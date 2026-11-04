@@ -28,6 +28,7 @@ public abstract class ClientPacketListenerMixin {
 		Entity entity = packet.getEntity(mc.level);
 		if (entity != null) {
 			PopTracker.onEntityEvent(entity, packet.getEventId());
+			dev.eventide.client.module.KillEffects.onEntityEvent(entity, packet.getEventId());
 		}
 	}
 

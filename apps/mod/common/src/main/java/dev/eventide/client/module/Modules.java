@@ -70,6 +70,17 @@ public final class Modules {
 			"Crystals vanish the moment you hit them. Check the server's rules", Category.COMBAT, false).icon("gem");
 	public static final Module POP_NOTIFIER = new Module("pop_notifier", "Pop Alerts",
 			"A chat message when someone pops a totem", Category.COMBAT, true).icon("bell");
+	public static final Module KILL_EFFECTS = new Module("kill_effects", "Kill Effects",
+			"A burst of light in your colour where a player you fought falls", Category.COMBAT, false).icon("skull").markNew();
+	public static final Choice KILL_EFFECTS_STYLE = KILL_EFFECTS.add(new Choice("style", "Effect", "What plays where they fall", 0,
+			"Nebula Burst", "Soul Rise", "Starfall", "Thunder", "Shatter"));
+	public static final Color KILL_EFFECTS_COLOR = KILL_EFFECTS.add(new Color("color", "Colour", "The effect's main colour", 0xFF9A4DFF));
+	public static final Slider KILL_EFFECTS_SIZE = KILL_EFFECTS.add(new Slider("size", "Size", "How big and how full the effect is",
+			50, 200, 10, 100, "%"));
+	public static final Choice KILL_EFFECTS_WHO = KILL_EFFECTS.add(new Choice("who", "Whose deaths", "Only players you hit in the last few seconds, or any player",
+			0, "Your kills", "Any player"));
+	public static final Toggle KILL_EFFECTS_MOBS = KILL_EFFECTS.add(new Toggle("mobs", "Mobs too", "Mobs you kill get the effect as well", false));
+	public static final Toggle KILL_EFFECTS_SOUND = KILL_EFFECTS.add(new Toggle("sound", "Sound", "A sound to go with it, only you hear", true));
 	public static final Module TOTEM_WARNING = new Module("totem_warning", "Totem Warning",
 			"A warning when your offhand has no totem but your inventory does", Category.COMBAT, true).icon("triangle-alert");
 	public static final Module ITEM_HIGHLIGHTER = new Module("item_highlighter", "Item Highlighter",
@@ -462,6 +473,7 @@ public final class Modules {
 		TextHotkeys.tick(mc);
 		CustomSkins.tick();
 		PlayerList.tick(mc);
+		KillEffects.tick(mc);
 		MusicBridge.tick();
 		if (LYRICS.enabled() || MUSIC.enabled() && MUSIC_LYRICS.get()) dev.eventide.client.music.Lyrics.want(MusicBridge.current());
 		if (SKIES.enabled()) dev.eventide.client.sky.SkyWeather.tick(mc);

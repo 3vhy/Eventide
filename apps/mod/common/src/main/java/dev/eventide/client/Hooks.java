@@ -58,4 +58,6 @@ public final class Hooks {
 
 	/** Set when the Skies module draws the sky (SkyRenderer.renderSkyDisc). */
 	public static volatile boolean skyDrawn = false;
+	/** Set when Kill Effects starts an effect. */
+	public static volatile boolean killEffectRan = false;
 }

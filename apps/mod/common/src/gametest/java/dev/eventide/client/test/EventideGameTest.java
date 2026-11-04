@@ -1045,6 +1045,50 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 	}
 
+	/**
+	 * Kill Effects: a zombie you hit dies and its effect plays (from the server's death event); then each effect
+	 * is pictured on its own in front of you.
+	 */
+	private static void killEffects(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
+		var server = singleplayer.getServer();
+		server.runCommand("time set midnight");
+		context.runOnClient(client -> {
+			Modules.KILL_EFFECTS.set(true);
+			Modules.KILL_EFFECTS_MOBS.set(true);
+			client.getToastManager().clear();
+		});
+		face(context, 0, 10);
+		server.runCommand("execute as @p at @s run summon zombie ^ ^ ^4 {NoAI:1b,Silent:1b,Tags:[\"eventide_kill\"]}");
+		context.waitTicks(10);
+		context.runOnClient(client -> {
+			for (var entity : client.level.entitiesForRendering()) {
+				if (entity.getType() == net.minecraft.world.entity.EntityType.ZOMBIE) dev.eventide.client.module.KillEffects.onAttack(entity);
+			}
+		});
+		server.runCommand("kill @e[tag=eventide_kill]");
+		context.waitTicks(4);
+		check(failed, "a mob you hit dying plays its kill effect (death event)", context.computeOnClient(client ->
+				Hooks.killEffectRan && dev.eventide.client.module.KillEffects.running() > 0));
+		shot(context, "eventide-kill-effect");
+		context.waitTicks(40);
+		String[] names = {"nebula", "soul", "starfall", "thunder", "shatter"};
+		for (int i = 0; i < names.length; i++) {
+			int kind = i;
+			context.runOnClient(client -> {
+				var look = client.player.getLookAngle();
+				dev.eventide.client.module.KillEffects.start(kind, client.player.getX() + look.x * 4, client.player.getY(), client.player.getZ() + look.z * 4, 1.9);
+			});
+			context.waitTicks(kind == 2 ? 11 : kind == 1 ? 14 : 3);
+			shot(context, "eventide-kill-effect-" + names[i]);
+			context.waitTicks(30);
+		}
+		context.runOnClient(client -> {
+			Modules.KILL_EFFECTS.set(false);
+			Modules.KILL_EFFECTS_MOBS.reset();
+		});
+		server.runCommand("time set noon");
+	}
+
 	/** Runs one part of the test on its own (-PtestFocus=...), for quicker checks while working on it. */
 	private static void runFocused(ClientGameTestContext context, String focus, List<String> failed) {
 		EventideClient.LOG.info("eventide-check: running only the {} part of the test", focus);
@@ -1060,6 +1104,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("lyrics")) skyLyrics(context, singleplayer, failed);
 			if (focus.contains("knives")) knives(context, singleplayer, failed, true);
 			if (focus.contains("menu")) menu(context, failed);
+			if (focus.contains("kills")) killEffects(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);
 		}

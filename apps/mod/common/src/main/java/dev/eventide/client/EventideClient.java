@@ -107,6 +107,7 @@ public final class EventideClient implements ClientModInitializer {
 			if (level.isClientSide()) {
 				Target.onAttack(entity);
 				Combo.onAttack(entity);
+				dev.eventide.client.module.KillEffects.onAttack(entity);
 			}
 			return InteractionResult.PASS;
 		});

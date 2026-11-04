@@ -7,7 +7,7 @@ import dev.eventide.client.module.Waypoints;
 import dev.eventide.client.module.Zoom;
 import net.minecraft.client.Minecraft;
 
-/** Draws the waypoint markers and the enabled HUD widgets every frame. */
+/** Draws the waypoint markers and the enabled HUD widgets every frame (not while the menu floats in front of you). */
 public final class HudRenderer {
 	private HudRenderer() {
 	}
@@ -18,7 +18,7 @@ public final class HudRenderer {
 		Zoom.update(mc);
 		if (mc.options.hideGui || mc.player == null) return;
 		Waypoints.drawOnScreen(d, mc);
-		if (mc.screen instanceof HudEditorScreen) return;
+		if (mc.screen instanceof HudEditorScreen || dev.eventide.client.gui.menu.FloatingMenu.visible()) return;
 		drawAll(d, mc);
 	}
 

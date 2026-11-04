@@ -163,6 +163,54 @@ public final class Paint {
 		strip(AX, AY, 1f, BX, BY, 0f, n);
 	}
 
+	/**
+	 * A box shaded smoothly between a colour at each corner (top left, top right, bottom right, bottom left),
+	 * split into a grid so the blend is even across it, for colour pickers.
+	 */
+	public static void corners(Draw d, float x1, float y1, float x2, float y2, int topLeft, int topRight, int bottomRight, int bottomLeft) {
+		if (x2 <= x1 || y2 <= y1) return;
+		solid(0xFFFFFFFF, x1, y1, x2, y2);
+		begin(d, null, true);
+		int n = 8;
+		for (int j = 0; j < n; j++) {
+			float v0 = j / (float) n;
+			float v1 = (j + 1) / (float) n;
+			for (int i = 0; i < n; i++) {
+				float u0 = i / (float) n;
+				float u1 = (i + 1) / (float) n;
+				float ax = x1 + (x2 - x1) * u0;
+				float bx = x1 + (x2 - x1) * u1;
+				float ay = y1 + (y2 - y1) * v0;
+				float by = y1 + (y2 - y1) * v1;
+				quad(ax, ay, bilinear(topLeft, topRight, bottomRight, bottomLeft, u0, v0), ax, by, bilinear(topLeft, topRight, bottomRight, bottomLeft, u0, v1),
+						bx, by, bilinear(topLeft, topRight, bottomRight, bottomLeft, u1, v1), bx, ay, bilinear(topLeft, topRight, bottomRight, bottomLeft, u1, v0));
+			}
+		}
+		flush();
+	}
+
+	private static int bilinear(int tl, int tr, int br, int bl, float u, float v) {
+		int top = Draw.mix(tl, tr, u);
+		int bottom = Draw.mix(bl, br, u);
+		return fade(Draw.mix(top, bottom, v), opacity);
+	}
+
+	/** A horizontal strip through {@code colors}, evenly spaced, for the hue bar. */
+	public static void stops(Draw d, float x1, float y1, float x2, float y2, int[] colors) {
+		if (x2 <= x1 || y2 <= y1 || colors.length < 2) return;
+		solid(0xFFFFFFFF, x1, y1, x2, y2);
+		begin(d, null, true);
+		int n = colors.length - 1;
+		for (int i = 0; i < n; i++) {
+			float ax = x1 + (x2 - x1) * i / n;
+			float bx = x1 + (x2 - x1) * (i + 1) / n;
+			int a = fade(colors[i], opacity);
+			int b = fade(colors[i + 1], opacity);
+			quad(ax, y1, a, ax, y2, a, bx, y2, b, bx, y1, b);
+		}
+		flush();
+	}
+
 	// Strokes
 
 	/** A border {@code width} units wide just inside the box's edge. */

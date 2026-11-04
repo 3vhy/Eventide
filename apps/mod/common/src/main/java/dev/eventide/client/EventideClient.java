@@ -6,6 +6,7 @@ import dev.eventide.client.discord.DiscordPresence;
 import dev.eventide.client.gui.TitleScreenStyle;
 import dev.eventide.client.gui.MenuNameTag;
 import dev.eventide.client.gui.PauseMenuButton;
+import dev.eventide.client.gui.menu.MenuHost;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.hud.Hotbar;
 import dev.eventide.client.hud.HudRenderer;
@@ -122,7 +123,7 @@ public final class EventideClient implements ClientModInitializer {
 	private static void tick(Minecraft mc) {
 		FreezeWatch.tick();
 		while (openSettingsKey.consumeClick()) {
-			if (mc.screen == null) mc.setScreen(MenuScreen.fromKey(null));
+			if (mc.screen == null) mc.setScreen(MenuHost.fromKey(null));
 		}
 		while (inspectKey.consumeClick()) Knives.inspect(mc);
 		Knives.tick(mc);

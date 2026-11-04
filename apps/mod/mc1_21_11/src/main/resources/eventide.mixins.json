@@ -20,6 +20,7 @@
 		"ClientPacketListenerMixin",
 		"EntityMixin",
 		"FogRendererMixin",
+		"GameRendererMixin",
 		"GuiGraphicsMixin",
 		"GuiRendererMixin",
 		"ItemInHandRendererMixin",

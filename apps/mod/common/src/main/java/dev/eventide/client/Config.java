@@ -141,10 +141,12 @@ public final class Config {
 				if (loaded.skinFile == null) loaded.skinFile = "";
 				migrateBlades(loaded.modules, loaded.settings);
 				Migration.renameValues(loaded.settings);
+				dev.eventide.client.module.Knives.migrate(loaded.settings);
 				for (Profile profile : loaded.profiles.values()) {
 					if (profile != null && profile.modules != null && profile.settings != null) {
 						migrateBlades(profile.modules, profile.settings);
 						Migration.renameValues(profile.settings);
+						dev.eventide.client.module.Knives.migrate(profile.settings);
 					}
 				}
 				instance = loaded;

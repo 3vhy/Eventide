@@ -1,6 +1,7 @@
 package dev.eventide.client.gui;
 
 import dev.eventide.client.compat.Compat;
+import dev.eventide.client.gui.menu.MenuHost;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.module.Module.Category;
 import dev.eventide.client.module.Modules;
@@ -50,7 +51,7 @@ public final class PauseMenuButton {
 			}
 		}
 		String label = LABEL;
-		Button mods = Button.builder(Component.literal(label), button -> mc.setScreen(new MenuScreen(screen, Category.RENDER))).build();
+		Button mods = Button.builder(Component.literal(label), button -> mc.setScreen(MenuHost.open(screen, Category.RENDER))).build();
 		GEMS.add(mods);
 		Compat.afterScreen(screen, d -> {
 			for (AbstractWidget widget : Compat.widgets(screen)) {

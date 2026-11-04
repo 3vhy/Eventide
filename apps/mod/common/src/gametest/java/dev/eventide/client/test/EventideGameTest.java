@@ -10,7 +10,8 @@ import dev.eventide.client.compat.CompatScreen;
 import dev.eventide.client.gui.HudEditorScreen;
 import dev.eventide.client.gui.TitleScreenStyle;
 import dev.eventide.client.gui.menu.MenuScreen;
-import dev.eventide.client.gui.menu.OrbitScreen;
+import dev.eventide.client.gui.menu.FloatingMenu;
+import dev.eventide.client.gui.menu.FloatingMenuScreen;
 import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.FreezeWatch;
@@ -276,24 +277,19 @@ public final class EventideGameTest implements FabricClientGameTest {
 		}
 
 		click(context, menuScale, "Eventide");
-		context.waitTicks(10);
-		check(failed, "the Eventide button on the main menu opens the Orbit", context.computeOnClient(client -> client.screen instanceof OrbitScreen));
 		context.waitTicks(30);
-		shot(context, "eventide-orbit-from-menu");
-		context.getInput().pressKey(InputConstants.KEY_RETURN);
-		context.waitTicks(30);
-		check(failed, "Enter in the Orbit opens the menu at that tab", context.computeOnClient(client ->
+		check(failed, "the Eventide button on the main menu opens the menu", context.computeOnClient(client ->
 				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
 		shot(context, "eventide-menu-from-menu");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(5);
-		check(failed, "Esc in the menu goes back to the Orbit", context.computeOnClient(client -> client.screen instanceof OrbitScreen));
-		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-		context.waitTicks(5);
-		check(failed, "Esc in the Orbit goes back to the main menu", context.computeOnClient(client -> client.screen instanceof TitleScreen));
+		check(failed, "Esc in the menu goes back to the main menu", context.computeOnClient(client -> client.screen instanceof TitleScreen));
+		context.runOnClient(client -> Modules.THEME_MENU_MODE.set("Floating"));
 		context.getInput().pressKey(EventideClient.openSettingsKey);
 		context.waitTicks(5);
-		check(failed, "Right Shift on the main menu opens the Orbit", context.computeOnClient(client -> client.screen instanceof OrbitScreen));
+		check(failed, "Right Shift on the main menu opens the menu on screen, even set to Floating (there's no world)",
+				context.computeOnClient(client -> client.screen instanceof MenuScreen));
+		context.runOnClient(client -> Modules.THEME_MENU_MODE.reset());
 		context.setScreen(() -> new HudEditorScreen(new TitleScreen()));
 		context.waitTicks(10);
 		shot(context, "eventide-edit-hud-from-menu");
@@ -742,50 +738,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 							&& TextHotkeys.keyName(GLFW.GLFW_KEY_F6, false).equals("F6")
 							&& TextHotkeys.keyName(GLFW.GLFW_MOUSE_BUTTON_4, true).equals("Mouse 4")));
 
-			context.getInput().pressKey(EventideClient.openSettingsKey);
-			context.waitTicks(30);
-			shot(context, "eventide-orbit");
-			check(failed, "Right Shift opens the Orbit", context.computeOnClient(client -> client.screen instanceof OrbitScreen));
-			context.getInput().pressKey(InputConstants.KEY_LEFT);
-			context.getInput().pressKey(InputConstants.KEY_LEFT);
-			context.waitTicks(30);
-			check(failed, "the arrow keys turn the Orbit", context.computeOnClient(client ->
-					client.screen instanceof OrbitScreen orbit && orbit.view().front() == 0));
-			shot(context, "eventide-orbit-profile");
-			context.getInput().pressKey(InputConstants.KEY_RIGHT);
-			context.getInput().pressKey(InputConstants.KEY_RIGHT);
-			context.waitTicks(30);
-			context.getInput().pressKey(InputConstants.KEY_RETURN);
-			context.waitTicks(30);
-			check(failed, "the Orbit opens the tab at the front", context.computeOnClient(client ->
-					client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
-			shot(context, "eventide-menu");
-			boolean zoomBefore = context.computeOnClient(client -> Modules.ZOOM.enabled());
-			float[] zoomCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().cardCenter(Modules.ZOOM));
-			check(failed, "the menu lays out a card for each module", zoomCard != null);
-			if (zoomCard != null) {
-				context.getInput().setCursorPos(zoomCard[0] * menuScale, zoomCard[1] * menuScale);
-				context.waitTicks(2);
-				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-				context.waitTicks(5);
-				check(failed, "clicking a card switches its module", context.computeOnClient(client -> Modules.ZOOM.enabled() != zoomBefore));
-				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-				context.waitTicks(5);
-				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-				context.waitTicks(15);
-				check(failed, "right-clicking a card opens its settings", context.computeOnClient(client ->
-						client.screen instanceof MenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
-				shot(context, "eventide-menu-zoom-settings");
-				context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-				context.waitTicks(5);
-			}
-			check(failed, "zoom is back the way it was", context.computeOnClient(client -> Modules.ZOOM.enabled() == zoomBefore));
-			context.getInput().typeChars("totem");
-			context.waitTicks(10);
-			check(failed, "typing in the menu searches", context.computeOnClient(client ->
-					client.screen instanceof MenuScreen menu && menu.view().searchText().equals("totem")));
-			shot(context, "eventide-menu-search");
-
+			menu(context, failed);
 			context.setScreen(() -> new HudEditorScreen(null));
 			context.waitTicks(10);
 			shot(context, "eventide-edit-hud");
@@ -835,17 +788,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new MenuScreen(null, Category.RENDER));
 			context.waitTicks(20);
 			shot(context, "eventide-menu-minecraft-font");
-			context.runOnClient(client -> {
-				Modules.THEME_FONT.reset();
-				Modules.THEME_RIGHT_SHIFT.set("Menu");
-			});
-			context.setScreen(() -> null);
-			context.waitTicks(3);
-			context.getInput().pressKey(EventideClient.openSettingsKey);
-			context.waitTicks(5);
-			check(failed, "Theme > Right Shift opens > Menu skips the Orbit",
-					context.computeOnClient(client -> client.screen instanceof MenuScreen));
-			context.runOnClient(client -> Modules.THEME_RIGHT_SHIFT.reset());
+			context.runOnClient(client -> Modules.THEME_FONT.reset());
 
 			// Pause menu: the Eventide button, then Confirm Disconnect
 			context.setScreen(() -> null);
@@ -977,6 +920,131 @@ public final class EventideGameTest implements FabricClientGameTest {
 		}
 	}
 
+	/**
+	 * The mod menu in a world: on screen (the sidebar, cards, keyboard, search and a settings panel), then
+	 * floating in the air (drawn in the world, clicked through the panel, seen from the side).
+	 */
+	private static void menu(ClientGameTestContext context, List<String> failed) {
+		int menuScale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+		context.getInput().pressKey(EventideClient.openSettingsKey);
+		context.waitTicks(30);
+		check(failed, "Right Shift opens the menu", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
+		shot(context, "eventide-menu");
+		boolean zoomBefore = context.computeOnClient(client -> Modules.ZOOM.enabled());
+		float[] zoomCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().cardCenter(Modules.ZOOM));
+		check(failed, "the menu lays out a card for each module", zoomCard != null);
+		if (zoomCard != null) {
+			context.getInput().setCursorPos(zoomCard[0] * menuScale, zoomCard[1] * menuScale);
+			context.waitTicks(2);
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(5);
+			check(failed, "clicking a card switches its module", context.computeOnClient(client -> Modules.ZOOM.enabled() != zoomBefore));
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(5);
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			context.waitTicks(15);
+			check(failed, "right-clicking a card opens its settings", context.computeOnClient(client ->
+					client.screen instanceof MenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
+			shot(context, "eventide-menu-zoom-settings");
+			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+			context.waitTicks(10);
+		}
+		check(failed, "zoom is back the way it was", context.computeOnClient(client -> Modules.ZOOM.enabled() == zoomBefore));
+		check(failed, "the mouse leaves no keyboard focus behind", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().focused() == null));
+		context.getInput().pressKey(InputConstants.KEY_DOWN);
+		context.getInput().pressKey(InputConstants.KEY_RIGHT);
+		context.waitTicks(5);
+		check(failed, "the arrow keys move between cards", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().focused() != null));
+		shot(context, "eventide-menu-keyboard");
+		Module focusedCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().focused());
+		boolean focusedBefore = focusedCard != null && context.computeOnClient(client -> focusedCard.enabled());
+		context.getInput().pressKey(InputConstants.KEY_SPACE);
+		context.waitTicks(5);
+		check(failed, "Space switches the card the keyboard is on", focusedCard != null && context.computeOnClient(client ->
+				focusedCard.enabled() != focusedBefore));
+		context.getInput().pressKey(InputConstants.KEY_SPACE);
+		context.getInput().pressKey(InputConstants.KEY_RETURN);
+		context.waitTicks(15);
+		check(failed, "Enter opens the settings of the card the keyboard is on", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().sheetModule() == focusedCard));
+		context.getInput().pressKey(InputConstants.KEY_DOWN);
+		context.waitTicks(5);
+		shot(context, "eventide-menu-settings-keyboard");
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.waitTicks(5);
+		context.getInput().pressKey(InputConstants.KEY_TAB);
+		context.waitTicks(10);
+		check(failed, "Tab moves to the next section", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().category() == Category.PLAYER));
+		context.getInput().typeChars("totem");
+		context.waitTicks(10);
+		check(failed, "typing in the menu searches", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().searchText().equals("totem")));
+		shot(context, "eventide-menu-search");
+		context.setScreen(() -> MenuScreen.settings(null, Modules.CROSSHAIR));
+		context.waitTicks(15);
+		float[] origin = context.computeOnClient(client -> ((MenuScreen) client.screen).view().sheetContent());
+		shot(context, "eventide-menu-crosshair");
+		context.setScreen(() -> MenuScreen.settings(null, Modules.KNIVES));
+		context.waitTicks(15);
+		shot(context, "eventide-menu-knives-settings");
+		check(failed, "a settings panel lays out its rows", origin != null && origin[1] > 0);
+
+		context.runOnClient(client -> Modules.THEME_MENU_MODE.set("Floating"));
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+		context.getInput().pressKey(EventideClient.openSettingsKey);
+		context.waitTicks(40);
+		check(failed, "Theme > Menu display > Floating opens the menu in the world", context.computeOnClient(client ->
+				client.screen instanceof FloatingMenuScreen));
+		check(failed, "the floating menu is drawn in the world (GameRenderer)", context.computeOnClient(client -> FloatingMenu.drawnFrames() > 0));
+		shot(context, "eventide-menu-floating");
+		boolean floatZoom = context.computeOnClient(client -> Modules.ZOOM.enabled());
+		float[] floatCard = context.computeOnClient(client -> {
+			float[] layout = ((FloatingMenuScreen) client.screen).view().cardCenter(Modules.ZOOM);
+			return layout == null ? null : FloatingMenu.project(layout[0], layout[1]);
+		});
+		check(failed, "the floating menu lays out its cards", floatCard != null);
+		if (floatCard != null) {
+			context.getInput().setCursorPos(floatCard[0] * menuScale, floatCard[1] * menuScale);
+			context.waitTicks(3);
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(5);
+			check(failed, "clicking a card on the floating menu switches its module", context.computeOnClient(client ->
+					Modules.ZOOM.enabled() != floatZoom));
+			context.runOnClient(client -> Modules.ZOOM.set(floatZoom));
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			context.waitTicks(15);
+			check(failed, "right-clicking a floating card opens its settings", context.computeOnClient(client ->
+					client.screen instanceof FloatingMenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
+			shot(context, "eventide-menu-floating-settings");
+		}
+		float yawBefore = context.computeOnClient(client -> client.player.getYRot());
+		context.runOnClient(client -> client.player.turn(-260, 40));
+		context.waitTicks(10);
+		check(failed, "you can look around the floating menu", context.computeOnClient(client -> client.player.getYRot() != yawBefore));
+		shot(context, "eventide-menu-floating-side");
+		context.getInput().pressKey(InputConstants.KEY_R);
+		context.waitTicks(10);
+		shot(context, "eventide-menu-floating-recentred");
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.waitTicks(5);
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.waitTicks(10);
+		check(failed, "Esc closes the floating menu", context.computeOnClient(client -> client.screen == null));
+		context.runOnClient(client -> {
+			Modules.THEME_MENU_MODE.reset();
+			client.player.turn(260, -40);
+		});
+		context.waitTicks(5);
+	}
+
 	/** Runs one part of the test on its own (-PtestFocus=...), for quicker checks while working on it. */
 	private static void runFocused(ClientGameTestContext context, String focus, List<String> failed) {
 		EventideClient.LOG.info("eventide-check: running only the {} part of the test", focus);
@@ -991,6 +1059,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("perf")) performance(context, failed);
 			if (focus.contains("lyrics")) skyLyrics(context, singleplayer, failed);
 			if (focus.contains("knives")) knives(context, singleplayer, failed, true);
+			if (focus.contains("menu")) menu(context, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);
 		}
@@ -1303,15 +1372,22 @@ public final class EventideGameTest implements FabricClientGameTest {
 		});
 		face(context, 0, every ? -8 : 10);
 		check(failed, "hotbar slots marked as knives keep their knife", context.computeOnClient(client ->
-				Knives.slot(1) == KnifeModel.BUTTERFLY && Knives.slot(7) == KnifeModel.SCYTHE && Knives.slot(8) == null
-						&& Modules.KNIVES_SLOTS.get().contains("2:bayonet")));
+				Knives.slot(1) == KnifeModel.WRAITH && Knives.slot(7) == KnifeModel.REAPER && Knives.slot(8) == null
+						&& Modules.KNIVES_SLOTS.get().contains("2:riptide")));
+		check(failed, "old knife names find their new knives", context.computeOnClient(client -> {
+			java.util.Map<String, String> old = new java.util.HashMap<>(java.util.Map.of("knives.model", "Karambit", "knives.finish", "Doppler (Blue)",
+					"knives.slots", "0:butterfly,3:m9_bayonet,5:phantom", "knives.glove", "Sport"));
+			Knives.migrate(old);
+			return "Eclipse".equals(old.get("knives.model")) && "Midnight".equals(old.get("knives.finish"))
+					&& "0:wraith,3:riptide,5:lumen".equals(old.get("knives.slots")) && !old.containsKey("knives.glove");
+		}));
 		context.runOnClient(client -> Knives.toggleSlot(8));
 		check(failed, "a hotbar slot can be marked and unmarked", context.computeOnClient(client -> {
 			boolean marked = Knives.slot(8) != null;
 			Knives.toggleSlot(8);
 			return marked && Knives.slot(8) == null;
 		}));
-		List<KnifeModel> shown = every ? List.of(KNIFE_SLOTS) : List.of(KnifeModel.KARAMBIT, KnifeModel.BUTTERFLY, KnifeModel.PHANTOM);
+		List<KnifeModel> shown = every ? List.of(KNIFE_SLOTS) : List.of(KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.LUMEN);
 		for (KnifeModel model : shown) {
 			String name = model.id();
 			context.getInput().pressKey(GLFW.GLFW_KEY_1 + List.of(KNIFE_SLOTS).indexOf(model));
@@ -1321,17 +1397,17 @@ public final class EventideGameTest implements FabricClientGameTest {
 			}
 			context.waitTicks(every ? 26 : 30);
 			shot(context, "eventide-knife-" + name);
-			if (every || model == KnifeModel.KARAMBIT) {
+			if (every || model == KnifeModel.ECLIPSE) {
 				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 				context.waitTicks(4);
 				shot(context, "eventide-knife-" + name + "-slash");
 				context.waitTicks(16);
 			}
-			if (every || model == KnifeModel.BUTTERFLY) {
+			if (every || model == KnifeModel.WRAITH) {
 				context.getInput().pressKey(EventideClient.inspectKey);
 				context.waitTicks(every ? 22 : 26);
 				shot(context, "eventide-knife-" + name + "-inspect");
-				if (model == KnifeModel.BUTTERFLY) check(failed, "the inspect key plays the knife's inspect", KnifeRenderer.inspecting()
+				if (model == KnifeModel.WRAITH) check(failed, "the inspect key plays the knife's inspect", KnifeRenderer.inspecting()
 						|| Hooks.knifeInspectRan);
 				context.waitTicks(60);
 			}
@@ -1355,11 +1431,11 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "a swing plays a slash (LocalPlayer.swing)", Hooks.knifeSlashRan);
 		check(failed, "the inspect key starts an inspect", Hooks.knifeInspectRan);
 		if (every) {
-			for (String finish : List.of("Purple", "Crimson", "Ice", "Gold")) {
+			for (String finish : List.of("Crystal", "Midnight", "Nebula", "Frost")) {
 				context.runOnClient(client -> Modules.KNIVES_FINISH.set(finish));
 				context.getInput().pressKey(GLFW.GLFW_KEY_3);
 				context.waitTicks(30);
-				shot(context, "eventide-knife-bayonet-" + finish.toLowerCase(java.util.Locale.ROOT));
+				shot(context, "eventide-knife-riptide-" + finish.toLowerCase(java.util.Locale.ROOT));
 			}
 			context.runOnClient(client -> {
 				Modules.KNIVES_FINISH.reset();
@@ -1386,8 +1462,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 	}
 
 	/** The knives the test puts in hotbar slots 1 to 8. */
-	private static final KnifeModel[] KNIFE_SLOTS = {KnifeModel.KARAMBIT, KnifeModel.BUTTERFLY, KnifeModel.BAYONET, KnifeModel.M9_BAYONET,
-			KnifeModel.FLIP, KnifeModel.HUNTSMAN, KnifeModel.PHANTOM, KnifeModel.SCYTHE};
+	private static final KnifeModel[] KNIFE_SLOTS = {KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.RIPTIDE, KnifeModel.NIGHTFALL,
+			KnifeModel.VESPER, KnifeModel.NOCTURNE, KnifeModel.LUMEN, KnifeModel.REAPER};
 
 	/**
 	 * The Knives settings: the slot picker shows the hotbar, clicking slot 9 marks it, and a marked slot's
@@ -1903,8 +1979,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		boolean every = options.containsKey("every");
 		context.runOnClient(client -> {
 			if (options.containsKey("finish")) Modules.KNIVES_FINISH.set(options.get("finish"));
-			if (options.containsKey("glove")) Modules.KNIVES_GLOVE.set(options.get("glove"));
-			if (options.containsKey("wear")) Modules.KNIVES_WEAR.set(Double.parseDouble(options.get("wear")));
+			if (options.containsKey("glow")) Modules.KNIVES_GLOW_COLOR.set((int) Long.parseLong(options.get("glow"), 16));
 			if (options.containsKey("time")) client.getSingleplayerServer().getCommands().performPrefixedCommand(
 					client.getSingleplayerServer().createCommandSourceStack(), "time set " + options.get("time"));
 		});

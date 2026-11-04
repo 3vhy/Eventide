@@ -13,6 +13,7 @@ public abstract class Setting {
 	public final String description;
 	Module owner;
 	private boolean hidden = false;
+	private String group = null;
 
 	protected Setting(String id, String name, String description) {
 		this.id = id;
@@ -33,6 +34,21 @@ public abstract class Setting {
 
 	public boolean hidden() {
 		return hidden;
+	}
+
+	/**
+	 * Files this setting under a heading on the settings page, like Viewmodel or Advanced; settings that
+	 * follow it in the module share the heading until another is set. Advanced starts folded away.
+	 */
+	@SuppressWarnings("unchecked")
+	<T extends Setting> T group(String name) {
+		group = name;
+		return (T) this;
+	}
+
+	/** The heading this setting sits under, or null for the module's main settings. */
+	public String group() {
+		return group;
 	}
 
 	private String key;
@@ -229,6 +245,22 @@ public abstract class Setting {
 	public static final class Text extends Setting {
 		private final String def;
 		public final int maxLength;
+		private java.util.function.Predicate<String> check = null;
+		private String problem = null;
+
+		/** Marks text that won't work, with what to tell the player; empty text always passes (it means the default). */
+		Text validate(java.util.function.Predicate<String> check, String problem) {
+			this.check = check;
+			this.problem = problem;
+			return this;
+		}
+
+		/** What's wrong with the text as it stands, or null when it's fine. */
+		public String problem() {
+			String value = get().trim();
+			if (check == null || value.isEmpty() || check.test(value)) return null;
+			return problem;
+		}
 
 		public Text(String id, String name, String description, String def, int maxLength) {
 			super(id, name, description);

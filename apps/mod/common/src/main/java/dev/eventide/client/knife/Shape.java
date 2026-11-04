@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * One rigid piece of a knife or hand, as quads with smooth normals, built once from code: ground blades,
- * lofted handles and fingers, rings, rounded plates and pins. Units are pixels (a sixteenth of a block).
+ * One rigid piece of a knife, as quads with smooth normals, built once from code: ground blades,
+ * lofted handles and guards, rings, rounded plates and pins. Units are pixels (a sixteenth of a block).
  * A knife's blade points up (+Y) with its edge towards +X and its flats facing ±Z. Every vertex records
  * its {@link KnifeShading} material, how near the cutting edge it is, and where it is on the part for the
  * finish pattern; the finish itself is chosen when it's drawn.
@@ -61,27 +61,8 @@ final class Shape {
 		}
 	}
 
-	/** Turns every vertex {@code degrees} about Y (from +X towards -Z) and scales it by {@code scale} about the origin. */
-	void turn(float degrees, float scale) {
-		double t = Math.toRadians(degrees);
-		float c = (float) Math.cos(t);
-		float s = (float) Math.sin(t);
-		for (int i = 0; i < quads * 4; i++) {
-			int at = i * STRIDE;
-			float x = data[at];
-			float z = data[at + 2];
-			data[at] = (c * x + s * z) * scale;
-			data[at + 1] *= scale;
-			data[at + 2] = (-s * x + c * z) * scale;
-			float nx = data[at + 3];
-			float nz = data[at + 5];
-			data[at + 3] = c * nx + s * nz;
-			data[at + 5] = -s * nx + c * nz;
-		}
-	}
-
-	/** Draws the shape with Eventide's shader: {@code look} is the finish (or glove design), {@code seed} the pattern seed (or colourway). */
-	void emit(PoseStack.Pose pose, VertexConsumer out, int light, int look, int seed, int frame) {
+	/** Draws the shape with Eventide's shader: {@code finish} is the finish, {@code hue} and {@code saturation} the edge glow's colour. */
+	void emit(PoseStack.Pose pose, VertexConsumer out, int light, int finish, float hue, float saturation, int frame) {
 		int lastMaterial = -1;
 		int lastEdge = -1;
 		int color = 0;
@@ -90,7 +71,7 @@ final class Shape {
 			int material = (int) data[at + 9];
 			int edge = Math.round(data[at + 8] * 255);
 			if (material != lastMaterial || edge != lastEdge) {
-				color = KnifeShading.color(material, look, seed, data[at + 8]);
+				color = KnifeShading.color(material, finish, hue, saturation, data[at + 8]);
 				lastMaterial = material;
 				lastEdge = edge;
 			}
@@ -99,14 +80,29 @@ final class Shape {
 		}
 	}
 
-	/** Draws the shape with Minecraft's entity shading and a plain colour per material (for shader packs). */
-	void emitPlain(PoseStack.Pose pose, VertexConsumer out, int light, int overlay, int finish, int design, int variant) {
+	/** Draws the shape with Minecraft's entity shading and a plain colour per material (for shader packs); the edge takes {@code glow}. */
+	void emitPlain(PoseStack.Pose pose, VertexConsumer out, int light, int overlay, int finish, int glow) {
 		for (int i = 0; i < quads * 4; i++) {
 			int at = i * STRIDE;
 			int material = (int) data[at + 9];
-			int color = KnifeShading.plain(material, material >= KnifeShading.GLOVE ? design : finish, design, variant);
-			out.addVertex(pose, data[at], data[at + 1], data[at + 2]).setColor(color).setUv(0.3f, 0.1f).setOverlay(overlay).setLight(light)
+			int color = KnifeShading.plain(material, finish, glow);
+			out.addVertex(pose, data[at], data[at + 1], data[at + 2]).setColor(color).setUv(0.98f, 0.98f).setOverlay(overlay).setLight(light)
 					.setNormal(pose, data[at + 3], data[at + 4], data[at + 5]);
+		}
+	}
+
+	/**
+	 * Draws a glowing shell around the shape for the luminous outline: every vertex pushed {@code width} pixels out
+	 * along its normal, in {@code color}. The glow shader lights it most where it's seen edge-on, so it reads as a
+	 * soft rim of light round the knife's silhouette.
+	 */
+	void emitGlow(PoseStack.Pose pose, VertexConsumer out, int color, float width) {
+		for (int i = 0; i < quads * 4; i++) {
+			int at = i * STRIDE;
+			float nx = data[at + 3];
+			float ny = data[at + 4];
+			float nz = data[at + 5];
+			out.addVertex(pose, data[at] + nx * width, data[at + 1] + ny * width, data[at + 2] + nz * width).setColor(color).setNormal(pose, nx, ny, nz);
 		}
 	}
 
@@ -193,8 +189,10 @@ final class Shape {
 		return Math.max(z, b.edgeHalf);
 	}
 
+	/** How near the blade's outline a point {@code f} across it is (0..1): its edges and, on a single-edged blade, its spine too, which glow. */
 	private static float edgeOf(Blade b, float f) {
-		return b.doubleEdged ? 1 - 2 * Math.min(f, 1 - f) : f;
+		if (b.doubleEdged) return 1 - 2 * Math.min(f, 1 - f);
+		return Math.max(0, Math.max((f - 0.55f) / 0.45f, 1 - f / 0.22f));
 	}
 
 	private static float[] bladePoint(Blade b, float[][] st, int i, float f, int side) {
@@ -257,7 +255,7 @@ final class Shape {
 			float[] nb = wallNormal(segment, i, false);
 			float[] a = point[i];
 			float[] c = point[i + 1];
-			float edge = f == 0 ? (b.doubleEdged ? 1 : 0) : 1;
+			float edge = 1;
 			quad(vertex(a[0], a[1], a[2], na[0], na[1], na[2], a[0], a[1], edge, material), vertex(c[0], c[1], c[2], nb[0], nb[1], nb[2], c[0], c[1], edge, material),
 					vertex(c[0], c[1], -c[2], nb[0], nb[1], nb[2], c[0], c[1], edge, material), vertex(a[0], a[1], -a[2], na[0], na[1], na[2], a[0], a[1], edge, material));
 		}
@@ -271,7 +269,7 @@ final class Shape {
 		return normalize(new float[] {segment[i][0] + segment[other][0], segment[i][1] + segment[other][1], 0});
 	}
 
-	/** Closes the blade across one station. */
+	/** Closes the blade across one station (the tip glows with the outline; the root, hidden in the guard, doesn't). */
 	private void bladeCap(Blade b, float[][] st, int i, int direction) {
 		int other = Math.max(0, Math.min(st.length - 1, i - direction));
 		float tx = (st[i][0] + st[i][2] - st[other][0] - st[other][2]) / 2;
@@ -283,10 +281,11 @@ final class Shape {
 			float f1 = (k + 1) / (float) steps;
 			float[] a = bladePoint(b, st, i, f0, 1);
 			float[] c = bladePoint(b, st, i, f1, 1);
-			quad(vertex(a[0], a[1], a[2], n[0], n[1], 0, a[0], a[1], edgeOf(b, f0), KnifeShading.BLADE),
-					vertex(c[0], c[1], c[2], n[0], n[1], 0, c[0], c[1], edgeOf(b, f1), KnifeShading.BLADE),
-					vertex(c[0], c[1], -c[2], n[0], n[1], 0, c[0], c[1], edgeOf(b, f1), KnifeShading.BLADE),
-					vertex(a[0], a[1], -a[2], n[0], n[1], 0, a[0], a[1], edgeOf(b, f0), KnifeShading.BLADE));
+			float glow = direction > 0 ? 1 : 0;
+			quad(vertex(a[0], a[1], a[2], n[0], n[1], 0, a[0], a[1], glow, KnifeShading.BLADE),
+					vertex(c[0], c[1], c[2], n[0], n[1], 0, c[0], c[1], glow, KnifeShading.BLADE),
+					vertex(c[0], c[1], -c[2], n[0], n[1], 0, c[0], c[1], glow, KnifeShading.BLADE),
+					vertex(a[0], a[1], -a[2], n[0], n[1], 0, a[0], a[1], glow, KnifeShading.BLADE));
 		}
 	}
 
@@ -587,26 +586,6 @@ final class Shape {
 		boolean neg = d1 < 0 || d2 < 0 || d3 < 0;
 		boolean pos = d1 > 0 || d2 > 0 || d3 > 0;
 		return !(neg && pos);
-	}
-
-	/**
-	 * Gives every quad added since quad {@code from} whose middle passes {@code test} (position, normal) the
-	 * material {@code material}. Whole quads change, so the border between materials follows the mesh.
-	 */
-	void restyle(int from, java.util.function.BiPredicate<float[], float[]> test, int material) {
-		for (int q = from; q < quads; q++) {
-			float[] position = new float[3];
-			float[] normal = new float[3];
-			for (int k = 0; k < 4; k++) {
-				int at = (q * 4 + k) * STRIDE;
-				for (int c = 0; c < 3; c++) {
-					position[c] += data[at + c] / 4;
-					normal[c] += data[at + 3 + c];
-				}
-			}
-			if (!test.test(position, normalize(normal))) continue;
-			for (int k = 0; k < 4; k++) data[(q * 4 + k) * STRIDE + 9] = material;
-		}
 	}
 
 	static float[] add(float[] a, float[] b) {

@@ -299,41 +299,27 @@ public final class Modules {
 
 	// Cosmetics
 	public static final Module KNIVES = new Module("knives", "Knives",
-			"Swords and the hotbar slots you pick as knives that flip, slash and inspect", Category.COSMETICS, false).icon("sword").markNew();
+			"Swords (or the hotbar slots you pick) as Eventide's knives, held in your own arm, with a glowing edge and their own animations",
+			Category.COSMETICS, false).icon("sword").markNew();
 	public static final Text KNIVES_SLOTS = KNIVES.add(new Text("slots", "Knife slots", "Hotbar slots held as knives, and which knife",
 			"", 200).hide());
 	public static final Choice KNIVES_MODEL = KNIVES.add(new Choice("model", "Knife", "Your swords' knife, and the first pick for a slot you mark",
-			0, dev.eventide.client.knife.KnifeModel.labels()));
-	public static final Choice KNIVES_FINISH = KNIVES.add(new Choice("finish", "Finish", "The pattern on the blade", 1,
+			1, dev.eventide.client.knife.KnifeModel.labels()).group("Knife"));
+	public static final Choice KNIVES_FINISH = KNIVES.add(new Choice("finish", "Finish", "What the blade's made of", 0,
 			dev.eventide.client.knife.Finish.labels()));
-	public static final Slider KNIVES_WEAR = KNIVES.add(new Slider("wear", "Wear", "Factory New on the left, Battle-Scarred on the right",
-			0, 100, 1, 3, "%"));
-	public static final Slider KNIVES_SEED = KNIVES.add(new Slider("seed", "Pattern", "Which version of the pattern you get", 0, 1023, 1, 412, ""));
-	public static final Choice KNIVES_GLOVE = KNIVES.add(new Choice("glove", "Gloves", "What your hand wears", 2, dev.eventide.client.knife.Gloves.DESIGNS));
-	public static final Slider KNIVES_GLOVE_COLOR = KNIVES.add(new Slider("glove_color", "Glove colour", "Each glove comes in eight colourways",
-			1, 8, 1, 1, ""));
-	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
-			0, 100, 5, 60, "%"));
-	public static final Toggle KNIVES_AUTO = KNIVES.add(new Toggle("auto", "Auto knives",
-			"Every item of a kind is a knife too, not just the slots you mark", true));
-	public static final Choice KNIVES_AUTO_TYPE = KNIVES.add(new Choice("auto_type", "Which items", "What Auto knives turns into knives", 0,
-			"Swords", "Swords and axes", "Item ID"));
-	public static final Text KNIVES_AUTO_ITEM = KNIVES.add(new Text("auto_item", "Item ID", "For Which items: Item ID, like minecraft:stick",
-			"minecraft:stick", 48));
+	public static final Toggle KNIVES_GLOW = KNIVES.add(new Toggle("glow", "Edge glow",
+			"A line of light round the blade and a soft glow round the knife", true).group("Glow"));
+	public static final Color KNIVES_GLOW_COLOR = KNIVES.add(new Color("glow_color", "Glow colour", "The colour of the edge and its glow",
+			0xFF9A4DFF));
+	public static final Slider KNIVES_GLOW_STRENGTH = KNIVES.add(new Slider("glow_strength", "Glow strength", "How bright the edge and its glow are",
+			0, 200, 5, 100, "%"));
+	public static final Toggle KNIVES_HAND_GLOW = KNIVES.add(new Toggle("hand_glow", "Hand glow", "The same soft glow round your arm", true));
+	public static final Toggle KNIVES_ARM = KNIVES.add(new Toggle("arm", "Show hand", "Your own arm holding the knife, in your skin", true).group("Hand"));
+	public static final Toggle KNIVES_SLEEVE = KNIVES.add(new Toggle("sleeve", "Sleeve", "Your skin's sleeve layer on the arm, if it has one", true));
 	public static final Toggle KNIVES_ANIMATIONS = KNIVES.add(new Toggle("animations", "Custom animations",
-			"Off, knife slots show your usual held item again", true));
-	public static final Toggle KNIVES_ARM = KNIVES.add(new Toggle("arm", "Show hand", "Your gloved hand holding the knife", true));
-	public static final Slider KNIVES_FOV = KNIVES.add(new Slider("fov", "Viewmodel FOV", "68 is the classic; lower brings the knife in bigger",
-			54, 90, 1, 68, ""));
-	public static final Choice KNIVES_PRESET = KNIVES.add(new Choice("preset", "Viewmodel", "Where the knife sits: low on the right, nearer the middle, or in your left hand",
-			0, "Classic", "Center", "Left-handed"));
-	public static final Slider KNIVES_X = KNIVES.add(new Slider("x", "Left / right", "Moves the knife sideways", -100, 100, 1, 0, ""));
-	public static final Slider KNIVES_Y = KNIVES.add(new Slider("y", "Up / down", "Moves the knife up or down", -100, 100, 1, 0, ""));
-	public static final Slider KNIVES_Z = KNIVES.add(new Slider("z", "Near / far", "Moves the knife closer or further away", -100, 100, 1, 0, ""));
-	public static final Slider KNIVES_PITCH = KNIVES.add(new Slider("pitch", "Tilt", "Tips the knife forwards or back", -90, 90, 1, 0, "°"));
-	public static final Slider KNIVES_YAW = KNIVES.add(new Slider("yaw", "Turn", "Turns the knife left or right", -90, 90, 1, 0, "°"));
-	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Roll", "Rolls the knife over", -90, 90, 1, 0, "°"));
-	public static final Slider KNIVES_SCALE = KNIVES.add(new Slider("scale", "Size", "How big the knife is", 50, 200, 5, 100, "%"));
+			"Off, knife slots show your usual held item again", true).group("Animation"));
+	public static final Choice KNIVES_STYLE = KNIVES.add(new Choice("style", "Animation style",
+			"Fluid, Snappy (quicker, less sway) or Heavy (slower, with more weight)", 0, "Fluid", "Snappy", "Heavy"));
 	public static final Slider KNIVES_SWING_SPEED = KNIVES.add(new Slider("swing_speed", "Slash speed", "How fast slashes and stabs play",
 			50, 200, 5, 100, "%"));
 	public static final Slider KNIVES_DRAW_SPEED = KNIVES.add(new Slider("draw_speed", "Draw speed", "How fast the knife comes out",
@@ -345,6 +331,25 @@ public final class Modules {
 	public static final Slider KNIVES_BOB = KNIVES.add(new Slider("bob", "Movement bob", "How much the knife bobs as you walk, dips as you sprint and lands with you",
 			0, 200, 5, 100, "%"));
 	public static final Toggle KNIVES_KICK = KNIVES.add(new Toggle("kick", "Camera kick", "A small kick of the view on each slash and stab", true));
+	public static final Toggle KNIVES_AUTO = KNIVES.add(new Toggle("auto", "Auto knives",
+			"Every item of a kind is a knife too, not just the slots you mark", true).group("Auto knives"));
+	public static final Choice KNIVES_AUTO_TYPE = KNIVES.add(new Choice("auto_type", "Which items", "What Auto knives turns into knives", 0,
+			"Swords", "Swords and axes", "Item ID"));
+	public static final Text KNIVES_AUTO_ITEM = KNIVES.add(new Text("auto_item", "Item ID", "For Which items: Item ID, like minecraft:stick",
+			"minecraft:stick", 48).validate(id -> id.matches("([a-z0-9_.-]+:)?[a-z0-9_./-]+"), "An item ID is lowercase, like minecraft:stick"));
+	public static final Slider KNIVES_FOV = KNIVES.add(new Slider("fov", "Viewmodel FOV", "70 is Minecraft's own; lower brings the knife in bigger",
+			50, 90, 1, 70, "").group("Viewmodel"));
+	public static final Choice KNIVES_PRESET = KNIVES.add(new Choice("preset", "Viewmodel", "Where the arm sits: Minecraft's place, nearer the middle, or your left hand",
+			0, "Classic", "Center", "Left-handed"));
+	public static final Slider KNIVES_SCALE = KNIVES.add(new Slider("scale", "Size", "How big the knife is", 50, 200, 5, 100, "%"));
+	public static final Slider KNIVES_X = KNIVES.add(new Slider("x", "Left / right", "Moves the arm sideways", -100, 100, 1, 0, "").group("Advanced"));
+	public static final Slider KNIVES_Y = KNIVES.add(new Slider("y", "Up / down", "Moves the arm up or down", -100, 100, 1, 0, ""));
+	public static final Slider KNIVES_Z = KNIVES.add(new Slider("z", "Near / far", "Moves the arm closer or further away", -100, 100, 1, 0, ""));
+	public static final Slider KNIVES_PITCH = KNIVES.add(new Slider("pitch", "Tilt", "Tips the arm forwards or back", -90, 90, 1, 0, "°"));
+	public static final Slider KNIVES_YAW = KNIVES.add(new Slider("yaw", "Turn", "Turns the arm left or right", -90, 90, 1, 0, "°"));
+	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Wrist", "Twists the wrist, turning the blade", -90, 90, 1, 0, "°"));
+	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
+			0, 100, 5, 60, "%"));
 	public static final Module MENU_NAME = new Module("menu_name", "Menu Logo",
 			"The Eventide logo in the corner of menus, chests and your inventory, or on your HUD", Category.COSMETICS, true)
 			.icon("badge").markNew();
@@ -364,27 +369,31 @@ public final class Modules {
 
 	// Client
 	public static final Module THEME = new Module("theme", "Theme",
-			"Accent colour, fonts, buttons and the HUD's size", Category.CLIENT, true).icon("palette").alwaysOn();
+			"Accent colour, how the menu opens, fonts, buttons and the HUD's size", Category.CLIENT, true).icon("palette").alwaysOn();
 	public static final Color THEME_PANEL_COLOR = THEME.add(new Color("panel_color", "Accent colour",
-			"Switches, tabs, bars and glows; Violet is Eventide's own", dev.eventide.client.gui.Accent.DEFAULT));
+			"Switches, the chosen tab, bars and glows; Violet is Eventide's own", dev.eventide.client.gui.Accent.DEFAULT).group("Colour"));
 	public static final Toggle THEME_RAINBOW = THEME.add(new Toggle("rainbow", "Rainbow",
 			"The accent slowly cycles through the rainbow", false));
+	public static final Choice THEME_MENU_MODE = THEME.add(new Choice("menu_mode", "Menu display",
+			"On the screen, or floating in the air in front of you like a hologram", 0, "Screen", "Floating").group("Menu"));
+	public static final Slider THEME_FLOAT_DISTANCE = THEME.add(new Slider("float_distance", "Floating distance",
+			"How far in front of you the floating menu hangs", 1.0, 3.0, 0.1, 1.6, " blocks"));
+	public static final Slider THEME_FLOAT_SCALE = THEME.add(new Slider("float_scale", "Floating size",
+			"How big the floating menu is", 60, 150, 5, 100, "%"));
 	public static final Choice THEME_FONT = THEME.add(new Choice("font", "Menu font",
 			"Inter, like the website, or Minecraft's pixel font", 0, "Clean", "Minecraft"));
-	public static final Toggle THEME_BUTTONS = THEME.add(new Toggle("buttons", "Glass buttons",
-			"Every screen's buttons, text boxes, sliders, lists and tooltips in Eventide's violet glass, other mods' too", true));
-	public static final Choice THEME_RIGHT_SHIFT = THEME.add(new Choice("right_shift", "Right Shift opens",
-			"The Orbit, to pick a tab, or the menu straight away", 0, "Orbit", "Menu"));
 	public static final Toggle THEME_SNOW = THEME.add(new Toggle("snow", "Stars", "Twinkling stars behind Eventide's menus", true));
 	public static final Slider THEME_SNOW_AMOUNT = THEME.add(new Slider("snow_amount", "Star amount", "How many stars",
 			10, 100, 10, 50, "%"));
+	public static final Toggle THEME_BUTTONS = THEME.add(new Toggle("buttons", "Eventide buttons",
+			"Every screen's buttons, text boxes, sliders, lists and tooltips in Eventide's midnight style, other mods' too", true).group("Game screens"));
 	public static final Slider THEME_HUD_SCALE = THEME.add(new Slider("hud_scale", "HUD size", "Makes every HUD widget bigger or smaller",
-			50, 200, 5, 100, "%"));
+			50, 200, 5, 100, "%").group("HUD"));
 	public static final Toggle THEME_ROUNDED_HUD = THEME.add(new Toggle("rounded_hud", "Rounded HUD",
 			"Soft round corners on HUD widgets", true));
 	public static final Choice THEME_WINDOW_TITLE = THEME.add(new Choice("window_title", "Window title",
 			"Keep \"Minecraft\" in it so Medal, OBS and Discord recognise the game", 0,
-			"Minecraft - Eventide", "Eventide"));
+			"Minecraft - Eventide", "Eventide").group("Window"));
 	public static final Module PERFORMANCE = new Module("performance", "Performance",
 			"Smoother frames on slower PCs: lighter effects and fewer particles, or one preset", Category.CLIENT, true).icon("gauge").alwaysOn()
 			.markNew();

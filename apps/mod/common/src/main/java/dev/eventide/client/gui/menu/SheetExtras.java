@@ -36,6 +36,8 @@ import dev.eventide.client.ui.Widgets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -50,7 +52,7 @@ import net.minecraft.world.item.ItemStack;
  */
 final class SheetExtras implements SettingsSheet.Extras {
 	private enum Focus {
-		NONE, PLAYER, RULE_FIND, RULE_REPLACE, HOTKEY_KEY, HOTKEY_TEXT, WAYPOINT
+		NONE, PLAYER, RULE_FIND, RULE_REPLACE, HOTKEY_KEY, HOTKEY_TEXT, WAYPOINT, BIND
 	}
 
 	private static final float ROW = 62;
@@ -63,7 +65,7 @@ final class SheetExtras implements SettingsSheet.Extras {
 	private static final float SLOT_GAP = 6;
 	private static final float CHIP = 30;
 
-	private final MenuScreen screen;
+	private final MenuHost screen;
 	private Focus focus = Focus.NONE;
 	private String playerName = "";
 	private String ruleFind = "";
@@ -75,10 +77,11 @@ final class SheetExtras implements SettingsSheet.Extras {
 	private Waypoint renaming = null;
 	private String waypointName = "";
 	private int knifeMenu = -1;
+	private KeyMapping binding = null;
 	private float mx;
 	private float my;
 
-	SheetExtras(MenuScreen screen) {
+	SheetExtras(MenuHost screen) {
 		this.screen = screen;
 	}
 
@@ -91,7 +94,7 @@ final class SheetExtras implements SettingsSheet.Extras {
 
 	@Override
 	public boolean has(Module module) {
-		return widgetOf(module) != null || module == Modules.THEME || module == Modules.MUSIC || module == Modules.LYRICS || module == Modules.SKIN_PROTECT
+		return widgetOf(module) != null || MenuHost.keyMapping(module) != null || module == Modules.THEME || module == Modules.MUSIC || module == Modules.LYRICS || module == Modules.SKIN_PROTECT
 				|| module == Modules.PLAYER_LIST || module == Modules.NAME_PROTECT || module == Modules.TEXT_HOTKEYS
 				|| module == Modules.WAYPOINTS || module == Modules.KNIVES || module == Modules.SKIES;
 	}
@@ -104,6 +107,7 @@ final class SheetExtras implements SettingsSheet.Extras {
 	@Override
 	public float height(Module module, float width) {
 		float h = 0;
+		if (MenuHost.keyMapping(module) != null) h += ROW;
 		if (widgetOf(module) != null) h += ROW;
 		if (module == Modules.THEME) h += ROW;
 		if (module == Modules.MUSIC) h += 2 * ROW;
@@ -123,6 +127,11 @@ final class SheetExtras implements SettingsSheet.Extras {
 		mx = mouseX;
 		my = mouseY;
 		y -= 12;
+		KeyMapping mapping = MenuHost.keyMapping(module);
+		if (mapping != null) {
+			drawBind(d, hits, module, mapping, x, y, w);
+			y += ROW;
+		}
 		if (widgetOf(module) != null) {
 			row(d, x, y, w, "Position", "Drag it anywhere in the layout editor", 150);
 			button(d, hits, x + w - 132, y + 13, x + w, y + 13 + FIELD, "move", "Edit layout", false, screen::openHudEditor);
@@ -167,6 +176,48 @@ final class SheetExtras implements SettingsSheet.Extras {
 
 	private boolean over(float x1, float y1, float x2, float y2) {
 		return mx >= x1 && mx < x2 && my >= y1 && my < y2;
+	}
+
+	/** The key that works a module: its key cap, and a click to pick a new one (Esc keeps the old). */
+	private void drawBind(Draw d, Hits hits, Module module, KeyMapping mapping, float x, float y, float w) {
+		boolean picking = focus == Focus.BIND && binding == mapping;
+		String what = module == Modules.THEME ? "Opens this menu" : module == Modules.KNIVES ? "Plays the knife's inspect" : "Works " + module.name;
+		row(d, x, y, w, "Key", picking ? "Press the new key, or Esc to keep it" : what + ". Click to change it", 150);
+		String label = picking ? "Press a key" : mapping.getTranslatedKeyMessage().getString();
+		float bw = Math.max(110, Type.width(label, 10.5f, Weight.SEMIBOLD) + 44);
+		float bx = x + w - bw;
+		float by = y + 13;
+		boolean hover = over(bx, by, x + w, by + FIELD);
+		if (picking) {
+			Widgets.accentPill(d, bx, by, x + w, by + FIELD, 0.8f);
+		} else {
+			Widgets.control(d, bx, by, x + w, by + FIELD, 10, hover ? 1 : 0);
+		}
+		Paint.icon(d, "keyboard", bx + 13, by + (FIELD - 14) / 2f, 14, picking ? 0xFFFFFFFF : Accent.text());
+		Type.draw(d, Type.fit(label, bw - 44, 10.5f, Weight.SEMIBOLD), bx + 34, by + (FIELD - 10.5f) / 2f, 10.5f, Weight.SEMIBOLD,
+				picking ? 0xFFFFFFFF : Tokens.TEXT);
+		hits.add(bx, by, x + w, by + FIELD, () -> {
+			focus = Focus.BIND;
+			binding = mapping;
+		});
+	}
+
+	/** Whether the next key pressed becomes a module's key. */
+	boolean pickingBind() {
+		return focus == Focus.BIND && binding != null;
+	}
+
+	/** Makes {@code key} the key being picked (Esc keeps the old one). */
+	void bindKey(int key) {
+		KeyMapping mapping = binding;
+		focus = Focus.NONE;
+		binding = null;
+		if (mapping == null || key == Keys.ESCAPE) return;
+		Minecraft mc = Minecraft.getInstance();
+		mapping.setKey(InputConstants.Type.KEYSYM.getOrCreate(key));
+		KeyMapping.resetMapping();
+		mc.options.save();
+		screen.view().notice(mapping.getTranslatedKeyMessage().getString() + " it is");
 	}
 
 	/** A row's name and one line about it, leaving {@code reserved} on the right for its control. */
@@ -948,6 +999,7 @@ final class SheetExtras implements SettingsSheet.Extras {
 	public void stopTyping() {
 		if (focus == Focus.WAYPOINT) finishRename();
 		focus = Focus.NONE;
+		binding = null;
 	}
 
 	private static String dropLast(String text) {

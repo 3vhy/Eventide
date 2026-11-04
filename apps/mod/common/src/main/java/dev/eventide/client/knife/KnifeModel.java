@@ -5,35 +5,26 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The knives, each its own shape built from {@link Shape} pieces (ground blades, lofted grips, plates,
- * pins and rings) after the real knife it's named for, with its own draw, inspect and slash animations
- * ({@link Clip}). Shapes are made the first time a knife is drawn and kept. The order is the order the
- * shader numbers them in (knife_surface.glsl's BLADE_RANGE and HOLE), so new knives go at the end.
+ * Eventide's knives, each its own weapon built from {@link Shape} pieces (ground blades, lofted grips, plates,
+ * pins and rings): dark steel with a luminous edge, in shapes made for Eventide. Every knife has its own draw,
+ * inspect and slash animations ({@link Clip}). Shapes are made the first time a knife is drawn and kept. The
+ * order is the order the shader numbers them in (knife_surface.glsl's BLADE_RANGE and HOLE), so new knives go
+ * at the end. Old knife names (from before the redesign) find their nearest new knife through {@link #byLabel}.
  */
 public enum KnifeModel {
-	KARAMBIT("Karambit", 1.0f, 0, -5.9f, -4.71f, 0.95f, 0.48f, Family.CURVED),
-	M9_BAYONET("M9 Bayonet", 0.86f, 0, -2.0f, -1.61f, 0.82f, 0.62f, Family.FIXED),
-	BAYONET("Bayonet", 0.86f, 0, -2.0f, -1.61f, 0.78f, 0.6f, Family.FIXED),
-	FLIP("Flip Knife", 1.0f, -0.25f, 0.45f, -2.19f, 1.0f, 0.6f, Family.FOLDING),
-	BUTTERFLY("Butterfly", 0.95f, -0.45f, 0.5f, -1.53f, 0.6f, 0.66f, Family.BUTTERFLY),
-	HUNTSMAN("Huntsman", 0.9f, 0, -1.5f, -1.57f, 0.86f, 0.64f, Family.FIXED),
-	GUT("Gut Knife", 0.98f, 0, -1.5f, -1.47f, 0.78f, 0.6f, Family.FIXED),
-	BOWIE("Bowie", 0.82f, 0, -1.8f, -1.7f, 0.9f, 0.66f, Family.FIXED),
-	FALCHION("Falchion", 0.95f, -0.2f, 0.45f, -2.28f, 1.0f, 0.62f, Family.FOLDING),
-	NAVAJA("Navaja", 1.0f, -0.2f, 0.4f, -2.19f, 1.0f, 0.5f, Family.FOLDING),
-	STILETTO("Stiletto", 0.9f, -0.1f, 0.4f, -2.37f, 1.0f, 0.48f, Family.FOLDING),
-	TALON("Talon", 0.98f, -0.25f, 0.4f, -4.63f, 1.0f, 0.55f, Family.CURVED),
-	URSUS("Ursus", 0.94f, -0.25f, 0.5f, -2.29f, 1.0f, 0.6f, Family.FOLDING),
-	PARACORD("Paracord", 0.98f, 0, -1.5f, -2.32f, 0.82f, 0.6f, Family.FIXED),
-	SURVIVAL("Survival", 0.95f, 0, -1.5f, -1.53f, 0.84f, 0.64f, Family.FIXED),
-	SKELETON("Skeleton", 0.98f, 0, -1.5f, -1.82f, 0.85f, 0.3f, Family.FIXED),
-	NOMAD("Nomad", 0.96f, 0, -1.5f, -2.16f, 1.05f, 0.48f, Family.FIXED),
-	CLASSIC("Classic", 0.92f, 0, -1.5f, -1.53f, 0.74f, 0.58f, Family.FIXED),
-	SHADOW_DAGGERS("Shadow Daggers", 1.15f, 0, -0.6f, -0.6f, 0.62f, 0.52f, Family.PUSH),
-	DAGGER("Dagger", 0.95f, 0, -1.0f, -1.63f, 0.6f, 0.6f, Family.FIXED),
-	PHANTOM("Phantom", 0.85f, 0, -1.0f, -1.78f, 0.7f, 0.7f, Family.FIXED),
-	KATANA("Katana", 0.66f, 0, -2.0f, -2.58f, 0.62f, 0.46f, Family.FIXED),
-	SCYTHE("Scythe", 0.72f, 0, -1.0f, -2.8f, 0.42f, 0.42f, Family.FIXED);
+	ECLIPSE("Eclipse", "A crescent karambit with a ring for your finger and a moon cut through the blade", 1.0f, 0, -5.9f, -4.7f, 0.95f, 0.5f,
+			Family.CURVED),
+	RIPTIDE("Riptide", "A double-edged dagger with a trident guard and a riptide ring", 0.86f, 0, -2.0f, -2.3f, 0.8f, 0.62f, Family.FIXED),
+	NIGHTFALL("Nightfall", "An angular tanto, black as the sky before the stars", 0.9f, 0, -1.6f, -2.4f, 0.95f, 0.62f, Family.FIXED),
+	VESPER("Vesper", "A slim flipper that snaps open with a flick", 1.0f, -0.25f, 0.45f, -2.25f, 1.0f, 0.6f, Family.FOLDING),
+	WRAITH("Wraith", "A balisong with open rail handles, made for tricks", 0.95f, -0.45f, 0.5f, -1.55f, 0.62f, 0.66f, Family.BUTTERFLY),
+	HALO("Halo", "A push dagger with a halo round its blade", 1.15f, 0, -0.6f, -0.6f, 0.62f, 0.52f, Family.PUSH),
+	LUMEN("Lumen", "A blade of pure light from a ringed hilt", 0.85f, 0, -1.0f, -1.8f, 0.72f, 0.72f, Family.FIXED),
+	NOCTURNE("Nocturne", "A long stiletto with a crescent guard and a jewel for a pommel", 0.9f, 0, -1.0f, -2.0f, 0.6f, 0.6f, Family.FIXED),
+	SERAPH("Seraph", "A curved short sword with swept wings for a guard", 0.66f, 0, -2.0f, -2.9f, 0.62f, 0.48f, Family.FIXED),
+	REAPER("Reaper", "A sickle on a banded haft, for the end of a fight", 0.72f, 0, -1.0f, -2.8f, 0.42f, 0.42f, Family.FIXED),
+	SPECTER("Specter", "A skeleton knife with a straight-edged blade and a ring", 0.98f, 0, -1.5f, -1.9f, 0.85f, 0.3f, Family.FIXED),
+	CORVID("Corvid", "A hooked blade with a toothed spine and a beaked grip", 0.96f, 0, -1.5f, -1.9f, 0.82f, 0.6f, Family.FIXED);
 
 	/** How a knife is built and handled: fixed blades, folders whose blade swings out, and the odd ones. */
 	enum Family {
@@ -61,6 +52,7 @@ public enum KnifeModel {
 	}
 
 	public final String label;
+	public final String description;
 	/** How big this knife is drawn, so long blades don't fill the screen. */
 	final float scale;
 	/** The point it spins about in tricks, in pixels: a karambit's ring, a butterfly knife's pin. */
@@ -78,8 +70,9 @@ public enum KnifeModel {
 	private Clip[] slashes;
 	private Clip use;
 
-	KnifeModel(String label, float scale, float spinX, float spinY, float grip, float handleA, float handleB, Family family) {
+	KnifeModel(String label, String description, float scale, float spinX, float spinY, float grip, float handleA, float handleB, Family family) {
 		this.label = label;
+		this.description = description;
 		this.scale = scale;
 		this.spinX = spinX;
 		this.spinY = spinY;
@@ -97,12 +90,33 @@ public enum KnifeModel {
 		return out;
 	}
 
-	/** The knife with this name (case doesn't matter), or null. */
+	/** The knife with this name or id (case doesn't matter), or the new knife an old name became; null if none. */
 	public static KnifeModel byLabel(String label) {
+		if (label == null) return null;
+		String wanted = label.trim();
 		for (KnifeModel model : values()) {
-			if (model.label.equalsIgnoreCase(label) || model.name().equalsIgnoreCase(label) || model.id().equalsIgnoreCase(label)) return model;
+			if (model.label.equalsIgnoreCase(wanted) || model.name().equalsIgnoreCase(wanted) || model.id().equalsIgnoreCase(wanted)) return model;
 		}
-		return null;
+		return renamed(wanted.toLowerCase(Locale.ROOT).replace(' ', '_'));
+	}
+
+	/** The new knife for a knife from before the redesign, by its old id or name, or null. */
+	static KnifeModel renamed(String old) {
+		return switch (old) {
+			case "karambit", "talon" -> ECLIPSE;
+			case "m9_bayonet", "bayonet" -> RIPTIDE;
+			case "huntsman", "survival", "bowie" -> NIGHTFALL;
+			case "flip", "flip_knife", "falchion", "navaja", "stiletto", "ursus" -> VESPER;
+			case "butterfly" -> WRAITH;
+			case "shadow_daggers" -> HALO;
+			case "phantom" -> LUMEN;
+			case "dagger", "classic" -> NOCTURNE;
+			case "katana" -> SERAPH;
+			case "scythe" -> REAPER;
+			case "skeleton", "paracord", "nomad" -> SPECTER;
+			case "gut", "gut_knife" -> CORVID;
+			default -> null;
+		};
 	}
 
 	List<Part> parts() {
@@ -139,54 +153,28 @@ public enum KnifeModel {
 		List<Part> out = new ArrayList<>();
 		Shape body = new Shape();
 		switch (this) {
-			case KARAMBIT -> karambit(body);
-			case M9_BAYONET -> m9(body);
-			case BAYONET -> bayonet(body);
-			case FLIP -> {
-				flipHandle(body);
-				out.add(new Part(flipBlade(), PartKind.FOLD, -0.25f, 0.45f));
+			case ECLIPSE -> eclipse(body);
+			case RIPTIDE -> riptide(body);
+			case NIGHTFALL -> nightfall(body);
+			case VESPER -> {
+				vesperHandle(body);
+				out.add(new Part(vesperBlade(), PartKind.FOLD, -0.25f, 0.45f));
 			}
-			case BUTTERFLY -> {
-				butterflyBlade(body);
-				out.add(new Part(butterflyHandle(-1), PartKind.HANDLE_A, -0.45f, 0.5f));
-				out.add(new Part(butterflyHandle(1), PartKind.HANDLE_B, 0.45f, 0.5f));
+			case WRAITH -> {
+				wraithBlade(body);
+				out.add(new Part(wraithHandle(-1), PartKind.HANDLE_A, -0.45f, 0.5f));
+				out.add(new Part(wraithHandle(1), PartKind.HANDLE_B, 0.45f, 0.5f));
 			}
-			case HUNTSMAN -> huntsman(body);
-			case GUT -> gut(body);
-			case BOWIE -> bowie(body);
-			case FALCHION -> {
-				folderHandle(body, 5.6f, 0.62f, KnifeShading.POLYMER, true);
-				out.add(new Part(falchionBlade(), PartKind.FOLD, -0.2f, 0.45f));
+			case HALO -> halo(body);
+			case LUMEN -> {
+				lumenHilt(body);
+				out.add(new Part(lumenBlade(), PartKind.ENERGY, 0, 1.4f));
 			}
-			case NAVAJA -> {
-				folderHandle(body, 5.8f, 0.5f, KnifeShading.WOOD, false);
-				out.add(new Part(navajaBlade(), PartKind.FOLD, -0.2f, 0.4f));
-			}
-			case STILETTO -> {
-				folderHandle(body, 6.2f, 0.48f, KnifeShading.WOOD, false);
-				out.add(new Part(stilettoBlade(), PartKind.FOLD, -0.1f, 0.4f));
-			}
-			case TALON -> {
-				talonHandle(body);
-				out.add(new Part(talonBlade(), PartKind.FOLD, -0.25f, 0.4f));
-			}
-			case URSUS -> {
-				folderHandle(body, 5.8f, 0.6f, KnifeShading.RUBBER, true);
-				out.add(new Part(ursusBlade(), PartKind.FOLD, -0.25f, 0.5f));
-			}
-			case PARACORD -> paracord(body);
-			case SURVIVAL -> survival(body);
-			case SKELETON -> skeleton(body);
-			case NOMAD -> nomad(body);
-			case CLASSIC -> classic(body);
-			case SHADOW_DAGGERS -> pushDagger(body);
-			case DAGGER -> dagger(body);
-			case PHANTOM -> {
-				phantomHilt(body);
-				out.add(new Part(phantomBlade(), PartKind.ENERGY, 0, 1.3f));
-			}
-			case KATANA -> katana(body);
-			case SCYTHE -> scythe(body);
+			case NOCTURNE -> nocturne(body);
+			case SERAPH -> seraph(body);
+			case REAPER -> reaper(body);
+			case SPECTER -> specter(body);
+			case CORVID -> corvid(body);
 		}
 		out.add(0, new Part(body, PartKind.BODY, 0, 0));
 		return List.copyOf(out);
@@ -204,11 +192,6 @@ public enum KnifeModel {
 			b.station(s[0], s[1], s[2], s[3], s[4]);
 		}
 		return b;
-	}
-
-	private static float smooth(float t) {
-		t = Math.max(0, Math.min(1, t));
-		return t * t * (3 - 2 * t);
 	}
 
 	/**
@@ -239,6 +222,15 @@ public enum KnifeModel {
 		};
 	}
 
+	/** A symmetric double-edged blade from {@code y0} to {@code y1}, {@code width} half wide, tapering by {@code taper(t)} (1 at the base, 0 at the tip). */
+	private static Profile symmetric(float y0, float y1, float width, float h0, float h1, java.util.function.Function<Float, Float> taper) {
+		return t -> {
+			float y = y0 + (y1 - y0) * t;
+			float w = width * Math.max(0.015f, taper.apply(t));
+			return new float[] {-w, y, w, y, h0 + (h1 - h0) * t};
+		};
+	}
+
 	/** Saw teeth along the spine between {@code from} and {@code to} (0..1 along the blade). */
 	private static Profile teeth(Profile base, float from, float to, int count, float depth) {
 		return t -> {
@@ -261,327 +253,180 @@ public enum KnifeModel {
 			float f = i / (float) rings;
 			float y = top + (bottom - top) * f;
 			float swell = 1 + bulge * (float) Math.sin(Math.PI * f);
-			float rib = ribs > 0 ? 1 - 0.07f * (float) Math.pow(Math.abs(Math.sin(Math.PI * (top - y) / ribs)), 6) : 1;
+			float rib = ribs > 0 ? 1 - 0.08f * (float) Math.pow(Math.abs(Math.sin(Math.PI * (top - y) / ribs)), 6) : 1;
 			out[i] = Shape.Ring.along(0, y, 0, rx * swell * rib, rz * swell * rib);
 		}
 		m.loft(out, 16, squareness, material, Shape.CAP, bottomEnd, false);
+	}
+
+	/** A tube along a path of points in the knife's plane (z = 0), {@code r} thick, for guards and hooks. */
+	private static void curve(Shape m, float[] xy, float r, float rz, int material) {
+		int n = xy.length / 2;
+		Shape.Ring[] rings = new Shape.Ring[n];
+		for (int i = 0; i < n; i++) {
+			int a = Math.max(0, i - 1);
+			int b = Math.min(n - 1, i + 1);
+			float tx = xy[2 * b] - xy[2 * a];
+			float ty = xy[2 * b + 1] - xy[2 * a + 1];
+			float taper = 0.55f + 0.45f * (float) Math.sin(Math.PI * Math.min(1, (i + 0.5f) / n * 1.15f));
+			rings[i] = new Shape.Ring(xy[2 * i], xy[2 * i + 1], 0, tx, ty, 0, r * taper, rz * taper, new float[] {-ty, tx, 0});
+		}
+		m.loft(rings, 10, 0.2f, material, Shape.DOME, Shape.DOME, true);
 	}
 
 	private static float[] rect(float x0, float y0, float x1, float y1) {
 		return new float[] {x0, y0, x1, y0, x1, y1, x0, y1};
 	}
 
-	private static void karambit(Shape m) {
-		Shape.Blade b = blade(26, t -> {
-			double angle = Math.toRadians(182 - 160 * t);
-			float cx = 3.2f;
-			float cy = 1.0f;
-			float spine = 4.3f + 0.15f * t;
-			float width = 1.5f * (1 - (float) Math.pow(t, 1.5f)) + 0.02f;
+	private static float[] mirrorX(float[] outline) {
+		float[] out = new float[outline.length];
+		for (int i = 0; i < outline.length; i += 2) {
+			out[i] = -outline[outline.length - 2 - i];
+			out[i + 1] = outline[outline.length - 1 - i];
+		}
+		return out;
+	}
+
+	/** A crescent karambit: the blade curls over like a waning moon, with a round hole near its root. */
+	private static void eclipse(Shape m) {
+		Shape.Blade b = blade(30, t -> {
+			double angle = Math.toRadians(196 - 168 * t);
+			float cx = 3.0f;
+			float cy = 0.9f;
+			float spine = 4.6f + 0.2f * t;
+			float width = 1.65f * (1 - (float) Math.pow(t, 1.4f)) + 0.03f;
 			float edge = spine - width;
 			return new float[] {cx + (float) Math.cos(angle) * spine, cy + (float) Math.sin(angle) * spine, cx + (float) Math.cos(angle) * edge,
-					cy + (float) Math.sin(angle) * edge, 0.26f - 0.16f * t};
+					cy + (float) Math.sin(angle) * edge, 0.28f - 0.18f * t};
 		});
-		b.grind = 0.42f;
-		b.swedgeFrom = 0.72f;
+		b.grind = 0.45f;
+		b.swedgeFrom = 0.7f;
 		b.swedgeWidth = 0.3f;
 		m.blade(b);
-		m.plate(new float[] {-1.25f, 1.15f, 0.55f, 1.15f, 0.95f, 0.4f, 0.75f, -0.3f, 1.0f, -1.0f, 0.7f, -1.6f, 0.95f, -2.3f, 0.62f, -2.9f, 0.88f, -3.6f,
-				0.72f, -4.4f, 0.55f, -4.85f, -0.55f, -4.85f, -0.95f, -3.9f, -1.0f, -2.2f, -1.15f, -0.4f}, -0.48f, 0.48f, 0.22f, KnifeShading.POLYMER);
-		m.plate(new float[] {-0.25f, 1.25f, 0.35f, 1.25f, 0.5f, 0.6f, -0.45f, 0.6f}, -0.52f, 0.52f, 0.12f, KnifeShading.HARDWARE);
-		m.pin(0.0f, -0.6f, -0.55f, 0.55f, 0.22f, KnifeShading.HARDWARE);
-		m.pin(-0.05f, -3.4f, -0.55f, 0.55f, 0.22f, KnifeShading.HARDWARE);
-		m.torus(0, -5.95f, 0, 1.15f, 0.36f, 0.42f, 24, 10, KnifeShading.RING);
+		float[] scale = {-1.2f, 1.15f, 0.55f, 1.15f, 0.95f, 0.4f, 0.8f, -0.4f, 1.05f, -1.1f, 0.72f, -1.7f, 1.0f, -2.4f, 0.68f, -3.0f, 0.92f, -3.7f,
+				0.7f, -4.5f, 0.5f, -4.9f, -0.5f, -4.9f, -0.9f, -3.9f, -1.05f, -2.2f, -1.15f, -0.4f};
+		m.plate(scale, -0.5f, 0.5f, 0.24f, KnifeShading.POLYMER);
+		m.plate(new float[] {-0.18f, 0.6f, 0.18f, 0.6f, 0.18f, -4.3f, -0.18f, -4.3f}, -0.53f, 0.53f, 0.06f, KnifeShading.HANDLE_PAINT);
+		m.plate(new float[] {-0.25f, 1.25f, 0.35f, 1.25f, 0.5f, 0.6f, -0.45f, 0.6f}, -0.54f, 0.54f, 0.12f, KnifeShading.HARDWARE);
+		m.pin(0.0f, -0.4f, -0.56f, 0.56f, 0.2f, KnifeShading.HARDWARE);
+		m.pin(-0.05f, -3.4f, -0.56f, 0.56f, 0.2f, KnifeShading.HARDWARE);
+		m.torus(0, -5.95f, 0, 1.2f, 0.38f, 0.44f, 26, 10, KnifeShading.RING);
+		m.torus(0, -5.95f, 0, 1.2f, 0.12f, 0.5f, 26, 6, KnifeShading.EDGE);
 	}
 
-	private static void m9(Shape m) {
-		Profile shape = straight(1.2f, 12.6f, -0.95f, 1.12f, 0.2f, 0.66f, true, 0.6f, 0.3f, 0.12f);
-		Shape.Blade b = blade(64, teeth(shape, 0.2f, 0.58f, 9, 0.32f));
+	/** A double-edged dagger with the Eventide trident's three prongs as its guard and a riptide ring for a pommel. */
+	private static void riptide(Shape m) {
+		Shape.Blade b = blade(48, symmetric(1.3f, 11.8f, 0.95f, 0.26f, 0.1f, t -> t < 0.62f ? 1 - 0.12f * t : (1 - 0.12f * 0.62f)
+				* (1 - (float) Math.pow((t - 0.62f) / 0.38f, 1.6f))));
+		b.doubleEdged = true;
+		b.grind = 0.36f;
+		b.fullerFrom = 0.05f;
+		b.fullerTo = 0.6f;
+		b.fullerCentre = 0.5f;
+		b.fullerWidth = 0.18f;
+		b.fullerDepth = 0.09f;
+		m.blade(b);
+		m.plate(new float[] {-1.25f, 0.6f, 1.25f, 0.6f, 1.05f, 1.35f, -1.05f, 1.35f}, -0.4f, 0.4f, 0.16f, KnifeShading.GUARD);
+		float[] tine = {1.05f, 0.62f, 1.9f, 0.7f, 2.35f, 1.35f, 2.3f, 2.9f, 1.95f, 3.5f, 1.78f, 2.7f, 1.62f, 1.6f, 1.15f, 1.35f};
+		m.plate(tine, -0.34f, 0.34f, 0.14f, KnifeShading.GUARD);
+		m.plate(mirrorX(tine), -0.34f, 0.34f, 0.14f, KnifeShading.GUARD);
+		m.plate(new float[] {-0.3f, 1.3f, 0.3f, 1.3f, 0.0f, 2.25f}, -0.42f, 0.42f, 0.1f, KnifeShading.GUARD);
+		grip(m, 0.62f, -5.2f, 0.78f, 0.6f, 0.4f, 0.42f, 0.06f, KnifeShading.CORD, Shape.OPEN);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -5.15f, 0, 0.84f, 0.66f), Shape.Ring.along(0, -5.55f, 0, 0.7f, 0.55f)}, 16, 0.3f,
+				KnifeShading.HARDWARE, Shape.OPEN, Shape.CAP, false);
+		m.torus(0, -6.35f, 0, 0.78f, 0.22f, 0.26f, 22, 8, KnifeShading.RING);
+		m.torus(0, -6.35f, 0, 0.42f, 0.1f, 0.3f, 16, 6, KnifeShading.RING);
+	}
+
+	/** An angular tanto: a straight spine to a high point, the edge breaking up to it at a sharp corner. */
+	private static void nightfall(Shape m) {
+		Shape.Blade b = blade(56, t -> {
+			float y = 1.2f + 9.8f * t;
+			float sx = -1.0f + 0.12f * t * t;
+			float tip = -0.82f;
+			float ex = t <= 0.8f ? 1.32f - 0.08f * t : 1.32f - 0.064f + (tip - 1.256f) * (float) Math.pow((t - 0.8f) / 0.2f, 0.9f);
+			if (t >= 0.999f) sx = tip;
+			return new float[] {sx, y, ex, y, 0.34f - 0.14f * t};
+		});
 		b.grind = 0.52f;
-		b.swedgeFrom = 0.68f;
-		b.swedgeWidth = 0.32f;
-		b.fullerFrom = 0.08f;
-		b.fullerTo = 0.5f;
-		b.fullerCentre = 0.42f;
-		b.fullerWidth = 0.13f;
-		b.fullerDepth = 0.1f;
+		b.fullerFrom = 0.05f;
+		b.fullerTo = 0.66f;
+		b.fullerCentre = 0.2f;
+		b.fullerWidth = 0.11f;
+		b.fullerDepth = 0.09f;
 		m.blade(b);
-		m.plate(new float[] {-2.15f, 0.55f, 2.55f, 0.55f, 2.75f, 0.95f, 2.45f, 1.25f, -1.95f, 1.25f, -2.3f, 0.95f}, -0.42f, 0.42f, 0.18f, KnifeShading.GUARD);
-		m.torus(-2.55f, 0.9f, 0, 0.62f, 0.2f, 0.28f, 18, 8, KnifeShading.GUARD);
-		grip(m, 0.6f, -5.3f, 0.82f, 0.62f, 0.45f, 0.55f, 0.08f, KnifeShading.POLYMER, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -5.25f, 0, 0.88f, 0.68f), Shape.Ring.along(0, -5.95f, 0, 0.92f, 0.7f),
-				Shape.Ring.along(0, -6.3f, 0, 0.62f, 0.48f)}, 16, 0.4f, KnifeShading.HARDWARE, Shape.OPEN, Shape.DOME, false);
-		m.torus(0, -6.75f, 0, 0.42f, 0.13f, 0.16f, 14, 6, KnifeShading.HARDWARE);
+		m.plate(new float[] {-1.5f, 0.55f, 1.8f, 0.55f, 2.0f, 0.9f, 1.7f, 1.25f, -1.4f, 1.25f, -1.65f, 0.9f}, -0.42f, 0.42f, 0.12f, KnifeShading.GUARD);
+		float[] scale = {-0.95f, 0.6f, 0.95f, 0.6f, 1.05f, -0.6f, 0.85f, -1.3f, 1.0f, -2.4f, 0.9f, -4.4f, 0.55f, -5.3f, -0.7f, -5.3f, -1.0f, -4.4f,
+				-1.05f, -1.2f};
+		m.plate(scale, -0.62f, 0.62f, 0.2f, KnifeShading.POLYMER);
+		m.plate(new float[] {-0.22f, -0.5f, 0.22f, -0.5f, 0.22f, -4.6f, -0.22f, -4.6f}, -0.65f, 0.65f, 0.05f, KnifeShading.HANDLE_PAINT);
+		m.pin(0.0f, -0.2f, -0.66f, 0.66f, 0.18f, KnifeShading.HARDWARE);
+		m.pin(0.0f, -2.4f, -0.66f, 0.66f, 0.18f, KnifeShading.HARDWARE);
+		m.pin(0.0f, -4.8f, -0.66f, 0.66f, 0.18f, KnifeShading.HARDWARE);
+		m.torus(0, -5.75f, 0, 0.42f, 0.13f, 0.16f, 14, 6, KnifeShading.HARDWARE);
 	}
 
-	private static void bayonet(Shape m) {
-		Profile shape = straight(1.2f, 12.4f, -0.85f, 0.95f, -0.1f, 0.74f, false, 0.7f, 0.28f, 0.11f);
-		Shape.Blade b = blade(48, shape);
-		b.grind = 0.55f;
-		b.swedgeFrom = 0.72f;
-		b.swedgeWidth = 0.3f;
-		b.fullerFrom = 0.06f;
-		b.fullerTo = 0.62f;
-		b.fullerCentre = 0.3f;
-		b.fullerWidth = 0.14f;
-		b.fullerDepth = 0.1f;
-		m.blade(b);
-		m.plate(new float[] {-1.6f, 0.55f, 2.0f, 0.55f, 2.1f, 1.25f, -1.7f, 1.25f}, -0.45f, 0.45f, 0.2f, KnifeShading.GUARD);
-		m.torus(-2.05f, 0.9f, 0, 0.6f, 0.2f, 0.26f, 18, 8, KnifeShading.GUARD);
-		grip(m, 0.6f, -5.2f, 0.78f, 0.6f, 0.4f, 0.48f, 0.06f, KnifeShading.RUBBER, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -5.15f, 0, 0.84f, 0.66f), Shape.Ring.along(0, -5.9f, 0, 0.9f, 0.7f),
-				Shape.Ring.along(0, -6.2f, 0, 0.6f, 0.45f)}, 16, 0.4f, KnifeShading.HARDWARE, Shape.OPEN, Shape.DOME, false);
+	/** The flipper's handle: two scales on a liner with an inlay down the middle, the pivot at the top and a flipper tab. */
+	private static void vesperHandle(Shape m) {
+		float length = 5.8f;
+		float half = 0.56f;
+		float[] scale = {-0.95f, 0.9f, 0.8f, 0.9f, 0.95f, -0.4f, 0.85f, -length * 0.55f, 0.95f, -length + 0.6f, 0.55f, -length, -0.6f, -length, -0.95f,
+				-length + 0.8f, -1.05f, -length * 0.4f};
+		m.plate(scale, 0.16f, half, 0.16f, KnifeShading.POLYMER);
+		m.plate(scale, -half, -0.16f, 0.16f, KnifeShading.POLYMER);
+		float[] inlay = {-0.18f, 0.1f, 0.18f, 0.1f, 0.18f, -length + 1.0f, -0.18f, -length + 1.0f};
+		m.plate(inlay, half - 0.02f, half + 0.04f, 0.04f, KnifeShading.HANDLE_PAINT);
+		m.plate(inlay, -half - 0.04f, -half + 0.02f, 0.04f, KnifeShading.HANDLE_PAINT);
+		m.plate(new float[] {-0.85f, 0.75f, 0.7f, 0.75f, 0.85f, -length + 0.5f, -0.85f, -length + 0.4f}, -0.18f, 0.18f, 0.05f, KnifeShading.HARDWARE);
+		m.plate(new float[] {-1.05f, 0.95f, -0.35f, 0.95f, -0.45f, 1.85f, -0.95f, 1.75f}, -0.14f, 0.14f, 0.1f, KnifeShading.HARDWARE);
+		m.pin(-0.25f, 0.45f, -half - 0.06f, half + 0.06f, 0.3f, KnifeShading.HARDWARE);
+		m.pin(-0.1f, -length + 0.6f, -half - 0.04f, half + 0.04f, 0.18f, KnifeShading.HARDWARE);
 	}
 
-	private static void flipHandle(Shape m) {
-		float[] scale = {-0.95f, 0.95f, 0.75f, 0.95f, 0.98f, 0.2f, 0.7f, -0.9f, 0.95f, -1.9f, 0.9f, -4.6f, 0.55f, -5.35f, -0.65f, -5.35f, -0.95f, -4.4f,
-				-1.05f, -1.8f};
-		m.plate(scale, 0.18f, 0.58f, 0.18f, KnifeShading.POLYMER);
-		m.plate(scale, -0.58f, -0.18f, 0.18f, KnifeShading.POLYMER);
-		m.plate(new float[] {-0.85f, 0.8f, 0.6f, 0.8f, 0.8f, -4.5f, -0.85f, -4.9f}, -0.2f, 0.2f, 0.05f, KnifeShading.HARDWARE);
-		m.plate(new float[] {-1.2f, 0.4f, -0.95f, 0.4f, -0.95f, -3.6f, -1.2f, -3.4f}, 0.45f, 0.66f, 0.08f, KnifeShading.HARDWARE);
-		m.pin(-0.25f, 0.45f, -0.66f, 0.66f, 0.32f, KnifeShading.HARDWARE);
-		m.pin(-0.1f, -4.6f, -0.62f, 0.62f, 0.2f, KnifeShading.HARDWARE);
-	}
-
-	private static Shape flipBlade() {
+	private static Shape vesperBlade() {
 		Shape m = new Shape();
-		Shape.Blade b = blade(32, straight(0.2f, 8.6f, -0.9f, 1.0f, 0.15f, 0.55f, false, 0.55f, 0.24f, 0.1f));
+		Profile shape = straight(0.2f, 9.2f, -0.82f, 0.95f, 0.05f, 0.56f, false, 0.5f, 0.22f, 0.09f);
+		Shape.Blade b = blade(40, teeth(shape, 0.03f, 0.13f, 5, 0.1f));
 		b.grind = 0.5f;
+		b.swedgeFrom = 0.6f;
+		b.swedgeWidth = 0.32f;
 		m.blade(b);
-		m.pin(-0.55f, 1.4f, -0.45f, 0.45f, 0.17f, KnifeShading.HARDWARE);
 		return m;
 	}
 
-	private static void butterflyBlade(Shape m) {
+	private static void wraithBlade(Shape m) {
 		m.plate(rect(-0.75f, -0.15f, 0.75f, 1.25f), -0.17f, 0.17f, 0.08f, KnifeShading.BLADE);
-		Shape.Blade b = blade(32, straight(1.2f, 9.4f, -0.62f, 0.78f, 0.05f, 0.64f, true, 0.66f, 0.17f, 0.08f));
+		Shape.Blade b = blade(36, straight(1.2f, 9.6f, -0.62f, 0.82f, -0.18f, 0.62f, true, 0.62f, 0.17f, 0.08f));
 		b.grind = 0.5f;
-		b.swedgeFrom = 0.66f;
+		b.swedgeFrom = 0.62f;
+		b.fullerFrom = 0.08f;
+		b.fullerTo = 0.5f;
+		b.fullerCentre = 0.35f;
+		b.fullerWidth = 0.14f;
+		b.fullerDepth = 0.05f;
 		m.blade(b);
 	}
 
-	/** One butterfly handle hanging from its pin at the origin, on one side of the blade ({@code side} -1 or 1). */
-	private static Shape butterflyHandle(int side) {
+	/** One balisong handle: two rails with cross bars, hanging from its pin, on one side of the blade ({@code side} -1 or 1). */
+	private static Shape wraithHandle(int side) {
 		Shape m = new Shape();
 		float z0 = side < 0 ? -0.66f : 0.2f;
 		float z1 = side < 0 ? -0.2f : 0.66f;
-		m.plate(new float[] {-0.55f, 0.45f, 0.55f, 0.45f, 0.6f, -7.5f, -0.6f, -7.5f}, z0, z1, 0.14f, KnifeShading.HANDLE_PAINT);
+		m.plate(new float[] {-0.6f, 0.45f, -0.3f, 0.45f, -0.32f, -7.5f, -0.62f, -7.5f}, z0, z1, 0.1f, KnifeShading.HANDLE_PAINT);
+		m.plate(new float[] {0.3f, 0.45f, 0.6f, 0.45f, 0.62f, -7.5f, 0.32f, -7.5f}, z0, z1, 0.1f, KnifeShading.HANDLE_PAINT);
+		for (float y : new float[] {0.15f, -2.6f, -5.0f, -7.25f}) {
+			m.plate(rect(-0.4f, y - 0.22f, 0.4f, y + 0.22f), z0 + 0.04f, z1 - 0.04f, 0.06f, KnifeShading.HARDWARE);
+		}
 		m.pin(0, 0, z0 - 0.04f, z1 + 0.04f, 0.2f, KnifeShading.HARDWARE);
 		m.pin(0, -7.0f, z0 - 0.04f, z1 + 0.04f, 0.16f, KnifeShading.HARDWARE);
-		if (side > 0) m.plate(rect(-0.55f, -8.2f, 0.55f, -7.45f), -0.66f, 0.66f, 0.12f, KnifeShading.HARDWARE);
+		if (side > 0) m.plate(rect(-0.55f, -8.2f, 0.55f, -7.45f), -0.66f, 0.66f, 0.12f, KnifeShading.RING);
 		return m;
 	}
 
-	private static void huntsman(Shape m) {
-		Profile shape = straight(1.2f, 11.2f, -0.95f, 1.35f, -0.15f, 0.58f, true, 0.58f, 0.3f, 0.12f);
-		Shape.Blade b = blade(48, teeth(shape, 0.06f, 0.3f, 6, 0.24f));
-		b.grind = 0.5f;
-		b.swedgeFrom = 0.6f;
-		b.swedgeWidth = 0.35f;
-		m.blade(b);
-		m.plate(new float[] {-1.55f, 0.5f, 1.95f, 0.5f, 2.05f, 1.25f, -1.6f, 1.25f}, -0.42f, 0.42f, 0.18f, KnifeShading.HARDWARE);
-		grip(m, 0.55f, -5.0f, 0.86f, 0.64f, 0.5f, 1.25f, 0.1f, KnifeShading.RUBBER, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0.05f, -4.95f, 0, 0.9f, 0.66f), Shape.Ring.along(0.05f, -5.55f, 0, 0.78f, 0.56f)}, 16, 0.5f,
-				KnifeShading.HARDWARE, Shape.OPEN, Shape.DOME, false);
-	}
-
-	private static void gut(Shape m) {
-		Profile base = straight(1.0f, 9.0f, -0.85f, 1.05f, 0.1f, 0.55f, false, 0.55f, 0.26f, 0.1f);
-		Profile hooked = t -> {
-			float[] s = base.at(t);
-			if (t > 0.5f && t < 0.66f) {
-				float u = (t - 0.5f) / 0.16f;
-				s[0] += 0.9f * (float) Math.sin(Math.PI * Math.pow(u, 0.7));
-			}
-			return s;
-		};
-		Shape.Blade b = blade(40, hooked);
-		b.grind = 0.5f;
-		m.blade(b);
-		m.plate(new float[] {-1.2f, 0.45f, 1.5f, 0.45f, 1.6f, 1.05f, -1.25f, 1.05f}, -0.38f, 0.38f, 0.16f, KnifeShading.HARDWARE);
-		grip(m, 0.5f, -4.9f, 0.78f, 0.6f, 0.5f, 0, 0.12f, KnifeShading.RUBBER, Shape.DOME);
-	}
-
-	private static void bowie(Shape m) {
-		Shape.Blade b = blade(48, straight(1.2f, 12.8f, -1.05f, 1.45f, 0.0f, 0.55f, true, 0.6f, 0.32f, 0.12f));
-		b.grind = 0.48f;
-		b.swedgeFrom = 0.56f;
-		b.swedgeWidth = 0.38f;
-		m.blade(b);
-		m.plate(new float[] {-2.3f, 0.55f, 2.4f, 0.55f, 2.7f, 1.2f, -2.6f, 1.2f}, -0.4f, 0.4f, 0.18f, KnifeShading.GUARD);
-		grip(m, 0.6f, -5.4f, 0.9f, 0.66f, 0.5f, 1.4f, 0.12f, KnifeShading.WOOD, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -5.35f, 0, 0.96f, 0.7f), Shape.Ring.along(0, -6.0f, 0, 0.8f, 0.58f)}, 16, 0.4f,
-				KnifeShading.GUARD, Shape.OPEN, Shape.DOME, false);
-	}
-
-	/** A folding knife's handle: two scales on a steel liner, the pivot at the top, from the bolster down {@code length}. */
-	private static void folderHandle(Shape m, float length, float half, int material, boolean clip) {
-		float[] scale = {-0.95f, 0.9f, 0.8f, 0.9f, 0.95f, -0.4f, 0.85f, -length * 0.55f, 0.95f, -length + 0.6f, 0.55f, -length, -0.6f, -length,
-				-0.95f, -length + 0.8f, -1.05f, -length * 0.4f};
-		m.plate(scale, 0.16f, half, 0.16f, material);
-		m.plate(scale, -half, -0.16f, 0.16f, material);
-		m.plate(new float[] {-0.85f, 0.75f, 0.7f, 0.75f, 0.85f, -length + 0.5f, -0.85f, -length + 0.4f}, -0.18f, 0.18f, 0.05f, KnifeShading.HARDWARE);
-		m.plate(new float[] {-0.98f, 1.0f, 0.9f, 1.0f, 0.95f, -0.3f, -1.05f, -0.4f}, -half - 0.02f, half + 0.02f, 0.18f, KnifeShading.HARDWARE);
-		m.pin(-0.2f, 0.45f, -half - 0.06f, half + 0.06f, 0.3f, KnifeShading.HARDWARE);
-		if (clip) m.plate(new float[] {-1.2f, 0.2f, -0.95f, 0.2f, -0.95f, -length * 0.62f, -1.2f, -length * 0.58f}, half - 0.05f, half + 0.12f, 0.06f,
-				KnifeShading.HARDWARE);
-	}
-
-	private static Shape falchionBlade() {
-		Shape m = new Shape();
-		Profile base = straight(0.2f, 10.0f, -0.85f, 1.05f, -0.75f, 0.5f, true, 0.5f, 0.24f, 0.1f);
-		Profile curved = t -> {
-			float[] s = base.at(t);
-			float bend = -0.9f * t * t;
-			s[0] += bend;
-			s[2] += bend;
-			return s;
-		};
-		Shape.Blade b = blade(36, curved);
-		b.grind = 0.5f;
-		b.swedgeFrom = 0.55f;
-		m.blade(b);
-		return m;
-	}
-
-	private static Shape navajaBlade() {
-		Shape m = new Shape();
-		Profile base = straight(0.2f, 8.8f, -0.7f, 0.9f, 0.4f, 0.6f, true, 0.4f, 0.2f, 0.08f);
-		Profile curved = t -> {
-			float[] s = base.at(t);
-			s[0] += 0.5f * t * t;
-			s[2] += 0.5f * t * t;
-			return s;
-		};
-		Shape.Blade b = blade(32, curved);
-		b.grind = 0.45f;
-		m.blade(b);
-		return m;
-	}
-
-	private static Shape stilettoBlade() {
-		Shape m = new Shape();
-		Shape.Blade b = blade(32, straight(0.2f, 10.2f, -0.55f, 0.6f, 0.0f, 0.5f, true, 0.5f, 0.2f, 0.08f));
-		b.grind = 0.5f;
-		b.swedgeFrom = 0.5f;
-		b.swedgeWidth = 0.45f;
-		m.blade(b);
-		return m;
-	}
-
-	private static void talonHandle(Shape m) {
-		float[] scale = {-0.95f, 0.85f, 0.8f, 0.85f, 1.0f, -0.6f, 0.75f, -2.4f, 0.4f, -4.5f, -0.2f, -5.4f, -0.8f, -5.3f, -0.95f, -4.2f, -1.05f, -1.8f};
-		m.plate(scale, 0.16f, 0.55f, 0.18f, KnifeShading.HANDLE_PAINT);
-		m.plate(scale, -0.55f, -0.16f, 0.18f, KnifeShading.HANDLE_PAINT);
-		m.plate(new float[] {-0.85f, 0.7f, 0.7f, 0.7f, 0.6f, -4.6f, -0.85f, -4.8f}, -0.18f, 0.18f, 0.05f, KnifeShading.HARDWARE);
-		m.pin(-0.25f, 0.4f, -0.6f, 0.6f, 0.3f, KnifeShading.HARDWARE);
-		m.torus(-0.4f, -5.9f, 0, 0.75f, 0.24f, 0.3f, 18, 8, KnifeShading.HARDWARE);
-	}
-
-	private static Shape talonBlade() {
-		Shape m = new Shape();
-		Shape.Blade b = blade(28, t -> {
-			double angle = Math.toRadians(185 - 120 * t);
-			float cx = 3.4f;
-			float cy = 0.3f;
-			float spine = 4.2f;
-			float width = 1.6f * (1 - (float) Math.pow(t, 1.4f)) + 0.02f;
-			return new float[] {cx + (float) Math.cos(angle) * spine, cy + (float) Math.sin(angle) * spine * 1.25f,
-					cx + (float) Math.cos(angle) * (spine - width), cy + (float) Math.sin(angle) * (spine - width) * 1.25f, 0.24f - 0.14f * t};
-		});
-		b.grind = 0.42f;
-		m.blade(b);
-		return m;
-	}
-
-	private static Shape ursusBlade() {
-		Shape m = new Shape();
-		Shape.Blade b = blade(32, straight(0.3f, 9.6f, -0.95f, 1.2f, 0.2f, 0.62f, true, 0.62f, 0.27f, 0.1f));
-		b.grind = 0.5f;
-		b.swedgeFrom = 0.62f;
-		m.blade(b);
-		m.pin(-0.55f, 1.6f, -0.45f, 0.45f, 0.18f, KnifeShading.HARDWARE);
-		return m;
-	}
-
-	private static void paracord(Shape m) {
-		Shape.Blade b = blade(36, straight(1.0f, 9.6f, -0.9f, 1.15f, 0.1f, 0.6f, false, 0.55f, 0.28f, 0.1f));
-		b.grind = 0.48f;
-		m.blade(b);
-		m.plate(new float[] {-0.9f, 1.1f, 1.15f, 1.1f, 1.0f, 0.5f, 0.6f, 0.2f, 0.75f, -0.4f, -0.8f, -0.4f}, -0.3f, 0.3f, 0.1f, KnifeShading.BLADE);
-		Shape.Ring[] wrap = new Shape.Ring[22];
-		for (int i = 0; i < wrap.length; i++) {
-			float f = i / (float) (wrap.length - 1);
-			float y = -0.3f - 4.9f * f;
-			float bump = i % 2 == 0 ? 1 : 0.88f;
-			wrap[i] = Shape.Ring.along(0, y, 0, 0.82f * bump, 0.6f * bump);
-		}
-		m.loft(wrap, 14, 0.35f, KnifeShading.CORD, Shape.OPEN, Shape.OPEN, false);
-		m.torus(0, -5.75f, 0, 0.55f, 0.2f, 0.24f, 16, 8, KnifeShading.BLADE);
-	}
-
-	private static void survival(Shape m) {
-		Profile shape = straight(1.0f, 10.4f, -0.95f, 1.15f, 0.1f, 0.62f, false, 0.6f, 0.3f, 0.11f);
-		Shape.Blade b = blade(48, teeth(shape, 0.1f, 0.42f, 7, 0.26f));
-		b.grind = 0.5f;
-		m.blade(b);
-		m.plate(new float[] {-1.35f, 0.45f, 1.6f, 0.45f, 1.7f, 1.05f, -1.4f, 1.05f}, -0.4f, 0.4f, 0.16f, KnifeShading.HARDWARE);
-		grip(m, 0.5f, -5.1f, 0.84f, 0.64f, 0.45f, 0.5f, 0.06f, KnifeShading.RUBBER, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -5.05f, 0, 0.92f, 0.7f), Shape.Ring.along(0, -5.75f, 0, 0.92f, 0.7f)}, 16, 0.2f,
-				KnifeShading.HARDWARE, Shape.OPEN, Shape.CAP, false);
-	}
-
-	private static void skeleton(Shape m) {
-		Shape.Blade b = blade(36, straight(0.6f, 9.0f, -0.85f, 1.05f, 0.1f, 0.6f, false, 0.55f, 0.24f, 0.1f));
-		b.grind = 0.48f;
-		m.blade(b);
-		Shape.Ring[] frame = new Shape.Ring[29];
-		for (int i = 0; i < frame.length; i++) {
-			double a = 2 * Math.PI * i / (frame.length - 1);
-			float x = (float) Math.sin(a) * 0.85f;
-			float y = -2.2f + (float) Math.cos(a) * 2.6f;
-			float tx = (float) Math.cos(a) * 0.85f;
-			float ty = -(float) Math.sin(a) * 2.6f;
-			frame[i] = new Shape.Ring(x, y, 0, tx, ty, 0, 0.26f, 0.24f, new float[] {(float) Math.sin(a), (float) Math.cos(a) * 0.3f, 0});
-		}
-		m.loft(frame, 10, 0.5f, KnifeShading.BLADE, Shape.OPEN, Shape.OPEN, true);
-		m.plate(new float[] {-0.85f, 0.7f, 1.05f, 0.7f, 0.85f, 0.1f, -0.85f, 0.1f}, -0.24f, 0.24f, 0.08f, KnifeShading.BLADE);
-		m.torus(0, -5.25f, 0, 0.75f, 0.24f, 0.24f, 18, 8, KnifeShading.BLADE);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -0.6f, 0, 0.22f, 0.16f), Shape.Ring.along(0, -3.6f, 0, 0.22f, 0.16f)}, 8, 0.3f,
-				KnifeShading.CORD, Shape.CAP, Shape.CAP, false);
-	}
-
-	private static void nomad(Shape m) {
-		Shape.Blade b = blade(36, straight(1.0f, 9.6f, -0.9f, 1.15f, 0.25f, 0.58f, false, 0.5f, 0.27f, 0.1f));
-		b.grind = 0.46f;
-		m.blade(b);
-		m.plate(new float[] {-1.05f, 1.05f, 1.2f, 1.05f, 1.25f, 0.4f, 0.6f, -0.2f, 0.95f, -1.6f, 0.85f, -4.6f, 0.4f, -5.3f, -0.6f, -5.3f, -0.95f,
-				-4.3f, -1.05f, -1.0f}, -0.48f, 0.48f, 0.2f, KnifeShading.POLYMER);
-		m.pin(0.05f, -0.9f, -0.52f, 0.52f, 0.2f, KnifeShading.HARDWARE);
-		m.pin(0.05f, -3.9f, -0.52f, 0.52f, 0.2f, KnifeShading.HARDWARE);
-	}
-
-	private static void classic(Shape m) {
-		Shape.Blade b = blade(40, straight(1.2f, 10.0f, -0.8f, 0.95f, -0.15f, 0.62f, true, 0.66f, 0.26f, 0.1f));
-		b.grind = 0.52f;
-		b.swedgeFrom = 0.64f;
-		b.swedgeWidth = 0.34f;
-		m.blade(b);
-		m.plate(new float[] {-1.9f, 0.5f, 2.0f, 0.5f, 2.3f, 0.85f, 2.0f, 1.2f, -1.9f, 1.2f, -2.2f, 0.85f}, -0.38f, 0.38f, 0.16f, KnifeShading.GUARD);
-		Shape.Ring[] wrap = new Shape.Ring[18];
-		for (int i = 0; i < wrap.length; i++) {
-			float f = i / (float) (wrap.length - 1);
-			wrap[i] = Shape.Ring.along(0, 0.5f - 5.2f * f, 0, 0.74f * (i % 2 == 0 ? 1 : 0.9f), 0.58f * (i % 2 == 0 ? 1 : 0.9f));
-		}
-		m.loft(wrap, 14, 0.3f, KnifeShading.CORD, Shape.OPEN, Shape.OPEN, false);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.65f, 0, 0.82f, 0.64f), Shape.Ring.along(0, -5.4f, 0, 0.7f, 0.55f)}, 16, 0.3f,
-				KnifeShading.GUARD, Shape.OPEN, Shape.DOME, false);
-	}
-
-	/** A push dagger: a T handle across the palm, the blade standing out between the fingers. */
-	private static void pushDagger(Shape m) {
-		Shape.Blade b = blade(28, straight(0.2f, 5.0f, -0.75f, 0.75f, 0.0f, 0.0f, false, 0.0f, 0.24f, 0.08f));
+	/** A push dagger: a T handle across the palm, a leaf blade standing out between the fingers, and a halo round its root. */
+	private static void halo(Shape m) {
+		Shape.Blade b = blade(30, symmetric(0.2f, 5.6f, 0.82f, 0.26f, 0.08f, t -> (float) Math.pow(Math.sin(Math.PI * (0.12f + 0.88f * t)), 0.7)
+				* (1 - 0.15f * t)));
 		b.doubleEdged = true;
 		b.grind = 0.42f;
 		m.blade(b);
@@ -589,111 +434,194 @@ public enum KnifeModel {
 				Shape.Ring.facing(1.0f, -0.6f, 0, 1, 0, 0, 0.62f, 0.52f), Shape.Ring.facing(2.4f, -0.45f, 0, 1, 0, 0, 0.55f, 0.48f)}, 14, 0.35f,
 				KnifeShading.RUBBER, Shape.DOME, Shape.DOME, false);
 		m.plate(new float[] {-0.85f, -0.1f, 0.85f, -0.1f, 0.75f, 0.35f, -0.75f, 0.35f}, -0.3f, 0.3f, 0.1f, KnifeShading.HARDWARE);
+		m.torus(0, 1.5f, 0, 1.45f, 0.13f, 0.2f, 30, 8, KnifeShading.RING);
 	}
 
-	private static void dagger(Shape m) {
-		Shape.Blade b = blade(28, straight(0.95f, 8.6f, -0.85f, 0.85f, 0.0f, 0.0f, false, 0.0f, 0.24f, 0.08f));
+	/** A long stiletto: a diamond-section blade, crescent quillons and a jewel at the pommel. */
+	private static void nocturne(Shape m) {
+		Shape.Blade b = blade(40, symmetric(1.0f, 11.6f, 0.64f, 0.3f, 0.12f, t -> (float) Math.pow(1 - t, 0.55)));
 		b.doubleEdged = true;
-		b.grind = 0.4f;
+		b.grind = 0.5f;
 		m.blade(b);
-		m.loft(new Shape.Ring[] {Shape.Ring.facing(-2.6f, 0.65f, 0, 1, 0, 0, 0.18f, 0.18f), Shape.Ring.facing(-2.1f, 0.65f, 0, 1, 0, 0, 0.32f, 0.36f),
-				Shape.Ring.facing(2.1f, 0.65f, 0, 1, 0, 0, 0.32f, 0.36f), Shape.Ring.facing(2.6f, 0.65f, 0, 1, 0, 0, 0.18f, 0.18f)}, 12, 0.2f,
-				KnifeShading.GUARD, Shape.DOME, Shape.DOME, false);
-		grip(m, 0.35f, -4.5f, 0.6f, 0.6f, 0, 0.4f, 0.12f, KnifeShading.CORD, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.45f, 0, 0.7f, 0.7f), Shape.Ring.along(0, -5.2f, 0, 0.85f, 0.85f)}, 14, 0, KnifeShading.GUARD,
-				Shape.OPEN, Shape.DOME, false);
-	}
-
-	private static void phantomHilt(Shape m) {
-		Shape.Ring[] hilt = new Shape.Ring[14];
-		for (int i = 0; i < hilt.length; i++) {
-			float f = i / (float) (hilt.length - 1);
-			float y = 1.3f - 6.3f * f;
-			float r = f < 0.12f ? 0.9f : f < 0.2f ? 0.72f : f > 0.92f ? 0.85f : (i % 2 == 0 ? 0.7f : 0.64f);
-			hilt[i] = Shape.Ring.along(0, y, 0, r, r);
+		float[] quillons = new float[2 * 15];
+		for (int i = 0; i < 15; i++) {
+			float u = i / 14f * 2 - 1;
+			float x = u * 2.7f;
+			float y = 0.65f + 0.22f * u * u + 0.55f * (float) Math.pow(Math.abs(u), 6);
+			quillons[2 * i] = x;
+			quillons[2 * i + 1] = y;
 		}
-		m.loft(hilt, 16, 0, KnifeShading.HARDWARE, Shape.CAP, Shape.DOME, false);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, 0.55f, 0, 0.77f, 0.77f), Shape.Ring.along(0, 0.85f, 0, 0.77f, 0.77f)}, 16, 0, KnifeShading.GUARD,
+		curve(m, quillons, 0.26f, 0.3f, KnifeShading.GUARD);
+		m.plate(new float[] {-0.7f, 0.45f, 0.7f, 0.45f, 0.5f, 1.15f, -0.5f, 1.15f}, -0.4f, 0.4f, 0.12f, KnifeShading.GUARD);
+		grip(m, 0.5f, -4.4f, 0.55f, 0.55f, 0.1f, 0.38f, 0.1f, KnifeShading.CORD, Shape.OPEN);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.35f, 0, 0.62f, 0.62f), Shape.Ring.along(0, -4.65f, 0, 0.5f, 0.5f)}, 14, 0, KnifeShading.GUARD,
 				Shape.OPEN, Shape.OPEN, false);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.35f, 0, 0.89f, 0.89f), Shape.Ring.along(0, -4.6f, 0, 0.89f, 0.89f)}, 16, 0, KnifeShading.GUARD,
-				Shape.OPEN, Shape.OPEN, false);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.6f, 0, 0.42f, 0.42f), Shape.Ring.along(0, -5.0f, 0, 0.68f, 0.68f),
+				Shape.Ring.along(0, -5.4f, 0, 0.5f, 0.5f)}, 8, 0, KnifeShading.RING, Shape.DOME, Shape.DOME, false);
 	}
 
-	/** The energy blade, base at the origin, 9.4 pixels long at full length; scaled along its length as it ignites. */
-	private static Shape phantomBlade() {
-		Shape m = new Shape();
-		Shape.Ring[] rings = new Shape.Ring[8];
-		for (int i = 0; i < rings.length; i++) {
-			float f = i / (float) (rings.length - 1);
-			rings[i] = Shape.Ring.along(0, f * 9.0f, 0, 0.36f, 0.36f);
-		}
-		m.loft(rings, 14, 0, KnifeShading.ENERGY, Shape.CAP, Shape.DOME, false);
-		return m;
-	}
-
-	private static void katana(Shape m) {
-		Shape.Blade b = blade(48, t -> {
-			float y = 1.2f + 12.6f * t;
-			float bend = -0.9f * t * t;
-			float tip = t > 0.9f ? (t - 0.9f) / 0.1f : 0;
-			float sx = -0.5f + bend + 0.6f * tip * tip;
-			float ex = 0.55f + bend - 0.9f * (float) Math.pow(tip, 0.7);
+	/** A curved short sword with swept-back wings for a guard and a long wrapped grip. */
+	private static void seraph(Shape m) {
+		Shape.Blade b = blade(52, t -> {
+			float y = 1.3f + 12.4f * t;
+			float bend = -1.0f * t * t;
+			float tip = t > 0.88f ? (t - 0.88f) / 0.12f : 0;
+			float sx = -0.52f + bend + 0.62f * tip * tip;
+			float ex = 0.6f + bend - 0.95f * (float) Math.pow(tip, 0.7);
 			return new float[] {sx, y, ex, y, 0.22f - 0.1f * t};
 		});
 		b.grind = 0.62f;
 		m.blade(b);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, 0.15f, 0, 1.65f, 1.35f), Shape.Ring.along(0, 0.55f, 0, 1.65f, 1.35f)}, 18, 0.15f,
-				KnifeShading.GUARD, Shape.CAP, Shape.CAP, false);
-		m.plate(rect(-0.62f, 0.55f, 0.68f, 1.25f), -0.3f, 0.3f, 0.06f, KnifeShading.HARDWARE);
-		grip(m, 0.15f, -6.3f, 0.62f, 0.46f, 0.35f, 0.5f, 0, KnifeShading.CORD, Shape.OPEN);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -6.25f, 0, 0.66f, 0.5f), Shape.Ring.along(0, -6.75f, 0, 0.58f, 0.44f)}, 14, 0.35f,
-				KnifeShading.HARDWARE, Shape.OPEN, Shape.CAP, false);
+		float[] wing = {0.55f, 0.35f, 1.6f, 0.15f, 2.8f, -0.35f, 3.35f, -0.05f, 3.0f, 0.55f, 2.2f, 1.0f, 1.2f, 1.3f, 0.55f, 1.3f};
+		m.plate(wing, -0.26f, 0.26f, 0.1f, KnifeShading.GUARD);
+		m.plate(mirrorX(wing), -0.26f, 0.26f, 0.1f, KnifeShading.GUARD);
+		m.plate(rect(-0.62f, 0.3f, 0.68f, 1.35f), -0.32f, 0.32f, 0.08f, KnifeShading.HARDWARE);
+		grip(m, 0.3f, -6.3f, 0.62f, 0.48f, 0.35f, 0.48f, 0, KnifeShading.CORD, Shape.OPEN);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -6.25f, 0, 0.68f, 0.52f), Shape.Ring.along(0, -6.8f, 0, 0.56f, 0.42f)}, 14, 0.35f,
+				KnifeShading.RING, Shape.OPEN, Shape.DOME, false);
 	}
 
-	private static void scythe(Shape m) {
+	/** A sickle on a banded haft. */
+	private static void reaper(Shape m) {
 		Shape.Ring[] pole = new Shape.Ring[6];
 		for (int i = 0; i < pole.length; i++) {
 			float f = i / (float) (pole.length - 1);
-			pole[i] = Shape.Ring.along(0.15f * (float) Math.sin(f * Math.PI), -6.5f + 10.2f * f, 0, 0.42f, 0.42f);
+			pole[i] = Shape.Ring.along(0.12f * (float) Math.sin(f * Math.PI), -6.4f + 10.0f * f, 0, 0.42f, 0.42f);
 		}
-		m.loft(pole, 12, 0, KnifeShading.WOOD, Shape.DOME, Shape.DOME, false);
-		m.loft(new Shape.Ring[] {Shape.Ring.along(0, 2.4f, 0, 0.55f, 0.55f), Shape.Ring.along(0, 3.2f, 0, 0.55f, 0.55f)}, 12, 0, KnifeShading.HARDWARE,
+		m.loft(pole, 12, 0, KnifeShading.POLYMER, Shape.DOME, Shape.DOME, false);
+		for (float y : new float[] {-5.6f, -1.0f, 2.4f}) {
+			m.loft(new Shape.Ring[] {Shape.Ring.along(0, y, 0, 0.5f, 0.5f), Shape.Ring.along(0, y + 0.55f, 0, 0.5f, 0.5f)}, 12, 0, KnifeShading.HARDWARE,
+					Shape.CAP, Shape.CAP, false);
+		}
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -6.3f, 0, 0.35f, 0.35f), Shape.Ring.along(0, -7.3f, 0, 0.02f, 0.02f)}, 10, 0, KnifeShading.RING,
 				Shape.OPEN, Shape.OPEN, false);
-		Shape.Blade b = blade(28, t -> {
-			double angle = Math.toRadians(128 - 112 * t);
+		Shape.Blade b = blade(32, t -> {
+			double angle = Math.toRadians(128 - 116 * t);
 			float cx = 4.2f;
 			float cy = -2.2f;
-			float rs = 6.0f;
-			float width = 1.55f * (1 - (float) Math.pow(t, 1.3)) + 0.02f;
+			float rs = 6.2f;
+			float width = 1.65f * (1 - (float) Math.pow(t, 1.3)) + 0.02f;
 			return new float[] {cx + (float) Math.cos(angle) * rs, cy + (float) Math.sin(angle) * rs, cx + (float) Math.cos(angle) * (rs - width),
-					cy + (float) Math.sin(angle) * (rs - width), 0.22f - 0.14f * t};
+					cy + (float) Math.sin(angle) * (rs - width), 0.24f - 0.15f * t};
 		});
 		b.grind = 0.45f;
 		m.blade(b);
 	}
 
+	/** A skeleton knife: a straight edge with the spine sweeping down to meet it, an open frame for a handle and a finger ring. */
+	private static void specter(Shape m) {
+		Shape.Blade b = blade(40, t -> {
+			float y = 0.6f + 8.6f * t;
+			float ex = 1.05f - 0.05f * t;
+			float sx = t < 0.3f ? -0.9f : -0.9f + (ex + 0.9f) * (float) Math.pow((t - 0.3f) / 0.7f, 1.35f);
+			return new float[] {sx, y, ex, y, 0.26f - 0.15f * t};
+		});
+		b.grind = 0.5f;
+		m.blade(b);
+		Shape.Ring[] frame = new Shape.Ring[29];
+		for (int i = 0; i < frame.length; i++) {
+			double a = 2 * Math.PI * i / (frame.length - 1);
+			float x = (float) Math.sin(a) * 0.85f;
+			float y = -2.0f + (float) Math.cos(a) * 2.5f;
+			float tx = (float) Math.cos(a) * 0.85f;
+			float ty = -(float) Math.sin(a) * 2.5f;
+			frame[i] = new Shape.Ring(x, y, 0, tx, ty, 0, 0.26f, 0.24f, new float[] {(float) Math.sin(a), (float) Math.cos(a) * 0.3f, 0});
+		}
+		m.loft(frame, 10, 0.5f, KnifeShading.BLADE, Shape.OPEN, Shape.OPEN, true);
+		m.plate(new float[] {-0.85f, 0.7f, 1.05f, 0.7f, 0.85f, 0.1f, -0.85f, 0.1f}, -0.24f, 0.24f, 0.08f, KnifeShading.BLADE);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -0.4f, 0, 0.16f, 0.12f), Shape.Ring.along(0, -3.6f, 0, 0.16f, 0.12f)}, 8, 0.3f,
+				KnifeShading.HANDLE_PAINT, Shape.CAP, Shape.CAP, false);
+		m.torus(0, -5.35f, 0, 0.85f, 0.26f, 0.26f, 22, 8, KnifeShading.RING);
+	}
+
+	/** A hooked blade: a gut hook cut into the spine, teeth near the root, and a grip that curls like a beak. */
+	private static void corvid(Shape m) {
+		Profile base = straight(1.0f, 9.4f, -0.88f, 1.1f, 0.25f, 0.6f, false, 0.52f, 0.26f, 0.1f);
+		Profile hooked = t -> {
+			float[] s = teeth(base, 0.08f, 0.3f, 6, 0.18f).at(t);
+			if (t > 0.5f && t < 0.66f) {
+				float u = (t - 0.5f) / 0.16f;
+				s[0] += 0.95f * (float) Math.sin(Math.PI * Math.pow(u, 0.7));
+			}
+			return s;
+		};
+		Shape.Blade b = blade(48, hooked);
+		b.grind = 0.5f;
+		m.blade(b);
+		m.plate(new float[] {-1.25f, 0.45f, 1.6f, 0.45f, 1.7f, 1.05f, -1.3f, 1.05f}, -0.38f, 0.38f, 0.14f, KnifeShading.GUARD);
+		Shape.Ring[] handle = new Shape.Ring[14];
+		for (int i = 0; i < handle.length; i++) {
+			float f = i / (float) (handle.length - 1);
+			float x = 0.9f * f * f * f;
+			float y = 0.5f - 5.1f * f;
+			float r = f > 0.85f ? 0.62f - (f - 0.85f) * 2.2f : 0.78f + 0.06f * (float) Math.sin(Math.PI * f);
+			handle[i] = new Shape.Ring(x, y, 0, 2.7f * f * f, -5.1f, 0, Math.max(0.2f, r), Math.max(0.16f, r * 0.76f), new float[] {1, 0, 0});
+		}
+		m.loft(handle, 16, 0.45f, KnifeShading.POLYMER, Shape.CAP, Shape.DOME, false);
+		m.pin(0.0f, -0.8f, -0.66f, 0.66f, 0.17f, KnifeShading.HARDWARE);
+		m.pin(0.1f, -3.0f, -0.66f, 0.66f, 0.17f, KnifeShading.HARDWARE);
+	}
+
+	/** The energy blade's hilt: a ringed grip, a forked emitter at the top and a lit core showing between its rings. */
+	private static void lumenHilt(Shape m) {
+		Shape.Ring[] hilt = new Shape.Ring[16];
+		for (int i = 0; i < hilt.length; i++) {
+			float f = i / (float) (hilt.length - 1);
+			float y = 1.2f - 6.4f * f;
+			float r = f < 0.1f ? 0.9f : f < 0.18f ? 0.72f : f > 0.92f ? 0.88f : (i % 2 == 0 ? 0.72f : 0.62f);
+			hilt[i] = Shape.Ring.along(0, y, 0, r, r);
+		}
+		m.loft(hilt, 16, 0, KnifeShading.HARDWARE, Shape.CAP, Shape.DOME, false);
+		for (float y : new float[] {-1.4f, -2.6f, -3.8f}) {
+			m.loft(new Shape.Ring[] {Shape.Ring.along(0, y, 0, 0.66f, 0.66f), Shape.Ring.along(0, y - 0.25f, 0, 0.66f, 0.66f)}, 16, 0, KnifeShading.ENERGY,
+					Shape.OPEN, Shape.OPEN, false);
+		}
+		float[] prong = {0.55f, 1.0f, 1.05f, 1.15f, 1.15f, 2.0f, 0.95f, 2.3f, 0.75f, 1.6f, 0.5f, 1.4f};
+		m.plate(prong, -0.22f, 0.22f, 0.08f, KnifeShading.GUARD);
+		m.plate(mirrorX(prong), -0.22f, 0.22f, 0.08f, KnifeShading.GUARD);
+		m.loft(new Shape.Ring[] {Shape.Ring.along(0, -4.4f, 0, 0.9f, 0.9f), Shape.Ring.along(0, -4.7f, 0, 0.9f, 0.9f)}, 16, 0, KnifeShading.RING,
+				Shape.OPEN, Shape.OPEN, false);
+	}
+
+	/** The energy blade, base at the origin, 9.6 pixels long at full length; scaled along its length as it ignites. */
+	private static Shape lumenBlade() {
+		Shape m = new Shape();
+		Shape.Ring[] rings = new Shape.Ring[9];
+		for (int i = 0; i < rings.length; i++) {
+			float f = i / (float) (rings.length - 1);
+			float r = 0.34f * (1 - 0.25f * f * f);
+			rings[i] = Shape.Ring.along(0, f * 9.2f, 0, r, r);
+		}
+		m.loft(rings, 14, 0, KnifeShading.ENERGY, Shape.CAP, Shape.DOME, false);
+		return m;
+	}
+
 	private void clips() {
 		if (draw != null) return;
-		float reach = this == KATANA || this == SCYTHE ? 1.35f : this == PHANTOM || this == BOWIE ? 1.2f : this == KARAMBIT || this == TALON ? 0.9f : 1f;
+		float reach = this == SERAPH || this == REAPER ? 1.3f : this == LUMEN || this == NOCTURNE ? 1.15f : this == ECLIPSE ? 0.9f : 1f;
 		slashes = new Clip[] {
-				Clip.of("slash right to left", 450)
+				Clip.of("slash right to left", 430)
 						.key(0)
-						.key(0.16f, Clip.X, 0.14f, Clip.Y, 0.34f, Clip.SWEEP, -24, Clip.PITCH, 6, Clip.K_YAW, 10)
-						.key(0.34f, Clip.X, -0.5f * reach, Clip.Y, 0.55f, Clip.Z, -0.04f, Clip.SWEEP, 58 * reach, Clip.YAW, 6, Clip.K_YAW, -30)
-						.key(0.46f, Clip.X, -0.72f * reach, Clip.Y, 0.3f, Clip.Z, -0.04f, Clip.SWEEP, 80 * reach, Clip.YAW, 8, Clip.PITCH, -3, Clip.K_YAW, -36)
+						.key(0.14f, Clip.X, 0.06f, Clip.Y, 0.05f, Clip.YAW, -14, Clip.PITCH, 8, Clip.ROLL, -10, Clip.K_ROLL, 8)
+						.key(0.34f, Clip.X, -0.22f * reach, Clip.Y, 0.08f, Clip.Z, -0.08f, Clip.YAW, 38 * reach, Clip.PITCH, -6, Clip.SWEEP, 12,
+								Clip.ROLL, 22, Clip.K_ROLL, -22)
+						.key(0.48f, Clip.X, -0.3f * reach, Clip.Y, 0.02f, Clip.Z, -0.06f, Clip.YAW, 50 * reach, Clip.PITCH, -10, Clip.SWEEP, 16,
+								Clip.ROLL, 28, Clip.K_ROLL, -26)
 						.key(1),
-				Clip.of("slash left to right", 450)
+				Clip.of("slash left to right", 430)
 						.key(0)
-						.key(0.16f, Clip.X, -0.6f, Clip.Y, 0.42f, Clip.SWEEP, 58, Clip.YAW, 6, Clip.PITCH, 5, Clip.K_YAW, -15)
-						.key(0.34f, Clip.X, -0.02f, Clip.Y, 0.5f, Clip.Z, -0.04f, Clip.SWEEP, -45 * reach, Clip.YAW, -4, Clip.K_YAW, 28)
-						.key(0.46f, Clip.X, 0.18f * reach, Clip.Y, 0.3f, Clip.Z, -0.04f, Clip.SWEEP, -62 * reach, Clip.YAW, -6, Clip.PITCH, -3, Clip.K_YAW, 32)
+						.key(0.16f, Clip.X, -0.2f, Clip.Y, 0.08f, Clip.YAW, 34, Clip.PITCH, 4, Clip.ROLL, 24, Clip.K_ROLL, -18)
+						.key(0.34f, Clip.X, 0.02f, Clip.Y, 0.06f, Clip.Z, -0.08f, Clip.YAW, -12 * reach, Clip.PITCH, -6, Clip.SWEEP, -10,
+								Clip.ROLL, -12, Clip.K_ROLL, 14)
+						.key(0.48f, Clip.X, 0.1f * reach, Clip.Y, 0.0f, Clip.Z, -0.05f, Clip.YAW, -24 * reach, Clip.PITCH, -9, Clip.SWEEP, -16,
+								Clip.ROLL, -18, Clip.K_ROLL, 18)
 						.key(1)};
-		use = Clip.of("heavy stab", 1000)
+		use = Clip.of("heavy stab", 900)
 				.key(0)
-				.key(0.3f, Clip.Y, 0.08f, Clip.Z, 0.1f, Clip.PITCH, 14, Clip.SWEEP, 12, Clip.K_PITCH, 10)
-				.key(0.36f, Clip.Y, 0.09f, Clip.Z, 0.11f, Clip.PITCH, 16, Clip.SWEEP, 14, Clip.K_PITCH, 12)
-				.key(0.47f, Clip.X, -0.12f, Clip.Y, 0.08f, Clip.Z, -0.3f * reach, Clip.PITCH, -6, Clip.SWEEP, 8, Clip.K_PITCH, -62)
-				.key(0.6f, Clip.X, -0.11f, Clip.Y, 0.07f, Clip.Z, -0.27f * reach, Clip.PITCH, -5, Clip.SWEEP, 7, Clip.K_PITCH, -58)
+				.key(0.28f, Clip.Y, 0.08f, Clip.Z, 0.12f, Clip.PITCH, 18, Clip.YAW, 6, Clip.K_PITCH, 12)
+				.key(0.34f, Clip.Y, 0.09f, Clip.Z, 0.13f, Clip.PITCH, 20, Clip.YAW, 7, Clip.K_PITCH, 14)
+				.key(0.46f, Clip.X, -0.1f, Clip.Y, 0.06f, Clip.Z, -0.32f * reach, Clip.PITCH, -10, Clip.YAW, 14, Clip.K_PITCH, -18)
+				.key(0.6f, Clip.X, -0.09f, Clip.Y, 0.05f, Clip.Z, -0.29f * reach, Clip.PITCH, -8, Clip.YAW, 13, Clip.K_PITCH, -16)
 				.key(1);
 		draw = KnifeClips.draw(this);
 		inspect = KnifeClips.inspect(this);

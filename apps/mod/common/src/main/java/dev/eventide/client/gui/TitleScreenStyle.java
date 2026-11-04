@@ -4,6 +4,7 @@ import dev.eventide.client.Draw;
 import dev.eventide.client.Hooks;
 import dev.eventide.client.EventideClient;
 import dev.eventide.client.compat.Compat;
+import dev.eventide.client.gui.menu.MenuHost;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.module.Setting;
@@ -107,7 +108,7 @@ public final class TitleScreenStyle {
 		x -= ROUND + ROUND_GAP;
 		round(screen, x, y, "image", "Screenshots", TitleScreenStyle::openScreenshots);
 		x -= ROUND + ROUND_GAP;
-		round(screen, x, y, "orbit", "Eventide", () -> mc.setScreen(MenuScreen.fromKey(screen)));
+		round(screen, x, y, "orbit", "Eventide", () -> mc.setScreen(MenuHost.fromKey(screen)));
 
 		panelX = screen.width - MARGIN - PANEL_W;
 		panelY = y - 8 - panelHeight();
@@ -137,7 +138,7 @@ public final class TitleScreenStyle {
 		ScreenMouseEvents.allowMouseClick(screen).register((shown, event) -> !clickPanel(shown, event));
 		ScreenKeyboardEvents.afterKeyPress(screen).register((shown, event) -> {
 			if (EventideClient.openSettingsKey != null && EventideClient.openSettingsKey.matches(event) && mc.screen == shown) {
-				mc.setScreen(MenuScreen.fromKey(shown));
+				mc.setScreen(MenuHost.fromKey(shown));
 			}
 		});
 		Hooks.mainMenuShown = true;

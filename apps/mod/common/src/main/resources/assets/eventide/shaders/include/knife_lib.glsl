@@ -1,6 +1,6 @@
 #version 330
 
-// Noise, the studio reflections and the light for Eventide's knives and gloves.
+// Noise, the reflections and the light for Eventide's knives.
 
 float k_hash12(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -75,28 +75,32 @@ vec3 k_cells(vec2 p) {
     return vec3(sqrt(d1), sqrt(d2), id);
 }
 
-// The world around the knife, as its metal reflects it: a bright sky with soft clouds and a sun, a
-// glowing horizon, and darker ground. It's fixed to the world, so the glints move as you look around.
+// The world around the knife, as its metal reflects it: a midnight sky with a violet nebula band and a
+// cyan glow low on one side, bright points of starlight, and dark ground. It's fixed to the world, so the
+// glints move as you look around.
 vec3 k_environment(vec3 r, float rough) {
     float y = r.y;
     float blur = 0.03 + rough * 0.55;
-    vec3 zenith = vec3(0.42, 0.58, 0.92);
-    vec3 horizon = vec3(1.05, 1.02, 0.98);
-    vec3 ground = vec3(0.16, 0.15, 0.14);
+    vec3 zenith = vec3(0.06, 0.05, 0.14);
+    vec3 horizon = vec3(0.2, 0.17, 0.32);
+    vec3 ground = vec3(0.05, 0.05, 0.07);
     vec3 sky = mix(horizon, zenith, smoothstep(0.02, 0.75, y));
     float angle = atan(r.z, r.x);
     float detail = 1.0 - smoothstep(0.05, 0.6, rough);
+    float band = exp(-pow((y - 0.35 - 0.25 * sin(angle * 1.5)) / (0.18 + rough * 0.3), 2.0));
     float clouds = k_fbm3(vec2(angle * 2.2, y * 5.0) + 3.0);
-    sky = mix(sky, vec3(1.15), smoothstep(0.45, 0.85, clouds) * smoothstep(0.0, 0.5, y) * 0.55 * detail);
-    vec3 sun = normalize(vec3(-0.35, 0.62, 0.7));
-    float sunSpot = pow(max(dot(r, sun), 0.0), mix(900.0, 12.0, rough));
-    sky += vec3(2.6, 2.4, 2.1) * sunSpot * (1.0 - rough * 0.6);
-    float skyline = k_fbm3(vec2(angle * 6.0, 1.0)) * 0.12 * detail;
+    sky += vec3(0.42, 0.2, 0.75) * band * (0.35 + 0.4 * clouds * detail);
+    sky += vec3(0.25, 0.8, 1.0) * exp(-pow((angle - 1.2) / (0.5 + rough), 2.0)) * smoothstep(0.5, 0.0, abs(y - 0.12)) * 0.3;
+    vec3 key = normalize(vec3(-0.35, 0.62, 0.7));
+    float keySpot = pow(max(dot(r, key), 0.0), mix(700.0, 10.0, rough));
+    sky += vec3(2.2, 2.1, 2.4) * keySpot * (1.0 - rough * 0.6);
+    vec3 rim = normalize(vec3(0.7, 0.3, -0.6));
+    sky += vec3(0.8, 0.45, 1.3) * pow(max(dot(r, rim), 0.0), mix(400.0, 8.0, rough)) * (1.0 - rough * 0.5);
+    float skyline = k_fbm3(vec2(angle * 6.0, 1.0)) * 0.1 * detail;
     vec3 under = mix(ground * 1.6, ground * 0.55, smoothstep(0.0, -0.7, y));
-    under *= 0.8 + 0.4 * k_fbm3(vec2(angle * 4.0, y * 6.0)) * detail;
     float t = smoothstep(-blur + skyline, blur + skyline, y);
     vec3 color = mix(under, sky, t);
-    color += vec3(1.3, 1.25, 1.18) * exp(-pow((y - skyline) / (0.025 + rough * 0.25), 2.0)) * (1.0 - rough * 0.7);
+    color += vec3(0.7, 0.55, 1.1) * exp(-pow((y - skyline) / (0.025 + rough * 0.25), 2.0)) * (1.0 - rough * 0.7) * 0.6;
     return color;
 }
 

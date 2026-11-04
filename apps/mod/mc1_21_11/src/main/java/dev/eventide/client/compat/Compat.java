@@ -165,4 +165,58 @@ public final class Compat {
 		return glow ? net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucentEmissive(texture)
 				: net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutNoCull(texture);
 	}
+
+	private static net.minecraft.client.renderer.PerspectiveProjectionMatrixBuffer floatingProjection;
+
+	/** A projection matrix uploaded for drawing, for Floating mode's panel (its own field of view). Render thread only. */
+	public static com.mojang.blaze3d.buffers.GpuBufferSlice projectionBuffer(org.joml.Matrix4f matrix) {
+		if (floatingProjection == null) floatingProjection = new net.minecraft.client.renderer.PerspectiveProjectionMatrixBuffer("Eventide floating menu");
+		return floatingProjection.getBuffer(matrix);
+	}
+
+	private static net.minecraft.client.renderer.rendertype.RenderType knifeGlow;
+
+	/**
+	 * The soft shell of light round a knife (shaders/core/knife_glow): added on top of what's behind it,
+	 * brightest where it's seen edge-on, two-sided and leaving the depth alone.
+	 */
+	public static net.minecraft.client.renderer.rendertype.RenderType knifeGlow() {
+		if (knifeGlow == null) {
+			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline
+					.builder(net.minecraft.client.renderer.RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("eventide", "pipeline/knife_glow"))
+					.withVertexShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withFragmentShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.ADDITIVE)
+					.withDepthWrite(false)
+					.withCull(false)
+					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+					.build();
+			knifeGlow = net.minecraft.client.renderer.rendertype.RenderType.create("eventide_knife_glow",
+					net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline).createRenderSetup());
+		}
+		return knifeGlow;
+	}
+
+	private static net.minecraft.client.renderer.rendertype.RenderType knifeOutline;
+
+	/** The glow shader drawing only far faces (its OUTLINE define), for a line of light round a box's silhouette. */
+	public static net.minecraft.client.renderer.rendertype.RenderType knifeOutline() {
+		if (knifeOutline == null) {
+			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline
+					.builder(net.minecraft.client.renderer.RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("eventide", "pipeline/knife_outline"))
+					.withVertexShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withFragmentShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withShaderDefine("OUTLINE")
+					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.ADDITIVE)
+					.withDepthWrite(false)
+					.withCull(false)
+					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+					.build();
+			knifeOutline = net.minecraft.client.renderer.rendertype.RenderType.create("eventide_knife_outline",
+					net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline).createRenderSetup());
+		}
+		return knifeOutline;
+	}
 }

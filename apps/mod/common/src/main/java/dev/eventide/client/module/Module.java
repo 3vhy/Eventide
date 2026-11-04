@@ -7,7 +7,7 @@ import java.util.List;
 
 /** A feature in the Eventide mod menu: a card you click to switch on or off, with its own settings. */
 public final class Module {
-	/** A tab in the mod menu and a planet in the Orbit, in their order. */
+	/** A section in the mod menu's sidebar, in its order. */
 	public enum Category {
 		COMBAT("Combat", "swords", "Know every fight before it's over"),
 		RENDER("Render", "eye", "Light, colour and a sharper view"),
@@ -73,6 +73,9 @@ public final class Module {
 
 	<T extends Setting> T add(T setting) {
 		setting.owner = this;
+		if (setting.group() == null && !settings.isEmpty() && settings.get(settings.size() - 1).group() != null) {
+			setting.group(settings.get(settings.size() - 1).group());
+		}
 		settings.add(setting);
 		return setting;
 	}

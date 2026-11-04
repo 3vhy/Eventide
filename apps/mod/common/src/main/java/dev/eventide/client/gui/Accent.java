@@ -7,9 +7,9 @@ import java.util.List;
 
 /**
  * The client's accent colour, picked in Theme (Accent colour) with Rainbow as an option. Lit switches,
- * active tabs, icon tiles, bars and glows use it as a gradient: Violet, the default, is the website's
- * violet-to-magenta exactly, and every other colour gets a gradient the same way, by turning its hue a
- * little either side.
+ * the chosen tab, icon tiles, bars and glows use it. Violet, the default, is Eventide's electric violet;
+ * {@link #secondary()} is the cyan second light that bars and edges run into, and {@link #highlight()} the
+ * pink kept for the rare highlight.
  */
 public final class Accent {
 	/** A named colour in the accent picker. */
@@ -20,11 +20,11 @@ public final class Accent {
 
 	public static final List<Preset> PRESETS = List.of(
 			new Preset("Violet", DEFAULT),
-			new Preset("Pink", 0xFFFF5FA2),
-			new Preset("Blue", 0xFF5A9CFF),
-			new Preset("Red", 0xFFFF5A5F),
+			new Preset("Cyan", Tokens.CYAN),
+			new Preset("Pink", Tokens.PINK),
+			new Preset("Blue", 0xFF5A8CFF),
 			new Preset("Emerald", 0xFF3DDC97),
-			new Preset("Cyan", 0xFF5BC8E6));
+			new Preset("Red", 0xFFFF5A6E));
 
 	private Accent() {
 	}
@@ -75,6 +75,22 @@ public final class Accent {
 	/** Progress bars and sliders: the accent, flat. */
 	public static Grad bar() {
 		return primary();
+	}
+
+	/** The second light: cyan, or the accent turned a little towards blue for other themes. */
+	public static int secondary() {
+		int c = get();
+		return isDefault(c) ? Tokens.CYAN : turn(c, -40);
+	}
+
+	/** Pink, for the rare highlight (the sung word, a new badge). */
+	public static int highlight() {
+		return Tokens.PINK;
+	}
+
+	/** The accent running into the second light, for bars and progress. */
+	public static Grad flow() {
+		return Grad.across(get(), secondary());
 	}
 
 	/** The soft glow under lit things. */

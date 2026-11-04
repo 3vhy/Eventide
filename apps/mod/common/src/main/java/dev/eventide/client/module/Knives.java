@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 /**
  * Knives: the hotbar slots you pick, and (with Auto knives) every item of a kind, held as a knife with
  * its own draw, slash and inspect animations. Picked slots and their knives are saved in the profile as
- * one line ("0:karambit,3:butterfly"). Only how the item looks in your hand changes.
+ * one line ("0:eclipse,3:wraith"). Only how the item looks in your hand changes.
  */
 public final class Knives {
 	private static final KnifeModel[] SLOTS = new KnifeModel[9];
@@ -85,7 +85,7 @@ public final class Knives {
 	/** The knife picked in the settings, for auto knives and newly marked slots. */
 	public static KnifeModel defaultModel() {
 		KnifeModel model = KnifeModel.byLabel(Modules.KNIVES_MODEL.get());
-		return model == null ? KnifeModel.KARAMBIT : model;
+		return model == null ? KnifeModel.RIPTIDE : model;
 	}
 
 	/** Whether Auto knives makes this item a knife. */
@@ -151,7 +151,39 @@ public final class Knives {
 	/** Puts the viewmodel's position, turn, size and speeds back to their defaults. */
 	public static void resetViewmodel() {
 		for (Setting setting : Modules.KNIVES.settings()) {
-			if (setting instanceof Setting.Slider) setting.reset();
+			if (setting instanceof Setting.Slider && setting != Modules.KNIVES_GLOW_STRENGTH) setting.reset();
 		}
+	}
+
+	/**
+	 * Knives from before the redesign: the old knife and finish names in saved settings become the new knife
+	 * and finish nearest to them, the slot list keeps its slots with the new knives, and the old glove,
+	 * wear and pattern settings go.
+	 */
+	public static void migrate(java.util.Map<String, String> settings) {
+		String model = settings.get("knives.model");
+		if (model != null) {
+			KnifeModel now = KnifeModel.byLabel(model);
+			if (now != null && !now.label.equals(model)) settings.put("knives.model", now.label);
+		}
+		String finish = settings.get("knives.finish");
+		String renamed = dev.eventide.client.knife.Finish.renamed(finish);
+		if (renamed != null) settings.put("knives.finish", renamed);
+		String slots = settings.get("knives.slots");
+		if (slots != null && !slots.isEmpty()) {
+			StringBuilder out = new StringBuilder();
+			for (String part : slots.split(",")) {
+				int colon = part.indexOf(':');
+				if (colon <= 0) continue;
+				KnifeModel now = KnifeModel.byLabel(part.substring(colon + 1).trim());
+				if (now == null) continue;
+				if (!out.isEmpty()) out.append(',');
+				out.append(part, 0, colon).append(':').append(now.id());
+			}
+			settings.put("knives.slots", out.toString());
+		}
+		for (String gone : new String[] {"knives.glove", "knives.glove_color", "knives.wear", "knives.seed"}) settings.remove(gone);
+		String fov = settings.get("knives.fov");
+		if (fov != null && "68.0".equals(fov)) settings.remove("knives.fov");
 	}
 }

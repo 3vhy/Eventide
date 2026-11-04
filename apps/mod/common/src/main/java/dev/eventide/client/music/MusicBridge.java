@@ -91,7 +91,7 @@ public final class MusicBridge {
 			Path script = installScript();
 			ProcessBuilder builder = new ProcessBuilder("powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive",
 					"-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script.toString(),
-					"-ParentId", Long.toString(ProcessHandle.current().pid()));
+					"-ParentId", Long.toString(ProcessHandle.current().pid()), "-CommandFile", commandFile().toString());
 			builder.redirectError(ProcessBuilder.Redirect.DISCARD);
 			Process started = builder.start();
 			process = started;
@@ -105,6 +105,28 @@ public final class MusicBridge {
 			status = "Couldn't start PowerShell";
 			EventideClient.LOG.warn("Couldn't start the Music HUD helper", e);
 		}
+	}
+
+	private static Path commandFile() {
+		return dev.eventide.client.Migration.dataDir().resolve("music-command.txt");
+	}
+
+	/**
+	 * Asks the app that's playing to play or pause ("toggle"), skip ("next") or go back ("previous"), through
+	 * Windows' media controls; the helper picks it up within a fifth of a second. Play and pause show at once.
+	 * Returns whether it could be asked (Windows only, with the helper running).
+	 */
+	public static boolean command(String what) {
+		if (!supported() || process == null) return false;
+		try {
+			Files.writeString(commandFile(), what, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			EventideClient.LOG.warn("Couldn't send the music command {}", what, e);
+			return false;
+		}
+		NowPlaying song = current;
+		if (song != null && what.equals("toggle")) current = song.toggled();
+		return true;
 	}
 
 	/** Copies the script next to the game, so PowerShell can run it, unless it's already there unchanged. */

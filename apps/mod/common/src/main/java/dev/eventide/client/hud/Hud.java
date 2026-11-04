@@ -9,9 +9,8 @@ import dev.eventide.client.ui.Type;
 import dev.eventide.client.ui.Type.Weight;
 
 /**
- * The HUD's shared look, from the website's HUD pieces: violet glass (a tenth-black violet fill, a
- * light hairline, a faint lit top edge and a long soft shadow), Inter text, and the website's signal
- * colours. Sizes are in GUI pixels at 100% HUD size.
+ * The HUD's shared look: dark midnight glass (a near-black violet fill and a light hairline), Inter
+ * text, and the signal colours. Sizes are in GUI pixels at 100% HUD size.
  */
 public final class Hud {
 	/** The capital height of a HUD value. */
@@ -32,8 +31,8 @@ public final class Hud {
 		if (strength <= 0.01f) return;
 		float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
 		float hair = hairline(d);
-		Paint.rect(d, x1, y1, x2, y2, r, Tokens.GLASS);
-		Paint.stroke(d, x1, y1, x2, y2, r, hair, 0x1FFFFFFF);
+		Paint.rect(d, x1, y1, x2, y2, r, 0xCC0B0817);
+		Paint.stroke(d, x1, y1, x2, y2, r, hair, 0x24FFFFFF);
 		Paint.opacity(old);
 	}
 

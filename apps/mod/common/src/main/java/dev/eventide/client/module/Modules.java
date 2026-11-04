@@ -238,10 +238,16 @@ public final class Modules {
 			"Fullscreen as a borderless window, so alt-tab is instant", Category.UTILITY, false).icon("maximize").markNew();
 
 	// HUD
-	public static final Module FPS = hud("fps", "FPS", "Frames per second, with a live graph", true).icon("gauge");
+	public static final Module WATERMARK = sized(background(new Module("watermark", "Watermark",
+			"Eventide's logo in the top left with your FPS and ping beside it", Category.HUD, true).icon("badge").markNew(), 90));
+	public static final Toggle WATERMARK_FPS = WATERMARK.add(new Toggle("fps", "FPS", "Frames per second, with a dot that shows how smooth it is", true));
+	public static final Toggle WATERMARK_PING = WATERMARK.add(new Toggle("ping", "Ping", "Your latency to the server, with a dot for its quality", true));
+	public static final Module BOSS_BARS = new Module("boss_bars", "Boss Bars",
+			"Server boss bars and banners as a thin glowing line in their colour", Category.HUD, true).icon("panels-top-left").markNew();
+	public static final Module FPS = hud("fps", "FPS", "Frames per second, with a live graph (the Watermark shows them too)", false).icon("gauge");
 	public static final Toggle FPS_GRAPH = FPS.add(new Toggle("graph", "Graph", "A small line of your last few seconds", true));
 	public static final Module CPS = hud("cps", "CPS", "Clicks per second, left and right", true).icon("mouse-pointer-click");
-	public static final Module PING = hud("ping", "Ping", "Your latency to the server, coloured by quality", true).icon("wifi");
+	public static final Module PING = hud("ping", "Ping", "Your latency to the server, coloured by quality (the Watermark shows it too)", false).icon("wifi");
 	public static final Toggle PING_COLOURS = PING.add(new Toggle("quality", "Colour by quality",
 			"Mint when it's good, pink when it's bad", true));
 	public static final Module TPS = hud("tps", "TPS", "The server's ticks per second", false).icon("activity").markNew();
@@ -303,7 +309,8 @@ public final class Modules {
 	public static final Toggle MODULE_LIST_HUD = MODULE_LIST.add(new Toggle("hud", "HUD mods",
 			"Also list the HUD mods you can already see, like FPS and Keystrokes", false));
 	public static final Toggle MODULE_LIST_GLOW = MODULE_LIST.add(new Toggle("glow", "Glow",
-			"A soft glow behind the icons", true));
+			"A soft glow round the accent line at each row's end", true));
+	public static final Toggle MODULE_LIST_ICONS = MODULE_LIST.add(new Toggle("icons", "Icons", "Each mod's icon in front of its name", false));
 
 	public static final Module SKIES = new Module("skies", "Skies",
 			"Living skies drawn per pixel: Eventide's galaxy, nebulae, auroras, flame clouds and more", Category.RENDER, false).icon("moon-star").markNew();

@@ -17,26 +17,27 @@ import dev.eventide.client.ui.Type.Weight;
 import net.minecraft.client.Minecraft;
 
 /**
- * The Music Player, laid out like the website's Spotify player: the line being sung above the card,
- * big and filling in like karaoke with the next line faint under it, then a glass card with the cover
- * (the app's icon on its corner), the title and artist, a thin violet progress bar with the times under
- * it, and back / a light play button / next. Every size is the website's, in CSS pixels scaled to the
- * HUD by {@link #S}.
+ * The Music Player: the line being sung above the card, big and filling in like karaoke with the next line
+ * faint under it, then a dark glass card with the cover in its top left (the app's icon on its corner),
+ * "Now playing" in the accent, the title and the artist beside it, then the time played, back / a white
+ * play button / next in the middle and the time left, over a violet progress bar with a knob that runs the
+ * card's width. With the cursor free (chat open), the buttons work: they ask the playing app through
+ * Windows' media controls.
  *
- * <p>It slides in when music starts and out when it stops, a new song's cover fades in as its title
- * slides up over the old one, the bar glides to where the song is, play and pause turn into each other,
- * and each lyric line rises in as the last one leaves.
+ * <p>It slides in when music starts and out when it stops, a new song's cover fades in as its title slides
+ * up over the old one, the bar glides to where the song is, play and pause turn into each other, and each
+ * lyric line rises in as the last one leaves.
  */
 final class MusicWidget extends HudWidget {
 	/** GUI pixels per CSS pixel of the website's player. */
 	private static final float S = 0.45f;
 	private static final int W = Math.round(440 * S);
-	private static final float CARD_H = 99 * S;
-	private static final float PAD_L = 12 * S;
-	private static final float PAD_R = 16 * S;
-	private static final float ART = 56 * S;
-	private static final float GAP = 14 * S;
-	private static final float CONTROLS = (17 + 10 + 34 + 10 + 17) * S;
+	/** The card's own unit: its design is 510 wide. */
+	private static final float U = W / 510f;
+	private static final float CARD_H = 200 * U;
+	private static final float PAD = 18 * U;
+	private static final float ART = 112 * U;
+	private static final float GAP = 26 * U;
 	private static final float VOLUME_ROW = 14;
 	private static final float LYRICS_H = (23 * 1.3f + 6 + 14 * 1.6f + 22) * S;
 	private static final float LINE_CAP = 20 * 0.727f * S;
@@ -57,9 +58,13 @@ final class MusicWidget extends HudWidget {
 	private boolean wasPlaying = false;
 	private float shownProgress = -1;
 	private long lastFrame = 0;
+	/** Where back, play and next were last drawn, in GUI units ({x1, y1, x2, y2} each), for clicks with the cursor free. */
+	private final float[][] buttons = new float[3][4];
+	private long pressedAt = 0;
+	private int pressed = -1;
 
 	MusicWidget() {
-		super("music", Modules.MUSIC, Anchor.TOP_CENTER);
+		super("music", Modules.MUSIC, Anchor.TOP_RIGHT);
 	}
 
 	private static boolean progress(NowPlaying song) {
@@ -200,32 +205,32 @@ final class MusicWidget extends HudWidget {
 
 	private void drawCard(Draw d, NowPlaying song, float x, float top, long now, float dt, boolean shadow) {
 		float h = cardHeight(song);
-		float r = radius(18 * S);
+		float r = radius(16 * U);
 		float strength = glassStrength();
 		if (strength > 0.01f) {
 			float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
-			Paint.rect(d, x, top, x + W, top + h, r, Tokens.GLASS);
-			Paint.stroke(d, x, top, x + W, top + h, r, Hud.hairline(d), 0x1AFFFFFF);
+			Paint.shadow(d, x, top, x + W, top + h, r, 0, 2, 10, 0, 0x55000000);
+			Paint.rect(d, x, top, x + W, top + h, r, 0xD90B0817);
+			Paint.stroke(d, x, top, x + W, top + h, r, Hud.hairline(d), 0x24FFFFFF);
 			Paint.opacity(old);
 		}
 		float change = Ease.OUT.apply((now - changedAt) / (double) CHANGE_MS);
-		float ax = x + PAD_L;
-		float ay = top + (CARD_H - ART) / 2f;
+		float ax = x + PAD;
+		float ay = top + PAD;
 		float metaX;
 		if (Modules.MUSIC_ART.get()) {
 			drawArt(d, song, ax, ay, change);
 			metaX = ax + ART + GAP;
 		} else {
-			metaX = x + PAD_L + 2;
+			metaX = x + PAD + 2;
 		}
-		float controlsX = x + W - PAD_R - CONTROLS;
-		float metaW = controlsX - GAP - metaX;
-		drawControls(d, controlsX, top + CARD_H / 2f, now);
-
-		float titleCap = 14.5f * 0.727f * S;
-		float artistCap = 12.5f * 0.727f * S;
-		float titleTop = top + 12 * S + (14.5f * 1.6f - 14.5f * 0.727f) / 2f * S;
-		float artistTop = top + (12 + 14.5f * 1.6f) * S + (12.5f * 1.6f - 12.5f * 0.727f) / 2f * S;
+		float metaW = x + W - PAD - metaX;
+		float labelCap = 11 * U;
+		Hud.text(d, "NOW PLAYING", metaX, top + 30 * U, labelCap, Weight.SEMIBOLD, Paint.fade(fill().from(), 0.95f), shadow);
+		float titleCap = 18 * U;
+		float artistCap = 14 * U;
+		float titleTop = top + 58 * U;
+		float artistTop = top + 92 * U;
 		if (change < 1 && !oldTitle.isEmpty()) {
 			float old = Paint.opacity(Paint.opacity() * (1 - change));
 			meta(d, oldTitle, oldArtist, metaX, titleTop - 4 * change, artistTop - 4 * change, metaW, titleCap, artistCap, shadow);
@@ -235,38 +240,47 @@ final class MusicWidget extends HudWidget {
 		meta(d, song.title(), song.artist(), metaX, titleTop + 4 * (1 - change), artistTop + 4 * (1 - change), metaW, titleCap, artistCap, shadow);
 		Paint.opacity(in);
 
-		if (progress(song)) {
+		float rowY = top + 158 * U;
+		drawControls(d, x + W / 2f, rowY, now);
+		boolean timeline = progress(song);
+		if (timeline) {
 			double position = song.positionNow();
 			float target = song.duration() > 0 ? (float) Math.max(0, Math.min(1, position / song.duration())) : 0;
 			if (shownProgress < 0 || Math.abs(target - shownProgress) < 0.004f) shownProgress = target;
 			else shownProgress += (target - shownProgress) * (1 - (float) Math.exp(-dt * 9));
-			float barTop = top + (12 + 14.5f * 1.6f + 12.5f * 1.6f + 8) * S;
-			float barH = 3 * S;
-			Paint.rect(d, metaX, barTop, metaX + metaW, barTop + barH, barH / 2f, 0x1AFFFFFF);
-			float fx = metaX + metaW * shownProgress;
-			if (fx > metaX + barH / 2f) Paint.rect(d, metaX, barTop, fx, barTop + barH, barH / 2f, fill());
-			float timeCap = 10.5f * 0.727f * S;
-			float timeTop = barTop + barH + 4 * S + (10.5f * 1.6f - 10.5f * 0.727f) / 2f * S;
+			float timeCap = 12 * U;
 			String played = NowPlaying.time(position);
-			String length = NowPlaying.time(song.duration());
-			Hud.text(d, played, metaX, timeTop, timeCap, Weight.SEMIBOLD, Tokens.TEXT_3, shadow);
-			Hud.text(d, length, metaX + metaW - Type.width(length, timeCap, Weight.SEMIBOLD), timeTop, timeCap, Weight.SEMIBOLD, Tokens.TEXT_3, shadow);
+			String left = "-" + NowPlaying.time(Math.max(0, song.duration() - position));
+			Hud.text(d, played, x + PAD, rowY - timeCap / 2f, timeCap, Weight.SEMIBOLD, Tokens.TEXT_2, shadow);
+			Hud.text(d, left, x + W - PAD - Type.width(left, timeCap, Weight.SEMIBOLD), rowY - timeCap / 2f, timeCap, Weight.SEMIBOLD, Tokens.TEXT_2,
+					shadow);
+			float barY = top + 184 * U;
+			float barH = 6 * U;
+			float bx1 = x + PAD;
+			float bx2 = x + W - PAD;
+			Paint.rect(d, bx1, barY - barH / 2f, bx2, barY + barH / 2f, barH / 2f, 0x26FFFFFF);
+			float fx = bx1 + (bx2 - bx1) * shownProgress;
+			if (fx > bx1 + barH / 2f) {
+				Paint.shadow(d, bx1, barY - barH / 2f, fx, barY + barH / 2f, barH / 2f, 0, 0, 8 * U, 0, Paint.fade(fill().from(), 0.45f));
+				Paint.rect(d, bx1, barY - barH / 2f, fx, barY + barH / 2f, barH / 2f, fill());
+			}
+			Paint.circle(d, fx, barY, 7.5f * U, 0xFFFFFFFF);
 		}
 
 		if (volume(song)) {
 			float cy = top + CARD_H + VOLUME_ROW / 2f - 3;
 			boolean silent = song.muted() || song.volume() == 0;
-			Paint.icon(d, silent ? "volume-x" : "volume-2", x + PAD_L, cy - 3.5f, 7, Tokens.TEXT_2);
+			Paint.icon(d, silent ? "volume-x" : "volume-2", x + PAD, cy - 3.5f, 7, Tokens.TEXT_2);
 			String level = song.muted() ? "Muted" : song.volume() + "%";
 			float small = 3.6f;
 			float levelW = Math.max(Type.width(level, small, Weight.SEMIBOLD), Type.width("100%", small, Weight.SEMIBOLD));
-			float bx1 = x + PAD_L + 11;
-			float bx2 = x + W - PAD_R - levelW - 6;
+			float vx1 = x + PAD + 11;
+			float vx2 = x + W - PAD - levelW - 6;
 			float vh = 3 * S;
-			Paint.rect(d, bx1, cy - vh / 2f, bx2, cy + vh / 2f, vh / 2f, 0x1AFFFFFF);
-			float vx = bx1 + (bx2 - bx1) * (song.muted() ? 0 : song.volume() / 100f);
-			if (vx > bx1 + vh / 2f) Paint.rect(d, bx1, cy - vh / 2f, vx, cy + vh / 2f, vh / 2f, fill());
-			Hud.text(d, level, x + W - PAD_R - Type.width(level, small, Weight.SEMIBOLD), cy - small / 2f, small, Weight.SEMIBOLD, Tokens.TEXT_3,
+			Paint.rect(d, vx1, cy - vh / 2f, vx2, cy + vh / 2f, vh / 2f, 0x1AFFFFFF);
+			float vx = vx1 + (vx2 - vx1) * (song.muted() ? 0 : song.volume() / 100f);
+			if (vx > vx1 + vh / 2f) Paint.rect(d, vx1, cy - vh / 2f, vx, cy + vh / 2f, vh / 2f, fill());
+			Hud.text(d, level, x + W - PAD - Type.width(level, small, Weight.SEMIBOLD), cy - small / 2f, small, Weight.SEMIBOLD, Tokens.TEXT_3,
 					shadow);
 		}
 	}
@@ -302,23 +316,62 @@ final class MusicWidget extends HudWidget {
 		}
 	}
 
-	/** Back, the light round play / pause button (turning into each other with a little bounce), and next. */
-	private void drawControls(Draw d, float x, float cy, long now) {
-		float icon = 17 * S;
-		Paint.icon(d, "skip-back", x, cy - icon / 2f, icon, Tokens.TEXT_2);
-		float pr = 17 * S * (0.88f + 0.12f * Ease.SPRING.apply(Math.min(1, (now - toggledAt) / 420.0)));
-		float pcx = x + (17 + 10 + 17) * S;
-		Paint.circle(d, pcx, cy, pr, 0xFFF1E8FF);
+	/**
+	 * Back, the white round play / pause button (turning into each other with a little bounce) and next, centred
+	 * on ({@code cx}, {@code cy}); each remembers where it was drawn for clicks, and flashes when pressed.
+	 */
+	private void drawControls(Draw d, float cx, float cy, long now) {
+		float icon = 24 * U;
+		float spread = 66 * U;
+		float flash = pressed >= 0 ? 1 - Math.min(1, (now - pressedAt) / 220f) : 0;
+		float back = cx - spread;
+		float next = cx + spread;
+		if (pressed == 0 && flash > 0) Paint.circle(d, back, cy, icon * 0.9f, Paint.fade(0xFFFFFFFF, 0.18f * flash));
+		Paint.icon(d, "skip-back", back - icon / 2f, cy - icon / 2f, icon, 1.2f, true, 0xFFFFFFFF, null);
+		if (pressed == 2 && flash > 0) Paint.circle(d, next, cy, icon * 0.9f, Paint.fade(0xFFFFFFFF, 0.18f * flash));
+		Paint.icon(d, "skip-forward", next - icon / 2f, cy - icon / 2f, icon, 1.2f, true, 0xFFFFFFFF, null);
+		float pr = 22 * U * (0.9f + 0.1f * Ease.SPRING.apply(Math.min(1, (now - toggledAt) / 420.0)));
+		Paint.circle(d, cx, cy, pr, 0xFFFFFFFF);
 		float p = playing.get();
-		float glyph = 15 * S;
+		float glyph = 22 * U;
 		float pause = glyph * (0.6f + 0.4f * p);
 		float old = Paint.opacity(Paint.opacity() * p);
-		Paint.icon(d, "pause", pcx - pause / 2f, cy - pause / 2f, pause, 1, true, 0xFF140A24, null);
+		Paint.icon(d, "pause", cx - pause / 2f, cy - pause / 2f, pause, 1, true, 0xFF0B0817, null);
 		Paint.opacity(old);
 		float play = glyph * (0.6f + 0.4f * (1 - p));
 		old = Paint.opacity(Paint.opacity() * (1 - p));
-		Paint.icon(d, "play", pcx - play / 2f + 0.35f, cy - play / 2f, play, 1, true, 0xFF140A24, null);
+		Paint.icon(d, "play", cx - play / 2f + 0.4f, cy - play / 2f, play, 1, true, 0xFF0B0817, null);
 		Paint.opacity(old);
-		Paint.icon(d, "skip-forward", x + (17 + 10 + 34 + 10) * S, cy - icon / 2f, icon, Tokens.TEXT_2);
+		remember(d, 0, back, cy, icon);
+		remember(d, 1, cx, cy, pr * 2);
+		remember(d, 2, next, cy, icon);
+	}
+
+	private void remember(Draw d, int which, float cx, float cy, float size) {
+		float k = d.poseScale();
+		float half = size * 0.75f;
+		buttons[which][0] = d.poseX() + (cx - half) * k;
+		buttons[which][1] = d.poseY() + (cy - half) * k;
+		buttons[which][2] = d.poseX() + (cx + half) * k;
+		buttons[which][3] = d.poseY() + (cy + half) * k;
+	}
+
+	/**
+	 * A click at (x, y) in GUI units while the cursor is free (the chat is open): back, play / pause or next
+	 * on the card ask the playing app. Returns whether it hit one.
+	 */
+	boolean click(double x, double y) {
+		if (!shown() || MusicBridge.current() == null || appear.get() < 0.5f) return false;
+		String[] commands = {"previous", "toggle", "next"};
+		for (int i = 0; i < 3; i++) {
+			float[] b = buttons[i];
+			if (x >= b[0] && x < b[2] && y >= b[1] && y < b[3]) {
+				pressed = i;
+				pressedAt = System.currentTimeMillis();
+				MusicBridge.command(commands[i]);
+				return true;
+			}
+		}
+		return false;
 	}
 }

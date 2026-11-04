@@ -5,9 +5,13 @@
 # Each line has the song, its position, Windows' volume (0-100, and whether it's muted), and (once
 # per song or app) the cover and the app's icon as base64 PNGs. When a cover, icon or the volume
 # can't be read, artError / iconError / volumeError say why.
+#
+# The game asks for play/pause, next and previous by writing "toggle", "next" or "previous" into
+# CommandFile; it's checked five times a second and acted on through the same media controls.
 param(
 	[int]$ParentId = 0,
-	[switch]$Once
+	[switch]$Once,
+	[string]$CommandFile = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -296,6 +300,16 @@ $lastApp = $null
 $iconSent = $false
 $iconTries = 0
 
+function Invoke-MediaCommand([string]$what) {
+	$current = $manager.GetCurrentSession()
+	if ($null -eq $current) { return }
+	switch ($what.Trim()) {
+		'toggle' { $null = Wait-Async ($current.TryTogglePlayPauseAsync()) ([bool]) }
+		'next' { $null = Wait-Async ($current.TrySkipNextAsync()) ([bool]) }
+		'previous' { $null = Wait-Async ($current.TrySkipPreviousAsync()) ([bool]) }
+	}
+}
+
 while ($true) {
 	if ($ParentId -gt 0 -and $null -eq (Get-Process -Id $ParentId -ErrorAction SilentlyContinue)) { exit 0 }
 	try {
@@ -376,5 +390,17 @@ while ($true) {
 		Write-Problem $_.Exception.Message
 	}
 	if ($Once) { exit 0 }
-	Start-Sleep -Milliseconds 1000
+	for ($wait = 0; $wait -lt 5; $wait++) {
+		if ($CommandFile -ne '' -and (Test-Path -LiteralPath $CommandFile)) {
+			try {
+				$command = [IO.File]::ReadAllText($CommandFile)
+				Remove-Item -LiteralPath $CommandFile -Force
+				Invoke-MediaCommand $command
+			} catch {
+				Write-Problem $_.Exception.Message
+			}
+			break
+		}
+		Start-Sleep -Milliseconds 200
+	}
 }

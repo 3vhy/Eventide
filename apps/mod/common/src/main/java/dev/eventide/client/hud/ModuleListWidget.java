@@ -28,8 +28,9 @@ import net.minecraft.client.Minecraft;
  */
 final class ModuleListWidget extends HudWidget {
 	private static final float CAP = Hud.CAP * 0.85f;
-	private static final float CHIP_H = 2.7f * CAP;
-	private static final float GAP = 2;
+	private static final float CHIP_H = 2.55f * CAP;
+	private static final float GAP = 0.6f;
+	private static final float BAR = 1.4f;
 	private static final float STEP = CHIP_H + GAP;
 	private static final float PAD = 0.95f * CAP;
 	private static final float ICON = 1.45f * CAP;
@@ -46,7 +47,8 @@ final class ModuleListWidget extends HudWidget {
 	}
 
 	private static float chipWidth(String name) {
-		return PAD + ICON + ICON_GAP + Type.width(name, CAP, Weight.SEMIBOLD) + PAD * 1.15f;
+		float icon = Modules.MODULE_LIST_ICONS.get() ? ICON + ICON_GAP : 0;
+		return PAD + icon + Type.width(name, CAP, Weight.SEMIBOLD) + PAD * 1.15f + BAR;
 	}
 
 	/** Whether a mod that's on belongs in the list: not the menu and window ones, and HUD mods only if asked for. */
@@ -129,15 +131,19 @@ final class ModuleListWidget extends HudWidget {
 			float old = Paint.opacity(Paint.opacity() * in);
 			if (strength > 0.01f) {
 				float glass = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
-				Paint.rect(d, left, top, chipRight, top + CHIP_H, r, Tokens.GLASS);
-				Paint.stroke(d, left, top, chipRight, top + CHIP_H, r, hair, 0x1FFFFFFF);
+				Paint.rect(d, left, top, chipRight, top + CHIP_H, Math.min(r, 2), 0xC80B0817);
 				Paint.opacity(glass);
 			}
 			int accent = Accent.get(slot * 0.035f);
-			float ix = left + PAD;
-			float iy = top + (CHIP_H - ICON) / 2f;
-			Paint.icon(d, module.icon() != null ? module.icon() : "list", ix, iy, ICON, accent);
-			Hud.text(d, module.name, ix + ICON + ICON_GAP, top + (CHIP_H - CAP) / 2f, CAP, Weight.SEMIBOLD, Tokens.TEXT, shadow);
+			float tx = left + PAD;
+			if (Modules.MODULE_LIST_ICONS.get()) {
+				Paint.icon(d, module.icon() != null ? module.icon() : "list", tx, top + (CHIP_H - ICON) / 2f, ICON, accent);
+				tx += ICON + ICON_GAP;
+			}
+			Hud.text(d, module.name, tx, top + (CHIP_H - CAP) / 2f, CAP, Weight.SEMIBOLD, Accent.lighten(accent, 0.55f), shadow);
+			float bx = chipRight - BAR;
+			if (glow) Paint.shadow(d, bx, top + 1, chipRight, top + CHIP_H - 1, BAR / 2f, 0, 0, 5, 0, Paint.fade(accent, 0.7f));
+			Paint.rect(d, bx, top + 1, chipRight, top + CHIP_H - 1, BAR / 2f, accent);
 			Paint.opacity(old);
 		}
 	}

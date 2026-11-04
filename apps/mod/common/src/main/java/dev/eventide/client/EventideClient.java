@@ -114,6 +114,10 @@ public final class EventideClient implements ClientModInitializer {
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if (screen instanceof PauseScreen) PauseMenuButton.add(client, screen);
+			if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+				net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((shown, event) ->
+						!(event.button() == 0 && HudWidgets.musicClick(event.x(), event.y())));
+			}
 			TitleScreenStyle.prepare(screen);
 			if (MenuNameTag.shows(screen)) Compat.afterScreen(screen, d -> MenuNameTag.draw(d, screen));
 		});

@@ -1089,6 +1089,44 @@ public final class EventideGameTest implements FabricClientGameTest {
 		server.runCommand("time set noon");
 	}
 
+	/**
+	 * The HUD as the reference composes it: the Watermark top left, the Music Player top right with the module
+	 * list under it, a server boss bar as a thin line, at night under the Galaxy sky; then close-ups.
+	 */
+	private static void hudLook(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
+		var server = singleplayer.getServer();
+		server.runCommand("time set midnight");
+		server.runCommand("bossbar add eventide:banner \"Join our community (/discord)\"");
+		server.runCommand("bossbar set eventide:banner color blue");
+		server.runCommand("bossbar set eventide:banner players @a");
+		context.runOnClient(client -> {
+			Modules.MUSIC.set(true);
+			MusicBridge.simulate(SAMPLE_SONG);
+			Modules.SKIES.set(true);
+			dev.eventide.client.sky.LivingSky.select(dev.eventide.client.sky.SkyType.GALAXY);
+			Modules.KEYSTROKES.set(false);
+			client.getToastManager().clear();
+			client.gui.getChat().clearMessages(false);
+		});
+		face(context, 30, -25);
+		context.waitTicks(30);
+		check(failed, "the Watermark shows on the HUD", context.computeOnClient(client -> HudWidgets.WATERMARK.shown()));
+		shot(context, "eventide-hud-look");
+		context.setScreen(() -> new MusicShowcase(HudWidgets.MUSIC));
+		context.waitTicks(10);
+		shot(context, "eventide-music-card");
+		context.setScreen(() -> new MusicShowcase(HudWidgets.WATERMARK));
+		context.waitTicks(10);
+		shot(context, "eventide-watermark-closeup");
+		context.setScreen(() -> null);
+		server.runCommand("bossbar remove eventide:banner");
+		context.runOnClient(client -> {
+			Modules.KEYSTROKES.set(true);
+			Modules.SKIES.set(false);
+		});
+		server.runCommand("time set noon");
+	}
+
 	/** Runs one part of the test on its own (-PtestFocus=...), for quicker checks while working on it. */
 	private static void runFocused(ClientGameTestContext context, String focus, List<String> failed) {
 		EventideClient.LOG.info("eventide-check: running only the {} part of the test", focus);
@@ -1105,6 +1143,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("knives")) knives(context, singleplayer, failed, true);
 			if (focus.contains("menu")) menu(context, failed);
 			if (focus.contains("kills")) killEffects(context, singleplayer, failed);
+			if (focus.contains("hud")) hudLook(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);
 		}

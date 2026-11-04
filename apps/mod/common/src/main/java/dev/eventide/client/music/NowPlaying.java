@@ -31,6 +31,12 @@ public record NowPlaying(
 		return volume >= 0;
 	}
 
+	/** The same song, paused if it was playing and playing if it was paused, from where it is now. */
+	public NowPlaying toggled() {
+		return new NowPlaying(key, app, title, artist, album, !playing, positionNow(), duration, System.nanoTime(), art, artVersion, icon, iconVersion,
+				artProblem, volume, muted);
+	}
+
 	/** Seconds into the song right now, counting time since the last update while it plays. */
 	public double positionNow() {
 		double seconds = position;

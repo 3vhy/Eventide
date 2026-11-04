@@ -24,5 +24,6 @@ void main() {
 	color += vec3(0.42, 0.26, 0.6) * horizonGlow(d, 0.07) * 0.22;
 	color = mix(color, color * 1.6 + vec3(0.08, 0.05, 0.12), SKY_DAY * 0.55);
 	color = mix(color, base * 0.9, smoothstep(0.0, -0.3, d.y));
+	color += vec3(0.85, 0.85, 1.0) * streaks(d, t, SKY_METEORS) * 0.35 * (1.0 - SKY_DAY * 0.8);
 	fragColor = vec4(finish(color, d), SKY_ALPHA);
 }

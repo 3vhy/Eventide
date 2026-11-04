@@ -7,7 +7,8 @@ package dev.eventide.client.sky;
  * {@code yaw}/{@code pitch} aim a thumbnail at the sky's best part.
  */
 public enum SkyType {
-	GALAXY("galaxy", "Galaxy", "Nebulae, aurora, shooting stars and a ringed planet", 0x6A2AAE, false, 180, 18),
+	GALAXY("galaxy", "Galaxy", "Eventide's sky: a violet nebula band, an eclipse ring and falling starlight", 0x2A1050, false, 200, 16),
+	NEBULA("nebula", "Nebula", "Billowing cyan and violet gas lit from within, with a white-hot heart", 0x16244A, false, 40, 14),
 	AETHER("aether", "Aether", "Silver light flowing over dark anthracite", 0x2E3136, false, 90, 22),
 	NOCTURNE("nocturne", "Nocturne", "Soft violet clouds with a lilac glow at their edges", 0x2A1A36, false, 180, 20),
 	AMETHYST("amethyst", "Amethyst", "Deep violet marble with fine veins of light", 0x2A0E48, false, 180, 25),

@@ -139,13 +139,27 @@ public final class Modules {
 	public static final Toggle SWING_SPEED_OTHERS = SWING_SPEED.add(new Toggle("others", "Other players too",
 			"Everyone's swing on your screen, not just yours", false));
 	public static final Module LYRICS = new Module("sky_lyrics", "Sky Lyrics",
-			"The song you play, its words written in the sky, behind anything in the way", Category.RENDER, false).icon("mic-vocal").markNew();
+			"The song you play, its words floating large in the sky ahead, behind anything in the way", Category.RENDER, false).icon("mic-vocal").markNew();
 	public static final Choice LYRICS_PLACE = LYRICS.add(new Choice("place", "Where", "High in the sky ahead of you, or at the top of the screen",
 			0, "Sky", "Screen"));
 	public static final Slider LYRICS_SIZE = LYRICS.add(new Slider("size", "Size", "How big the words are", 50, 200, 10, 100, "%"));
-	public static final Toggle LYRICS_NEXT = LYRICS.add(new Toggle("next", "Next line", "The line coming up, faint under the one being sung", true));
+	public static final Toggle LYRICS_NEXT = LYRICS.add(new Toggle("next", "Next line", "The line coming up, smaller under the one being sung", true));
+	public static final Slider LYRICS_HEIGHT = LYRICS.add(new Slider("height", "Height", "How high in the sky the words hang", 6, 40, 1, 17, "°")
+			.group("Placement"));
+	public static final Slider LYRICS_TILT = LYRICS.add(new Slider("tilt", "Tilt", "Leans the words as if hung on the sky; 0° keeps them level",
+			0, 20, 1, 7, "°"));
+	public static final Choice LYRICS_FONT = LYRICS.add(new Choice("font", "Font", "Inter, Eventide's display face, or Minecraft's own", 0,
+			"Clean", "Display", "Minecraft").group("Look"));
+	public static final Color LYRICS_COLOR = LYRICS.add(new Color("color", "Text colour", "The words as they're sung", 0xFFFFFFFF));
+	public static final Color LYRICS_ACCENT = LYRICS.add(new Color("accent", "Glow colour", "The glow round the words and their outline", 0xFF9A4DFF));
+	public static final Slider LYRICS_GLOW = LYRICS.add(new Slider("glow", "Glow", "How strong the glow is; 0% for none", 0, 200, 5, 100, "%"));
+	public static final Choice LYRICS_BACKDROP = LYRICS.add(new Choice("backdrop", "Backdrop", "A soft glow, an outline round the letters, or a dark panel",
+			0, "Glow", "Outline", "Panel"));
+	public static final Choice LYRICS_STYLE = LYRICS.add(new Choice("style", "Line change", "How a new line comes in", 0, "Rise", "Fade", "Scale", "Drift")
+			.group("Motion"));
+	public static final Slider LYRICS_SPEED = LYRICS.add(new Slider("speed", "Change speed", "How quickly lines come and go", 50, 200, 10, 100, "%"));
 	public static final Toggle LYRICS_DEBUG = LYRICS.add(new Toggle("debug", "Debug log",
-			"Write every lyrics search to the game log: what was tried, where it was found and why not", false));
+			"Write every lyrics search to the game log: what was tried, where it was found and why not", false).group("Advanced"));
 
 	// Player
 	public static final Module NAME_PROTECT = new Module("name_protect", "Name Protect",
@@ -292,21 +306,29 @@ public final class Modules {
 			"A soft glow behind the icons", true));
 
 	public static final Module SKIES = new Module("skies", "Skies",
-			"Living skies drawn per pixel: auroras, a ringed planet, flame clouds and more", Category.RENDER, false).icon("moon-star").markNew();
+			"Living skies drawn per pixel: Eventide's galaxy, nebulae, auroras, flame clouds and more", Category.RENDER, false).icon("moon-star").markNew();
 	public static final Choice SKIES_SKY = SKIES.add(new Choice("sky", "Sky", "Which sky you see", 0, dev.eventide.client.sky.SkyType.labels()).hide());
-	public static final Slider SKIES_SPEED = SKIES.add(new Slider("speed", "Speed", "How fast the sky moves", 0, 300, 5, 100, "%"));
+	public static final Slider SKIES_SPEED = SKIES.add(new Slider("speed", "Speed", "How fast the sky moves", 0, 300, 5, 100, "%").group("Sky"));
 	public static final Slider SKIES_BRIGHTNESS = SKIES.add(new Slider("brightness", "Brightness", "How bright the sky is", 20, 200, 5, 100, "%"));
 	public static final Color SKIES_TINT = SKIES.add(new Color("tint", "Tint", "A colour over the sky; white leaves it as it is", 0xFFFFFFFF));
-	public static final Toggle SKIES_STARS = SKIES.add(new Toggle("stars", "Stars", "Stars twinkling in the night skies", true));
-	public static final Toggle SKIES_SUN_MOON = SKIES.add(new Toggle("sun_moon", "Sun and moon", "Minecraft's sun and moon over the sky", true));
 	public static final Choice SKIES_TIME = SKIES.add(new Choice("time", "Time of day", "Follow the world's clock, or keep one time of day", 0,
 			"World time", "Night", "Dusk", "Day"));
+	public static final Slider SKIES_NEBULA = SKIES.add(new Slider("nebula", "Nebula", "How strong the clouds of glowing gas are", 0, 200, 5, 100, "%")
+			.group("Atmosphere"));
+	public static final Slider SKIES_GLOW = SKIES.add(new Slider("glow", "Glow", "The light of the eclipse ring, the nebula's heart and the horizon",
+			0, 200, 5, 100, "%"));
+	public static final Toggle SKIES_STARS = SKIES.add(new Toggle("stars", "Stars", "Stars twinkling in the night skies", true));
+	public static final Slider SKIES_STAR_DENSITY = SKIES.add(new Slider("star_density", "Star density", "How many stars there are", 25, 200, 5, 100, "%"));
+	public static final Slider SKIES_METEORS = SKIES.add(new Slider("meteors", "Shooting stars", "How many streaks of light fall through the sky; 0% for none",
+			0, 200, 5, 100, "%"));
 	public static final Toggle SKIES_PARTICLES = SKIES.add(new Toggle("particles", "Weather particles",
-			"Light rain, snow or embers around you with the Rain, Snow and Fire skies", true));
-	public static final Choice SKIES_RESOLUTION = SKIES.add(new Choice("resolution", "Sky resolution",
-			"Half and Quarter draw the sky smaller and stretch it, for more FPS", 1, "Full", "Half", "Quarter"));
+			"Light rain, snow or embers around you with the Rain, Snow and Fire skies", true).group("Weather"));
 	public static final Choice SKIES_END = SKIES.add(new Choice("end", "In the End", "Your sky in the End too, or the End's own", 0,
 			"Your sky", "The End's"));
+	public static final Toggle SKIES_SUN_MOON = SKIES.add(new Toggle("sun_moon", "Sun and moon", "Minecraft's sun and moon over the sky", true)
+			.group("Advanced"));
+	public static final Choice SKIES_RESOLUTION = SKIES.add(new Choice("resolution", "Sky resolution",
+			"Half and Quarter draw the sky smaller and stretch it, for more FPS", 1, "Full", "Half", "Quarter"));
 
 	// Cosmetics
 	public static final Module KNIVES = new Module("knives", "Knives",

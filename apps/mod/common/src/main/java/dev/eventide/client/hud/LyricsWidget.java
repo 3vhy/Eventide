@@ -103,15 +103,20 @@ final class LyricsWidget extends HudWidget {
 		for (String row : rows) {
 			float w = Type.width(row, cap, Weight.BOLD);
 			float x = cx - w / 2f;
-			Paint.shadow(d, x - cap * 0.2f, y, x + w + cap * 0.2f, y + cap, cap * 0.5f, 0, 0, cap * 1.6f, cap * 0.2f, 0x590E0820);
-			Type.draw(d, row, x + cap * 0.07f, y + cap * 0.09f, cap, Weight.BOLD, 0xB3140A30);
+			int primary = Modules.LYRICS_COLOR.get() | 0xFF000000;
+			int accent = Modules.LYRICS_ACCENT.get() | 0xFF000000;
+			float strength = (float) (Modules.LYRICS_GLOW.get() / 100.0);
+			Paint.shadow(d, x - cap * 0.2f, y, x + w + cap * 0.2f, y + cap, cap * 0.5f, 0, 0, cap * 1.6f, cap * 0.2f, 0x590A0618);
+			if (strength > 0) Paint.shadow(d, x, y + cap * 0.15f, x + w, y + cap * 0.85f, cap * 0.4f, 0, 0, cap * 2.4f, 0,
+					Paint.fade(accent, Math.min(0.8f, 0.3f * strength)));
+			Type.draw(d, row, x + cap * 0.07f, y + cap * 0.09f, cap, Weight.BOLD, 0xB3100828);
 			float here = Math.max(0, Math.min(w, lit));
-			if (here < w) Type.draw(d, row, x, y, cap, Weight.BOLD, 0xB8D9CCFF);
+			if (here < w) Type.draw(d, row, x, y, cap, Weight.BOLD, Draw.mix(Paint.fade(primary, 0.6f), Paint.fade(accent, 0.6f), 0.35));
 			if (here >= w) {
-				Type.draw(d, row, x, y, cap, Weight.BOLD, 0xFFFFFFFF);
+				Type.draw(d, row, x, y, cap, Weight.BOLD, primary);
 			} else if (here > 0) {
 				d.enableScissor((int) Math.floor(x - cap), (int) Math.floor(y - cap), (int) Math.ceil(x + here), (int) Math.ceil(y + cap * 2));
-				Type.draw(d, row, x, y, cap, Weight.BOLD, 0xFFFFFFFF);
+				Type.draw(d, row, x, y, cap, Weight.BOLD, primary);
 				d.disableScissor();
 			}
 			lit -= w;

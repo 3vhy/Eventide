@@ -121,7 +121,12 @@ final class LyricTracker {
 
 	/** How far the change to the current line has gone, 0..1. */
 	float change() {
-		return Ease.OUT.apply((System.currentTimeMillis() - changedAt) / (double) CHANGE_MS);
+		return change(1);
+	}
+
+	/** How far the change to the current line has got (0..1), playing {@code speed} times as fast as usual. */
+	float change(float speed) {
+		return Ease.OUT.apply((System.currentTimeMillis() - changedAt) * Math.max(0.1f, speed) / (double) CHANGE_MS);
 	}
 
 	/** How much of the current line has been sung, 0..1. */

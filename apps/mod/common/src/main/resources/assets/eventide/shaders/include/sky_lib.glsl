@@ -8,6 +8,9 @@
 #define SKY_RAIN TextureMat[1].w
 #define SKY_SUN TextureMat[2].xyz
 #define SKY_DAY TextureMat[2].w
+#define SKY_NEBULA ColorModulator.x
+#define SKY_GLOW ColorModulator.y
+#define SKY_METEORS ColorModulator.z
 
 const float PI = 3.14159265;
 
@@ -96,6 +99,71 @@ float stars(vec3 d, float density, float time) {
 
 float starLayer(vec3 d, float time) {
 	return stars(d, 90.0, time) + 0.6 * stars(d.zxy, 170.0, time * 1.3);
+}
+
+// A denser, coloured field of stars in three layers that drift at their own pace (near ones faster, for
+// depth), scaled by density (0..2, the Star density setting). Returns their light.
+vec3 starField(vec3 d, float time, float density) {
+	if (density <= 0.0) {
+		return vec3(0.0);
+	}
+	float k = clamp(density, 0.0, 2.0);
+	vec3 col = vec3(0.0);
+	for (int i = 0; i < 3; i++) {
+		float fi = float(i);
+		float a = time * (0.0015 + 0.001 * fi);
+		vec3 q = vec3(d.x * cos(a) - d.z * sin(a), d.y, d.x * sin(a) + d.z * cos(a));
+		float cells = 70.0 + 60.0 * fi;
+		vec3 p = (i == 1 ? q.zxy : i == 2 ? q.yzx : q) * cells;
+		vec3 cell = floor(p);
+		vec3 f = fract(p) - 0.5;
+		float h = hash13(cell + fi * 17.0);
+		float threshold = 1.0 - 0.07 * k * (1.0 + fi * 0.5);
+		if (h < threshold) {
+			continue;
+		}
+		vec3 offset = vec3(hash13(cell + 1.31), hash13(cell + 7.17), hash13(cell + 3.73)) - 0.5;
+		float dist = length(f - offset * 0.6);
+		float bright = (h - threshold) / max(1.0 - threshold, 1e-3);
+		float size = 0.04 + 0.08 * bright * (1.0 - fi * 0.25);
+		float twinkle = 0.6 + 0.4 * sin(time * (0.8 + 2.4 * h) + h * 61.0);
+		vec3 tint = mix(vec3(0.75, 0.82, 1.0), mix(vec3(1.0, 0.85, 1.0), vec3(0.7, 0.95, 1.0), hash13(cell + 9.1)), 0.5);
+		float core = smoothstep(size, 0.0, dist);
+		float halo = smoothstep(size * 3.5, 0.0, dist) * 0.25 * bright;
+		col += tint * (core + halo) * twinkle * (0.35 + 0.65 * bright) * (1.0 - fi * 0.2);
+	}
+	return col;
+}
+
+// Streaks of light falling slantwise across the sky (Shooting stars), a scatter of them at once, each
+// with a fading tail. amount (0..2) is how many.
+float streaks(vec3 d, float time, float amount) {
+	if (amount <= 0.0 || d.y < -0.05) {
+		return 0.0;
+	}
+	vec2 p = d.xz / (d.y + 0.35);
+	float ang = 0.55;
+	p = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * p;
+	float total = 0.0;
+	for (int layer = 0; layer < 2; layer++) {
+		float fl = float(layer);
+		float scale = 2.4 + fl * 1.7;
+		vec2 q = p * scale + vec2(0.0, time * (0.9 + fl * 0.5));
+		vec2 cell = floor(q);
+		vec2 f = fract(q);
+		float h = hash12(cell + fl * 31.0);
+		if (h > 0.18 * amount) {
+			continue;
+		}
+		float x = 0.2 + 0.6 * hash12(cell + 4.7);
+		float len = 0.35 + 0.4 * hash12(cell + 8.3);
+		float along = clamp((f.y - (1.0 - len)) / len, 0.0, 1.0);
+		float inSeg = step(1.0 - len, f.y);
+		float across = abs(f.x - x);
+		float width = 0.012 + 0.012 * (1.0 - fl);
+		total += smoothstep(width, 0.0, across) * inSeg * along * along * (0.6 + 0.4 * h / 0.18);
+	}
+	return total * smoothstep(-0.05, 0.25, d.y);
 }
 
 float horizonGlow(vec3 d, float width) {

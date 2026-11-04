@@ -36,8 +36,8 @@ import org.joml.Vector4f;
  * Switching sky crossfades over {@link #FADE_MS}. With Sky resolution below Full it's drawn into a smaller
  * texture first and stretched over the screen, which costs a quarter (or a sixteenth) as much.
  *
- * <p>The shader's settings ride in the transform block's texture matrix (see {@code sky_lib.glsl}), so the
- * skies need no buffers of their own. The settings' thumbnails are the same shaders drawn small, each into
+ * <p>The shader's settings ride in the transform block's texture matrix and colour slot (see
+ * {@code sky_lib.glsl}), so the skies need no buffers of their own. The settings' thumbnails are the same shaders drawn small, each into
  * its own texture, with a fixed camera. With an Iris shader pack on, the pack draws the sky instead.
  */
 public final class LivingSky {
@@ -156,10 +156,17 @@ public final class LivingSky {
 	private static Matrix4f params(float alpha, Vector3f sun, float day, float thumbX, float thumbY, boolean thumb) {
 		int tint = Modules.SKIES_TINT.get();
 		float rain = Modules.SKIES_TIME.is("World time") ? 1 - rainBrightness : 0;
-		return new Matrix4f((float) time, (float) (Modules.SKIES_BRIGHTNESS.get() / 100.0), alpha, Modules.SKIES_STARS.get() ? 1 : 0,
+		float stars = Modules.SKIES_STARS.get() ? (float) (Modules.SKIES_STAR_DENSITY.get() / 100.0) : 0;
+		return new Matrix4f((float) time, (float) (Modules.SKIES_BRIGHTNESS.get() / 100.0), alpha, stars,
 				((tint >> 16) & 255) / 255f, ((tint >> 8) & 255) / 255f, (tint & 255) / 255f, thumb ? 0 : rain,
 				sun.x, sun.y, sun.z, day,
 				thumbX, thumbY, 0, thumb ? 1 : 0);
+	}
+
+	/** The atmosphere settings the skies read from the colour slot: nebula, glow and shooting stars (0..2 each). */
+	private static Vector4f atmosphere() {
+		return new Vector4f((float) (Modules.SKIES_NEBULA.get() / 100.0), (float) (Modules.SKIES_GLOW.get() / 100.0),
+				(float) (Modules.SKIES_METEORS.get() / 100.0), 1);
 	}
 
 	private static void pass(GpuTextureView target, RenderPipeline pipeline, Matrix4f view, Matrix4f params, GpuTextureView texture,
@@ -172,7 +179,8 @@ public final class LivingSky {
 		MeshData mesh = builder.build();
 		if (mesh == null) return;
 		try {
-			GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(view, new Vector4f(1, 1, 1, 1), new Vector3f(), params);
+			GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(view, texture == null ? atmosphere() : new Vector4f(1, 1, 1, 1),
+					new Vector3f(), params);
 			GpuBuffer vertices = pipeline.getVertexFormat().uploadImmediateVertexBuffer(mesh.vertexBuffer());
 			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(mesh.drawState().mode());
 			GpuBuffer indexBuffer = indices.getBuffer(mesh.drawState().indexCount());

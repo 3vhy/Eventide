@@ -399,9 +399,9 @@ public final class Modules {
 	public static final Toggle MENU_NAME_HUD = MENU_NAME.add(new Toggle("hud", "Show in game",
 			"Keep it on your HUD while you play too, above the Music Player; move it in Edit HUD", false));
 	public static final Module MAIN_MENU = new Module("main_menu", "Main Menu",
-			"Eventide's title screen: glass buttons, the Eventide logo and a scene you pick", Category.COSMETICS, true).icon("house");
-	public static final Choice MAIN_MENU_SCENE = MAIN_MENU.add(new Choice("scene", "Scene", "What's behind the main menu", 0,
-			"Panorama", "Night sky", "October"));
+			"Eventide's title screen: the live galaxy behind it, the Eventide logo and midnight buttons", Category.COSMETICS, true).icon("house");
+	public static final Choice MAIN_MENU_SCENE = MAIN_MENU.add(new Choice("scene", "Scene", "What's behind the main menu: Eventide's live galaxy, "
+			+ "Minecraft's panorama, a starry night or October", 0, "Galaxy", "Panorama", "Night sky", "October"));
 	public static final Choice MAIN_MENU_TIME = MAIN_MENU.add(new Choice("time", "Time of day", "The light over the scene; Live follows your clock",
 			1, "Dawn", "Day", "Dusk", "Night", "Live"));
 	public static final Choice MAIN_MENU_CAMERA = MAIN_MENU.add(new Choice("camera", "Camera", "How the panorama moves", 0,

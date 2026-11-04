@@ -1131,6 +1131,21 @@ public final class EventideGameTest implements FabricClientGameTest {
 	private static void runFocused(ClientGameTestContext context, String focus, List<String> failed) {
 		EventideClient.LOG.info("eventide-check: running only the {} part of the test", focus);
 		context.waitTicks(20);
+		if (focus.contains("title")) {
+			context.waitTicks(40);
+			shot(context, "eventide-main-menu");
+			EventideClient.LOG.info("eventide-check: logo drawn on the galaxy title screen: {}", Hooks.logoDrawn);
+			context.runOnClient(client -> Modules.MAIN_MENU_SCENE.set("Night sky"));
+			context.waitTicks(10);
+			shot(context, "eventide-main-menu-night-sky");
+			context.runOnClient(client -> Modules.MAIN_MENU_SCENE.reset());
+			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+			click(context, scale, "Eventide");
+			context.waitTicks(30);
+			shot(context, "eventide-menu-from-menu");
+			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+			context.waitTicks(10);
+		}
 		if (focus.contains("glass")) glassTitleScreens(context, failed);
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			context.waitTicks(100);

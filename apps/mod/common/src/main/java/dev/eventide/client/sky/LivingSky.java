@@ -46,6 +46,9 @@ public final class LivingSky {
 	private static final Map<SkyType, SkyCanvas> THUMBS = new EnumMap<>(SkyType.class);
 	private static final SkyCanvas WORLD = new SkyCanvas("Eventide sky");
 	private static final SkyCanvas PREVIEW = new SkyCanvas("Eventide sky preview");
+	private static final SkyCanvas MENU = new SkyCanvas("Eventide main menu sky");
+	private static final Identifier MENU_ID = Identifier.fromNamespaceAndPath(EventideClient.MOD_ID, "sky/menu");
+	private static boolean menuRegistered = false;
 	private static final Identifier PREVIEW_ID = Identifier.fromNamespaceAndPath(EventideClient.MOD_ID, "sky/preview");
 	private static RenderPipeline blit;
 	private static boolean previewRegistered = false;
@@ -333,6 +336,32 @@ public final class LivingSky {
 			failed = true;
 			EventideClient.LOG.error("Couldn't draw the sky thumbnails; Skies is off until the game restarts", e);
 			return false;
+		}
+	}
+
+	/**
+	 * Draws {@code sky} as the main menu's backdrop into a {@code width} x {@code height} texture, looking
+	 * {@code yaw}/{@code pitch} degrees, and returns the texture (null if it couldn't be drawn). Works with no
+	 * world loaded; the Skies module needn't be on.
+	 */
+	public static Identifier drawMenu(SkyType sky, int width, int height, float yaw, float pitch) {
+		if (failed || width < 2 || height < 2) return null;
+		try {
+			if (Minecraft.getInstance().level == null || !active()) advance();
+			if (!menuRegistered) {
+				MENU.size(width, height);
+				Minecraft.getInstance().getTextureManager().register(MENU_ID, MENU);
+				menuRegistered = true;
+			}
+			MENU.size(width, height);
+			float tanHalf = (float) Math.tan(Math.toRadians(38));
+			Vector3f sun = sun((float) Math.PI * 0.9f);
+			pass(MENU.getTextureView(), pipeline(sky), lookAt(yaw, pitch), params(1, sun, 0, tanHalf * width / height, tanHalf, true), null, null);
+			return MENU_ID;
+		} catch (RuntimeException e) {
+			failed = true;
+			EventideClient.LOG.error("Couldn't draw the main menu's sky; it shows the panorama instead", e);
+			return null;
 		}
 	}
 

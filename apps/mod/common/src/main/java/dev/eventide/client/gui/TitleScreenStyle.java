@@ -39,11 +39,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 /**
- * Eventide's main menu, over Minecraft's own title screen so buttons other mods add still show up: the Eventide
- * logo in place of Minecraft's (with the splash beside it), Minecraft's buttons as violet glass pills,
- * the Eventide version over Minecraft's in the bottom left, and round buttons in the bottom right for the
- * Orbit, your screenshots and the Scene panel. The Scene panel picks the time of day (the light over
- * the panorama), the scene (Minecraft's panorama, a night sky or October) and how the camera moves.
+ * Eventide's main menu, over Minecraft's own title screen so buttons other mods add still show up: Eventide's
+ * live Galaxy sky behind it (the same shader as in game, the camera drifting slowly), the Eventide logo in place
+ * of Minecraft's with a soft violet glow (and the splash beside it), Minecraft's buttons as midnight pills, the
+ * Eventide version over Minecraft's in the bottom left, and round buttons in the bottom right for the mod
+ * menu, your screenshots and the Scene panel. The Scene panel picks the time of day (the light over the
+ * panorama), the scene (the galaxy, Minecraft's panorama, a night sky or October) and how the camera moves.
  */
 public final class TitleScreenStyle {
 	private static final int MARGIN = 6;
@@ -70,7 +71,7 @@ public final class TitleScreenStyle {
 
 	private static final List<Row> ROWS = List.of(
 			new Row("Time of day", Modules.MAIN_MENU_TIME, new String[] {"sunrise", "sun", "sunset", "moon-star", "clock"}),
-			new Row("Scene", Modules.MAIN_MENU_SCENE, new String[] {"image", "sparkles", "ghost"}),
+			new Row("Scene", Modules.MAIN_MENU_SCENE, new String[] {"orbit", "image", "sparkles", "ghost"}),
 			new Row("Camera", Modules.MAIN_MENU_CAMERA, new String[] {"orbit", "wind", "pause"}));
 
 	private static final Map<AbstractWidget, Part> PARTS = new WeakHashMap<>();
@@ -231,6 +232,8 @@ public final class TitleScreenStyle {
 		float w = mark * 1.24f + Logo.wordmarkWidth(cap);
 		float x = screenWidth / 2f - w / 2f;
 		float old = Paint.opacity(Paint.opacity() * alpha);
+		float breath = 0.85f + 0.15f * (float) Math.sin(now % 5000 / 5000.0 * Math.PI * 2);
+		Paint.shadow(d, x - 10, y + 4, x + w + 10, y + mark - 4, mark / 2f, 0, 0, mark * 1.6f, 0, Paint.fade(Accent.get(), 0.22f * breath));
 		Logo.lockup(d, x, y, mark, cap, now);
 		Paint.opacity(old);
 		Hooks.logoDrawn = true;
@@ -241,12 +244,13 @@ public final class TitleScreenStyle {
 		return enabled() && !Modules.MAIN_MENU_SCENE.is("Panorama");
 	}
 
-	/** The Night sky or October scene, in place of the panorama. */
+	/** The Galaxy, Night sky or October scene, in place of the panorama. */
 	public static void drawBackground(Draw d, int w, int h) {
 		if (Modules.MAIN_MENU_SCENE.is("October")) {
 			October.drawBackdrop(d, w, h);
 			return;
 		}
+		if (Modules.MAIN_MENU_SCENE.is("Galaxy") && drawGalaxy(d, w, h)) return;
 		float unit = Math.min(w / 1600f, h / 900f);
 		d.push();
 		d.scale(unit);
@@ -256,9 +260,32 @@ public final class TitleScreenStyle {
 		tint(d, w, h, true);
 	}
 
+	private static float galaxyYaw = 200;
+	private static long galaxyFrame = 0;
+
+	/**
+	 * Eventide's live Galaxy sky behind the menu, the camera drifting slowly round it (or still, as Camera
+	 * says), with a soft shade at the bottom so the buttons read. Returns false if the sky couldn't be drawn.
+	 */
+	private static boolean drawGalaxy(Draw d, int w, int h) {
+		var window = Minecraft.getInstance().getWindow();
+		long now = System.nanoTime();
+		float dt = galaxyFrame == 0 ? 0 : Math.min(0.1f, (now - galaxyFrame) / 1e9f);
+		galaxyFrame = now;
+		float speed = Modules.MAIN_MENU_CAMERA.is("Still") ? 0 : Modules.MAIN_MENU_CAMERA.is("Drift") ? 0.6f : 1.6f;
+		galaxyYaw = (galaxyYaw + dt * speed) % 360f;
+		float pitch = 14 + (float) Math.sin(now / 1e9 * 0.07) * 3;
+		var id = dev.eventide.client.sky.LivingSky.drawMenu(dev.eventide.client.sky.SkyType.GALAXY, Math.max(2, window.getWidth() * 2 / 3),
+				Math.max(2, window.getHeight() * 2 / 3), galaxyYaw, pitch);
+		if (id == null) return false;
+		Paint.image(d, id, 0, 0, w, h, 0, 0, 1, 1, 0, 0xFFFFFFFF, true);
+		Paint.rect(d, 0, h * 0.45f, w, h, 0, Grad.down(0x00000000, 0xB305030B));
+		return true;
+	}
+
 	/** The time of day's light over the panorama, and a soft shade at the bottom so the buttons read. */
 	public static void drawTint(Draw d, int w, int h) {
-		if (!enabled()) return;
+		if (!enabled() || Modules.MAIN_MENU_SCENE.is("Galaxy")) return;
 		tint(d, w, h, false);
 	}
 

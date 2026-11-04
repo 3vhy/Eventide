@@ -25,11 +25,11 @@ import net.minecraft.network.chat.contents.TranslatableContents;
  */
 public final class ButtonStyle {
 	private static final Map<AbstractWidget, Anim> HOVER = new WeakHashMap<>();
-	private static final int FILL = 0xCC2B2546;
-	private static final int FILL_HOVER = 0xE03A335C;
-	private static final int EDGE = 0x24FFFFFF;
-	private static final int EDGE_HOVER = 0x47FFFFFF;
-	private static final int TRACK = 0xCC1F1A35;
+	private static final int FILL = 0xC70C0919;
+	private static final int FILL_HOVER = 0xE61C1538;
+	private static final int EDGE = 0x29FFFFFF;
+	private static final int EDGE_HOVER = 0x99A06BFF;
+	private static final int TRACK = 0xCC120E22;
 
 	private ButtonStyle() {
 	}

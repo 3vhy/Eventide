@@ -37,11 +37,12 @@ public final class Performance {
 			applied = Modules.PERFORMANCE_PRESET.index();
 		}
 		Paint.shadowQuality(2 - Modules.PERFORMANCE_SHADOWS.index());
-		Anim.speed(switch (Modules.PERFORMANCE_ANIMATIONS.index()) {
+		float glide = switch (Modules.PERFORMANCE_ANIMATIONS.index()) {
 			case 1 -> 2f;
 			case 2 -> 0f;
 			default -> 1f;
-		});
+		};
+		Anim.speed(Modules.UI_ANIMATIONS.enabled() ? glide * (float) (100.0 / Modules.UI_ANIMATIONS_SPEED.get()) : 0f);
 		String blur = Modules.PERFORMANCE_BLUR.get();
 		if (!blur.equals(blurApplied)) {
 			if (blurApplied != null) mc.options.menuBackgroundBlurriness().set(blur.equals("High") ? 5 : blur.equals("Low") ? 2 : 0);

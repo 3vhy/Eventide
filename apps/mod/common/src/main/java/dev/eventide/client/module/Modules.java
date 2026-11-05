@@ -264,11 +264,17 @@ public final class Modules {
 			.icon("palette").markNew();
 	public static final Choice COLOUR_GRADING_PRESET = COLOUR_GRADING.add(new Choice("preset", "Look", "The colour grade over the game", 0,
 			"Eventide", "Vivid", "Cinematic", "Warm", "Cold", "Noir"));
+	public static final Module OWN_NAMETAG = new Module("own_nametag", "Own Nametag",
+			"Your own name tag over your head in third person, as others see it", Category.RENDER, false).icon("user").markNew();
+	public static final Module ITEM_PHYSICS = new Module("item_physics", "Item Physics",
+			"Dropped items lie flat on the ground once they land, instead of floating and spinning", Category.RENDER, false).icon("package").markNew();
 	public static final Module NO_FIRE = new Module("no_fire", "No Fire", "No flames over your view while you burn", Category.RENDER, false)
 			.icon("flame-kindling").markNew();
 	public static final Module LOW_FIRE = new Module("low_fire", "Low Fire", "The flames over your view while you burn, lowered out of the way",
 			Category.RENDER, false).icon("flame").markNew();
 	public static final Slider LOW_FIRE_HEIGHT = LOW_FIRE.add(new Slider("height", "Lower by", "How far the flames drop", 10, 100, 5, 50, "%"));
+	public static final Module STAY_OPEN = new Module("stay_open", "Stay Open",
+			"The chat opens again right after you send a message, for quick back-and-forth", Category.UTILITY, false).icon("message-square").markNew();
 	public static final Module FPS_CAP = new Module("fps_cap", "FPS Cap",
 			"Caps your frames per second, and lowers them while the game's in the background, for a cooler, quieter computer",
 			Category.UTILITY, false).icon("gauge").markNew();
@@ -276,6 +282,8 @@ public final class Modules {
 	public static final Slider FPS_CAP_BACKGROUND = FPS_CAP.add(new Slider("background", "In the background",
 			"Frames per second while you're tabbed out", 5, 120, 5, 30, " fps"));
 
+	public static final Module SHULKER_PREVIEW = new Module("shulker_preview", "Shulker Preview",
+			"Hover a shulker box in any inventory to see its 27 slots", Category.WORLD, true).icon("box").markNew();
 	// Utility
 	public static final Module CHAT = new Module("chat", "Chat",
 			"Timestamps, stacked spam and a longer history", Category.UTILITY, true).icon("message-circle").markNew();
@@ -471,6 +479,9 @@ public final class Modules {
 	public static final Color JUMP_CIRCLES_COLOR = JUMP_CIRCLES.add(new Color("color", "Colour", "The ring's colour", 0xFFB98BFF));
 	public static final Toggle JUMP_CIRCLES_EVERYONE = JUMP_CIRCLES.add(new Toggle("everyone", "Other players too",
 			"Rings under other players when they jump", false));
+	public static final Module SWORD_MODELS = new Module("sword_models", "Sword Models",
+			"Every kind of sword as its own 3D blade in your hand, from a wooden hook to a netherite katana, with Knives' glow and animations",
+			Category.COSMETICS, false).icon("swords").markNew();
 	public static final Module HAND_AURA = new Module("hand_aura", "Hand Aura",
 			"A soft glow of colour round your arm in first person, empty-handed or holding a knife", Category.COSMETICS, true)
 			.icon("hand").markNew();
@@ -520,6 +531,9 @@ public final class Modules {
 	public static final Choice THEME_WINDOW_TITLE = THEME.add(new Choice("window_title", "Window title",
 			"Keep \"Minecraft\" in it so Medal, OBS and Discord recognise the game", 0,
 			"Minecraft - Eventide", "Eventide").group("Window"));
+	public static final Module UI_ANIMATIONS = new Module("ui_animations", "UI Animations",
+			"Eventide's menus and HUD glide and fade; off, everything snaps into place at once", Category.CLIENT, true).icon("sparkle").markNew();
+	public static final Slider UI_ANIMATIONS_SPEED = UI_ANIMATIONS.add(new Slider("speed", "Length", "How long each glide takes", 50, 200, 10, 100, "%"));
 	public static final Module PERFORMANCE = new Module("performance", "Performance",
 			"Smoother frames on slower PCs: lighter effects and fewer particles, or one preset", Category.CLIENT, true).icon("gauge").alwaysOn()
 			.markNew();
@@ -544,12 +558,12 @@ public final class Modules {
 	/** Every module, in menu order: by tab, then as listed here. */
 	public static final List<Module> ALL = List.of(
 			TARGET_HUD, COMBO, POPS, ITEMS, CRYSTAL_OPTIMIZER, POP_NOTIFIER, KILL_EFFECTS, HIT_GLOW, DEATH_DISINTEGRATE, PLAYER_OUTLINE,
-			TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM, JUMP_RESET, SKIES, COLOUR_GRADING, NO_FIRE, LOW_FIRE, CROSSHAIR, ZOOM, FREELOOK, NAMETAGS,
-			FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT,
-			NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT,
-			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, MEMORY, SERVER, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS,
-			HOTBAR, MUSIC, MODULE_LIST, KNIVES, HAND_AURA, MODEL_SKIN, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD,
-			PROFILES);
+			TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM, JUMP_RESET, SKIES, COLOUR_GRADING, OWN_NAMETAG, ITEM_PHYSICS, NO_FIRE, LOW_FIRE, CROSSHAIR,
+			ZOOM, FREELOOK, NAMETAGS, FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST,
+			TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT, NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, SHULKER_PREVIEW,
+			CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS, STAY_OPEN, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, MEMORY,
+			SERVER, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC, MODULE_LIST, KNIVES, SWORD_MODELS, HAND_AURA,
+			MODEL_SKIN, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, UI_ANIMATIONS, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {
@@ -576,6 +590,7 @@ public final class Modules {
 		syncFog();
 		Zoom.tick(mc);
 		Freelook.tick(mc);
+		StayOpen.tick(mc);
 		Target.tick(mc);
 		Combo.tick(mc);
 		JumpReset.tick(mc);

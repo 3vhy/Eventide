@@ -144,46 +144,81 @@ public final class Cosmetics {
 	}
 
 	/**
-	 * One wing (the right; the left is drawn mirrored), from the shoulder out along +X: a fan of long flight
-	 * feathers under rows of shorter ones.
+	 * One wing (the right; the left is drawn mirrored), spread wide behind you: an arched leading edge rising from
+	 * the shoulder to above your head and out to the tip, with three layers of pointed feathers hanging from it,
+	 * short coverts over medium secondaries near the body and long primaries out at the tip. Y is up.
 	 */
 	private static void featherWing(Shape m, int material) {
-		int[] counts = {11, 9, 7};
-		float[] lengths = {9.5f, 6.2f, 3.6f};
-		float[] widths = {1.05f, 1.0f, 0.95f};
-		for (int row = 0; row < counts.length; row++) {
-			for (int i = 0; i < counts[row]; i++) {
-				float f = i / (float) (counts[row] - 1);
-				double angle = Math.toRadians(-62 + 130 * f);
-				float reach = lengths[row] * (0.55f + 0.45f * (float) Math.sin(Math.PI * Math.min(1, f * 1.1f)));
-				float bx = 1.0f + 6.2f * (float) Math.pow(f, 0.8);
-				float by = 2.2f + 2.4f * f;
-				feather(m, bx, by, angle, reach, widths[row], 0.06f * row, material);
-			}
+		float[][] bone = {{0.6f, 0.6f}, {3.4f, 4.6f}, {7.0f, 7.0f}, {11.0f, 7.5f}, {15.0f, 6.4f}, {18.2f, 4.6f}};
+		Shape.Ring[] edge = new Shape.Ring[bone.length];
+		for (int i = 0; i < bone.length; i++) {
+			int a = Math.max(0, i - 1);
+			int c = Math.min(bone.length - 1, i + 1);
+			float r = 0.62f - 0.34f * i / (bone.length - 1);
+			edge[i] = new Shape.Ring(bone[i][0], bone[i][1], 0.3f, bone[c][0] - bone[a][0], bone[c][1] - bone[a][1], 0, r, r * 0.8f, null);
 		}
-		m.loft(new Shape.Ring[] {new Shape.Ring(0, 1.2f, 0, 1, 0.35f, 0, 0.55f, 0.45f, null), new Shape.Ring(4.0f, 3.2f, 0, 1, 0.25f, 0, 0.45f, 0.35f, null),
-				new Shape.Ring(7.6f, 4.4f, 0, 1, 0.1f, 0, 0.3f, 0.25f, null)}, 10, 0, material, Shape.DOME, Shape.DOME, false);
+		m.loft(edge, 10, 0, material, Shape.DOME, Shape.DOME, false);
+		featherRow(m, bone, 10, 0.48f, 1.0f, 10.0f, 13.6f, 82, 34, 1.75f, -0.12f, material);
+		featherRow(m, bone, 10, 0.0f, 0.56f, 7.6f, 10.2f, 100, 84, 1.8f, 0.02f, material);
+		featherRow(m, bone, 14, 0.02f, 0.98f, 3.6f, 5.4f, 96, 50, 1.6f, 0.16f, material);
 	}
 
-	/** One feather from (x, y), pointing {@code angle} below the horizontal outward line, {@code length} long. */
+	/** A row of {@code count} feathers hung from the wing's edge between {@code from} and {@code to} (0..1 along it). */
+	private static void featherRow(Shape m, float[][] bone, int count, float from, float to, float lengthNear, float lengthFar, float angleNear,
+			float angleFar, float width, float z, int material) {
+		for (int i = 0; i < count; i++) {
+			float f = count == 1 ? 0 : i / (float) (count - 1);
+			float t = from + (to - from) * f;
+			float[] at = along(bone, t);
+			float length = lengthNear + (lengthFar - lengthNear) * f;
+			float angle = angleNear + (angleFar - angleNear) * f;
+			feather(m, at[0], at[1] - 0.2f, Math.toRadians(angle), length, width, z + 0.025f * (i % 2), material);
+		}
+	}
+
+	/** The point {@code t} (0..1) of the way along a path of points. */
+	private static float[] along(float[][] path, float t) {
+		float total = 0;
+		float[] lengths = new float[path.length - 1];
+		for (int i = 0; i + 1 < path.length; i++) {
+			lengths[i] = (float) Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]);
+			total += lengths[i];
+		}
+		float want = t * total;
+		for (int i = 0; i < lengths.length; i++) {
+			if (want <= lengths[i] || i == lengths.length - 1) {
+				float k = Math.min(1, want / Math.max(1e-4f, lengths[i]));
+				return new float[] {path[i][0] + (path[i + 1][0] - path[i][0]) * k, path[i][1] + (path[i + 1][1] - path[i][1]) * k};
+			}
+			want -= lengths[i];
+		}
+		return path[path.length - 1];
+	}
+
+	/** One feather from (x, y), pointing {@code angle} below the horizontal outward line, {@code length} long: a pointed blade. */
 	private static void feather(Shape m, float x, float y, double angle, float length, float width, float z, int material) {
 		float dx = (float) Math.cos(angle);
 		float dy = -(float) Math.sin(angle);
 		float px = -dy;
 		float py = dx;
 		int steps = 6;
-		float[] outline = new float[4 * (steps + 1)];
-		for (int i = 0; i <= steps; i++) {
+		float[] outline = new float[2 * (2 * steps + 1)];
+		int n = 0;
+		for (int i = 0; i < steps; i++) {
 			float t = i / (float) steps;
-			float half = width * 0.5f * (float) Math.sin(Math.PI * Math.min(1, t * 1.05f + 0.06f)) * (1 - 0.35f * t);
-			float cx = x + dx * length * t;
-			float cy = y + dy * length * t;
-			outline[2 * i] = cx + px * half;
-			outline[2 * i + 1] = cy + py * half;
-			outline[4 * (steps + 1) - 2 - 2 * i] = cx - px * half;
-			outline[4 * (steps + 1) - 1 - 2 * i] = cy - py * half;
+			float half = width * 0.5f * (0.55f + 0.45f * (float) Math.sin(Math.PI * Math.min(1, t * 1.6f))) * (1 - 0.55f * t * t);
+			outline[n++] = x + dx * length * t + px * half;
+			outline[n++] = y + dy * length * t + py * half;
 		}
-		m.plate(outline, z - 0.07f, z + 0.07f, 0.05f, material);
+		outline[n++] = x + dx * length;
+		outline[n++] = y + dy * length;
+		for (int i = steps - 1; i >= 0; i--) {
+			float t = i / (float) steps;
+			float half = width * 0.5f * (0.55f + 0.45f * (float) Math.sin(Math.PI * Math.min(1, t * 1.6f))) * (1 - 0.55f * t * t);
+			outline[n++] = x + dx * length * t - px * half;
+			outline[n++] = y + dy * length * t - py * half;
+		}
+		m.plate(outline, z - 0.07f, z + 0.07f, 0.04f, material);
 	}
 
 	/** A bat's wing: three long fingers and a membrane between them, dark with a glowing edge. */
@@ -275,19 +310,19 @@ public final class Cosmetics {
 		pose.popPose();
 	}
 
-	/** The wings, on a body whose model frame {@code pose} is in: both, mirrored, from the upper back, flapping slowly. */
+	/** The wings, on a body whose model frame {@code pose} is in: both, mirrored, spread wide from the upper back, beating slowly. */
 	public static void drawWings(PoseStack pose, SubmitNodeCollector collector, int light, float ageTicks) {
 		String type = Modules.WINGS_TYPE.get();
 		Shape wing = shape(type);
-		float flap = Modules.WINGS_FLAP.get() ? (float) Math.sin(ageTicks * 0.09f) * 14 : 0;
+		float flap = Modules.WINGS_FLAP.get() ? (float) Math.sin(ageTicks * 0.08f) * 9 : 0;
 		float size = (float) (Modules.WINGS_SIZE.get() / 100.0);
+		boolean feathered = !type.equals("Demon");
 		for (int side = -1; side <= 1; side += 2) {
 			pose.pushPose();
-			pose.translate(side * 0.6f / 16f, 3.5f / 16f, 2.3f / 16f);
+			pose.translate(side * 0.8f / 16f, 3.2f / 16f, 2.4f / 16f);
 			pose.scale(side / 16f * size, -1 / 16f * size, 1 / 16f * size);
-			pose.mulPose(Axis.YP.rotationDegrees(-28 - flap));
-			pose.mulPose(Axis.ZP.rotationDegrees(-6));
-			pose.translate(0, -3.0f, 0);
+			pose.mulPose(Axis.YP.rotationDegrees((feathered ? -12 : -28) - flap));
+			if (!feathered) pose.translate(0, -3.0f, 0);
 			emit(wing, pose, collector, light, type.equals("Demon") ? Finish.VOID : Finish.FROST, type.equals("Energy"));
 			pose.popPose();
 		}

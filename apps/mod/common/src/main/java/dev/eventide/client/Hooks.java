@@ -45,6 +45,9 @@ public final class Hooks {
 	public static volatile boolean pillsStuck = false;
 	public static volatile boolean smoothFont = false;
 	public static volatile boolean modelSkinDrawn = false;
+	public static volatile boolean shulkerPreviewDrawn = false;
+	public static volatile boolean itemPhysicsRan = false;
+	public static volatile boolean stayOpenRan = false;
 	public static volatile boolean knifeRendered = false;
 	public static volatile boolean knifeDrawRan = false;
 	public static volatile boolean knifeSlashRan = false;

@@ -35,8 +35,8 @@ public final class Nametags {
 
 	public static boolean showOwn(Entity entity) {
 		Minecraft mc = Minecraft.getInstance();
-		return Modules.NAMETAGS.enabled() && Modules.NAMETAGS_OWN.get() && entity == mc.player
-				&& !mc.options.getCameraType().isFirstPerson() && !mc.options.hideGui;
+		boolean wanted = Modules.OWN_NAMETAG.enabled() || Modules.NAMETAGS.enabled() && Modules.NAMETAGS_OWN.get();
+		return wanted && entity == mc.player && !mc.options.getCameraType().isFirstPerson() && !mc.options.hideGui;
 	}
 
 	/** Whether this player's tag is drawn in Eventide's style instead of Minecraft's. */

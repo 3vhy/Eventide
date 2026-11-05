@@ -52,6 +52,11 @@ public final class Anim {
 		speed = Math.max(0, value);
 	}
 
+	/** The current glide speed. */
+	public static float speed() {
+		return speed;
+	}
+
 	public float get() {
 		if (settled) return to;
 		if (speed <= 0) {

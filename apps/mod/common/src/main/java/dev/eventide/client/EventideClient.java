@@ -127,6 +127,9 @@ public final class EventideClient implements ClientModInitializer {
 				});
 			}
 			if (MenuNameTag.shows(screen)) Compat.afterScreen(screen, d -> MenuNameTag.draw(d, screen));
+			if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> container) {
+				Compat.afterScreen(screen, d -> dev.eventide.client.module.ShulkerPreview.draw(d, container));
+			}
 		});
 
 		LOG.info("Eventide {} loaded on Minecraft {}", version, minecraftVersion);

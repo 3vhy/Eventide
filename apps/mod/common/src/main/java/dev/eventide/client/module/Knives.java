@@ -107,10 +107,24 @@ public final class Knives {
 	 * (or Knives is off). Only your own hands get knives.
 	 */
 	public static KnifeModel modelFor(Player player, ItemStack stack, int slot) {
-		if (!Modules.KNIVES.enabled() || player != Minecraft.getInstance().player) return null;
-		KnifeModel picked = slot(slot);
-		if (picked != null) return picked;
-		return autoMatches(stack) ? defaultModel() : null;
+		if (player != Minecraft.getInstance().player) return null;
+		if (Modules.KNIVES.enabled()) {
+			KnifeModel picked = slot(slot);
+			if (picked != null) return picked;
+			if (autoMatches(stack)) return defaultModel();
+		}
+		return Modules.SWORD_MODELS.enabled() ? swordModel(stack) : null;
+	}
+
+	/** Sword Models: each kind of sword as its own 3D blade, from a toothed wooden hook to a netherite katana. */
+	private static KnifeModel swordModel(ItemStack stack) {
+		if (stack.is(net.minecraft.world.item.Items.WOODEN_SWORD)) return KnifeModel.CORVID;
+		if (stack.is(net.minecraft.world.item.Items.STONE_SWORD)) return KnifeModel.NIGHTFALL;
+		if (stack.is(net.minecraft.world.item.Items.IRON_SWORD)) return KnifeModel.RIPTIDE;
+		if (stack.is(net.minecraft.world.item.Items.GOLDEN_SWORD)) return KnifeModel.HALO;
+		if (stack.is(net.minecraft.world.item.Items.DIAMOND_SWORD)) return KnifeModel.WRAITH;
+		if (stack.is(net.minecraft.world.item.Items.NETHERITE_SWORD)) return KnifeModel.SERAPH;
+		return null;
 	}
 
 	/** The knife in your main hand right now, or null. */

@@ -540,6 +540,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			killEffects(context, singleplayer, failed);
 			worldFx(context, singleplayer, failed);
 			cosmetics(context, singleplayer, failed);
+			extras(context, singleplayer, failed);
 			hudLook(context, singleplayer, failed);
 			skies(context, singleplayer, failed, false);
 			performance(context, failed);
@@ -1229,6 +1230,16 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "hats and wings are drawn on your player", Hooks.cosmeticsDrawn);
 		context.runOnClient(client -> {
 			Modules.HATS.set(false);
+			client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+		});
+		for (String wing : wings) {
+			context.runOnClient(client -> Modules.WINGS_TYPE.set(wing));
+			context.waitTicks(6);
+			shot(context, "eventide-wings-" + wing.toLowerCase(java.util.Locale.ROOT) + "-back");
+		}
+		context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+		context.runOnClient(client -> {
+			Modules.HATS.set(false);
 			Modules.WINGS.set(false);
 			Modules.KNIVES.set(true);
 			client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
@@ -1241,6 +1252,103 @@ public final class EventideGameTest implements FabricClientGameTest {
 			client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
 			for (Module module : hudOn) module.set(true);
 		});
+	}
+
+	/** Sword Models, Item Physics, Shulker Preview, Stay Open, Own Nametag and UI Animations. */
+	private static void extras(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
+		var server = singleplayer.getServer();
+		server.runCommand("time set noon");
+		server.runCommand("weather clear");
+		boolean knivesWere = context.computeOnClient(client -> Modules.KNIVES.enabled());
+		context.runOnClient(client -> {
+			client.options.setCameraType(CameraType.FIRST_PERSON);
+			client.getToastManager().clear();
+			Modules.KNIVES.set(false);
+			Modules.SWORD_MODELS.set(true);
+		});
+		server.runCommand("item replace entity @p hotbar.7 with minecraft:diamond_sword");
+		context.getInput().pressKey(GLFW.GLFW_KEY_8);
+		face(context, 0, 10);
+		context.waitTicks(25);
+		check(failed, "Sword Models draws a diamond sword as its own 3D blade", context.computeOnClient(client ->
+				Knives.modelFor(client.player, client.player.getMainHandItem(), 7) == KnifeModel.WRAITH));
+		shot(context, "eventide-sword-models");
+		context.runOnClient(client -> {
+			Modules.SWORD_MODELS.set(false);
+			Modules.KNIVES.set(knivesWere);
+			Modules.ITEM_PHYSICS.set(true);
+		});
+		context.getInput().pressKey(GLFW.GLFW_KEY_1);
+		server.runCommand("execute as @p at @s run summon item ^-0.7 ^0.6 ^2.4 {Item:{id:\"minecraft:diamond_sword\",count:1},PickupDelay:32767}");
+		server.runCommand("execute as @p at @s run summon item ^0.7 ^0.6 ^2.6 {Item:{id:\"minecraft:golden_apple\",count:3},PickupDelay:32767}");
+		server.runCommand("execute as @p at @s run summon item ^0 ^0.6 ^3.2 {Item:{id:\"minecraft:ender_pearl\",count:8},PickupDelay:32767}");
+		face(context, 0, 50);
+		context.waitTicks(50);
+		check(failed, "Item Physics lays dropped items flat once they land (ItemEntityRenderer)", Hooks.itemPhysicsRan);
+		shot(context, "eventide-item-physics");
+		server.runCommand("kill @e[type=item]");
+		context.runOnClient(client -> {
+			Modules.ITEM_PHYSICS.set(false);
+			Modules.SHULKER_PREVIEW.set(true);
+		});
+		server.runCommand("item replace entity @p hotbar.8 with minecraft:purple_shulker_box[minecraft:container=["
+				+ "{slot:0,item:{id:\"minecraft:diamond\",count:24}},{slot:1,item:{id:\"minecraft:golden_apple\",count:6}},"
+				+ "{slot:4,item:{id:\"minecraft:ender_pearl\",count:16}},{slot:9,item:{id:\"minecraft:netherite_sword\",count:1}},"
+				+ "{slot:13,item:{id:\"minecraft:totem_of_undying\",count:1}},{slot:20,item:{id:\"minecraft:experience_bottle\",count:64}},"
+				+ "{slot:26,item:{id:\"minecraft:enchanted_golden_apple\",count:2}}]]");
+		context.waitTicks(5);
+		context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
+		context.waitTicks(10);
+		double[] box = context.computeOnClient(client -> {
+			InventoryScreen screen = (InventoryScreen) client.screen;
+			var at = (dev.eventide.client.mixin.AbstractContainerScreenAccessor) screen;
+			double scale = client.getWindow().getGuiScale();
+			for (net.minecraft.world.inventory.Slot slot : screen.getMenu().slots) {
+				if (slot.container == client.player.getInventory() && slot.getContainerSlot() == 8) {
+					return new double[] {(at.eventide$left() + slot.x + 8) * scale, (at.eventide$top() + slot.y + 8) * scale};
+				}
+			}
+			return new double[] {0, 0};
+		});
+		context.getInput().setCursorPos(box[0], box[1]);
+		context.waitTicks(5);
+		check(failed, "Shulker Preview shows a shulker box's contents when you hover it", Hooks.shulkerPreviewDrawn);
+		shot(context, "eventide-shulker-preview");
+		context.setScreen(() -> null);
+		context.runOnClient(client -> {
+			Modules.SHULKER_PREVIEW.set(true);
+			Modules.STAY_OPEN.set(true);
+		});
+		context.setScreen(() -> new net.minecraft.client.gui.screens.ChatScreen("", false));
+		context.waitTicks(5);
+		context.runOnClient(client -> {
+			((net.minecraft.client.gui.screens.ChatScreen) client.screen).handleChatInput("Eventide says hi", true);
+			client.setScreen(null);
+		});
+		context.waitTicks(4);
+		check(failed, "Stay Open opens the chat again after you send a message", context.computeOnClient(client ->
+				client.screen instanceof net.minecraft.client.gui.screens.ChatScreen) && Hooks.stayOpenRan);
+		context.setScreen(() -> null);
+		context.runOnClient(client -> {
+			Modules.STAY_OPEN.set(false);
+			Modules.OWN_NAMETAG.set(true);
+			client.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+		});
+		face(context, 0, 15);
+		context.waitTicks(10);
+		check(failed, "Own Nametag shows your name over your head in third person", context.computeOnClient(client ->
+				dev.eventide.client.module.Nametags.showOwn(client.player)));
+		shot(context, "eventide-own-nametag");
+		context.runOnClient(client -> {
+			Modules.OWN_NAMETAG.set(false);
+			client.options.setCameraType(CameraType.FIRST_PERSON);
+			Modules.UI_ANIMATIONS.set(false);
+		});
+		context.waitTicks(3);
+		check(failed, "UI Animations off makes every glide snap into place", context.computeOnClient(client -> dev.eventide.client.ui.Anim.speed() == 0f));
+		context.runOnClient(client -> Modules.UI_ANIMATIONS.set(true));
+		context.waitTicks(3);
+		check(failed, "UI Animations back on brings the glides back", context.computeOnClient(client -> dev.eventide.client.ui.Anim.speed() > 0f));
 	}
 
 	/**
@@ -1343,6 +1451,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("kills")) killEffects(context, singleplayer, failed);
 			if (focus.contains("fx")) worldFx(context, singleplayer, failed);
 			if (focus.contains("cosmetics")) cosmetics(context, singleplayer, failed);
+			if (focus.contains("extras")) extras(context, singleplayer, failed);
 			if (focus.contains("hud")) hudLook(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);

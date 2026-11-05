@@ -26,5 +26,9 @@ void main() {
     if (a < 0.003) {
         discard;
     }
+#ifdef LINE
+    fragColor = vec4(vertexColor.rgb, a);
+#else
     fragColor = vec4(vertexColor.rgb * a * 1.6, a);
+#endif
 }

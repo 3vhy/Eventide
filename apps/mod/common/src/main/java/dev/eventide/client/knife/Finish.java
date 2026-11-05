@@ -17,7 +17,12 @@ public enum Finish {
 	FROST(5, "Frost", "Polished ice-silver with a cold blue light", 0xFFC8D6E6, 0xFFEFF6FF, 0xFF7C8CA4),
 	ROSE(6, "Rose", "Pink gold, warm and bright", 0xFFD88AA8, 0xFFFFC4D8, 0xFF8A4A62),
 	VOID(7, "Void", "Black as space, with a scatter of stars", 0xFF0A0A0E, 0xFF2A2A34, 0xFF000000),
-	CHROME(8, "Chrome", "A mirror polish", 0xFFD8DCE2, 0xFFFFFFFF, 0xFF8C9096);
+	CHROME(8, "Chrome", "A mirror polish", 0xFFD8DCE2, 0xFFFFFFFF, 0xFF8C9096),
+	ENGRAVED(9, "Engraved", "Dark steel with a glowing teal rose and vines cut into the blade", 0xFF1C1E24, 0xFF4FD8A8, 0xFF08090C),
+	ONYX(10, "Onyx", "Polished black stone with a violet sheen", 0xFF0C0A12, 0xFF3A2A5C, 0xFF000000);
+
+	/** The Finish setting's first choice: every knife in its own signature finish. */
+	public static final String SIGNATURE = "Signature";
 
 	/** The number the shader knows it by. */
 	public final int id;
@@ -35,10 +40,12 @@ public enum Finish {
 		this.swatch = new int[] {plain, light, dark};
 	}
 
+	/** The Finish setting's choices: Signature, then every finish. */
 	public static String[] labels() {
 		Finish[] all = values();
-		String[] out = new String[all.length];
-		for (int i = 0; i < all.length; i++) out[i] = all[i].label;
+		String[] out = new String[all.length + 1];
+		out[0] = SIGNATURE;
+		for (int i = 0; i < all.length; i++) out[i + 1] = all[i].label;
 		return out;
 	}
 
@@ -58,7 +65,7 @@ public enum Finish {
 
 	/** The finish a finish from before the redesign became, by its old name, or null when it's still a finish today. */
 	public static String renamed(String old) {
-		if (old == null || byLabel(old) != null) return null;
+		if (old == null || byLabel(old) != null || SIGNATURE.equalsIgnoreCase(old)) return null;
 		return switch (old.toLowerCase(Locale.ROOT)) {
 			case "eventide violet", "doppler (black pearl)", "crimson web" -> CRYSTAL.label;
 			case "doppler (blue)", "blue steel" -> MIDNIGHT.label;

@@ -27,27 +27,30 @@ void main() {
     vec3 glowColor = k_hsv(frameInfo.w, saturation, 1.0);
     vec2 p = pattern;
 
-    vec4 hole = HOLE[clamp(knife, 0, 23)];
-    if (hole.z > 0.0 && (material == M_BLADE || material == M_EDGE)) {
-        vec2 d = (p - hole.xy) / hole.zw;
-        if (dot(d, d) < 1.0) discard;
-    }
-
     vec3 nv3 = normalize(viewNormal);
     vec3 nw = normalize(worldNormal);
     vec3 v = normalize(-viewPos);
     vec3 vw = normalize(-worldPos);
-    float t = k_bladeT(knife, p);
+    bool blade = material == M_BLADE || material == M_EDGE;
+    float t = blade ? k_bladeT(knife, p) : 0.0;
+    float len = k_bladeLength(knife);
     float nv = clamp(dot(nv3, v), 0.0, 1.0);
 
     Surface s;
-    bool blade = material == M_BLADE || material == M_EDGE;
     bool finished = blade || material == M_GUARD || material == M_RING || material == M_HANDLE_PAINT;
     if (material == M_ENERGY) {
         s = k_surface(vec3(0.0), 0.0, 1.0);
         s.emissive = mix(glowColor * 1.2, vec3(1.0), 0.45 + 0.55 * pow(nv, 1.5));
+    } else if (material == M_GEM_RIM) {
+        s = k_surface(vec3(0.0), 0.0, 1.0);
+        s.emissive = mix(glowColor, vec3(1.0), 0.18) * (1.0 + 0.35 * pow(1.0 - nv, 2.0));
+    } else if (material == M_GEM) {
+        vec2 c = k_crystal(p * 2.2);
+        s = k_surface(mix(vec3(0.05, 0.02, 0.12), vec3(0.3, 0.13, 0.58), c.x), 0.45, 0.08);
+        s.coat = 1.0;
+        s.emissive = glowColor * (0.14 + 0.2 * c.x + 0.55 * pow(1.0 - nv, 2.0));
     } else if (finished) {
-        s = k_finish(finish, p, t, edge, glowColor);
+        s = k_finish(finish, p, t, edge, glowColor, blade, len);
         if (material == M_EDGE) {
             s.rough *= 0.5;
             s.albedo = mix(s.albedo, vec3(0.85, 0.86, 0.9), 0.14);
@@ -110,7 +113,7 @@ void main() {
     }
 
     vec3 light = mix(lightMapColor.rgb, vec3(1.0), boost);
-    if (material == M_ENERGY) light = vec3(1.0);
+    if (material == M_ENERGY || material == M_GEM_RIM) light = vec3(1.0);
     color = color * light + s.emissive;
     fragColor = vec4(k_softClip(color), 1.0);
 }

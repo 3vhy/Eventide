@@ -132,6 +132,7 @@ public final class EventideClient implements ClientModInitializer {
 
 	private static void tick(Minecraft mc) {
 		FreezeWatch.tick();
+		dev.eventide.client.module.EventideBadge.tick(mc);
 		while (openSettingsKey.consumeClick()) {
 			if (mc.screen == null) mc.setScreen(MenuHost.fromKey(null));
 		}

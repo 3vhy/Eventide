@@ -85,7 +85,7 @@ public final class Knives {
 	/** The knife picked in the settings, for auto knives and newly marked slots. */
 	public static KnifeModel defaultModel() {
 		KnifeModel model = KnifeModel.byLabel(Modules.KNIVES_MODEL.get());
-		return model == null ? KnifeModel.RIPTIDE : model;
+		return model == null ? KnifeModel.WRAITH : model;
 	}
 
 	/** Whether Auto knives makes this item a knife. */

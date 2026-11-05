@@ -871,6 +871,10 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "freelook camera (Camera.setRotation)", Hooks.freelookCameraRan);
 		check(failed, "own nametag in third person (shouldShowName)", Hooks.ownNametagRan);
 		check(failed, "nametags drawn in Eventide's style (submitNameTag)", Hooks.styledNametagRan);
+		check(failed, "your name tag carries the Eventide Badge (AvatarRenderer.extractRenderState)", Hooks.badgeShown);
+		check(failed, "the server passes Eventide's skin-settings bit on, so other Eventide players can see the badge", context.computeOnClient(client ->
+				(client.player.getEntityData().get(dev.eventide.client.mixin.AvatarAccessor.eventide$customisation())
+						& dev.eventide.client.module.EventideBadge.MARK) != 0));
 		check(failed, "shiny pots (ItemStack.hasFoil)", Hooks.shinyPotRan);
 		check(failed, "TPS from server time (handleSetTime)", Hooks.timePacketRan);
 		check(failed, "custom crosshair replaces Minecraft's", Hooks.crosshairRan);
@@ -1439,7 +1443,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			Knives.toggleSlot(8);
 			return marked && Knives.slot(8) == null;
 		}));
-		List<KnifeModel> shown = every ? List.of(KNIFE_SLOTS) : List.of(KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.LUMEN);
+		List<KnifeModel> shown = every ? List.of(KNIFE_SLOTS) : List.of(KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.PRISM);
 		for (KnifeModel model : shown) {
 			String name = model.id();
 			context.getInput().pressKey(GLFW.GLFW_KEY_1 + List.of(KNIFE_SLOTS).indexOf(model));
@@ -1483,7 +1487,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "a swing plays a slash (LocalPlayer.swing)", Hooks.knifeSlashRan);
 		check(failed, "the inspect key starts an inspect", Hooks.knifeInspectRan);
 		if (every) {
-			for (String finish : List.of("Crystal", "Midnight", "Nebula", "Frost")) {
+			for (String finish : List.of("Crystal", "Engraved", "Nebula", "Onyx")) {
 				context.runOnClient(client -> Modules.KNIVES_FINISH.set(finish));
 				context.getInput().pressKey(GLFW.GLFW_KEY_3);
 				context.waitTicks(30);
@@ -1514,8 +1518,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 	}
 
 	/** The knives the test puts in hotbar slots 1 to 8. */
-	private static final KnifeModel[] KNIFE_SLOTS = {KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.RIPTIDE, KnifeModel.NIGHTFALL,
-			KnifeModel.VESPER, KnifeModel.NOCTURNE, KnifeModel.LUMEN, KnifeModel.REAPER};
+	private static final KnifeModel[] KNIFE_SLOTS = {KnifeModel.ECLIPSE, KnifeModel.WRAITH, KnifeModel.RIPTIDE, KnifeModel.PRISM,
+			KnifeModel.VESPER, KnifeModel.SERAPH, KnifeModel.LUMEN, KnifeModel.REAPER};
 
 	/**
 	 * The Knives settings: the slot picker shows the hotbar, clicking slot 9 marks it, and a marked slot's

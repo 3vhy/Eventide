@@ -344,9 +344,9 @@ public final class Modules {
 	public static final Text KNIVES_SLOTS = KNIVES.add(new Text("slots", "Knife slots", "Hotbar slots held as knives, and which knife",
 			"", 200).hide());
 	public static final Choice KNIVES_MODEL = KNIVES.add(new Choice("model", "Knife", "Your swords' knife, and the first pick for a slot you mark",
-			1, dev.eventide.client.knife.KnifeModel.labels()).group("Knife"));
-	public static final Choice KNIVES_FINISH = KNIVES.add(new Choice("finish", "Finish", "What the blade's made of", 0,
-			dev.eventide.client.knife.Finish.labels()));
+			4, dev.eventide.client.knife.KnifeModel.labels()).group("Knife"));
+	public static final Choice KNIVES_FINISH = KNIVES.add(new Choice("finish", "Finish",
+			"What the blade's made of; Signature dresses each knife in its own", 0, dev.eventide.client.knife.Finish.labels()));
 	public static final Toggle KNIVES_GLOW = KNIVES.add(new Toggle("glow", "Edge glow",
 			"A line of light round the blade and a soft glow round the knife", true).group("Glow"));
 	public static final Color KNIVES_GLOW_COLOR = KNIVES.add(new Color("glow_color", "Glow colour", "The colour of the edge and its glow",
@@ -390,6 +390,13 @@ public final class Modules {
 	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Wrist", "Twists the wrist, turning the blade", -90, 90, 1, 0, "°"));
 	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
 			0, 100, 5, 60, "%"));
+	public static final Module BADGE = new Module("badge", "Eventide Badge",
+			"The Eventide logo by the name of everyone playing with Eventide, on name tags and in the tab list", Category.COSMETICS, true)
+			.icon("badge-check").markNew();
+	public static final Toggle BADGE_SHARE = BADGE.add(new Toggle("share", "Show yours",
+			"Lets other Eventide players see your badge (Eventide marks itself in the skin settings the server shares)", true));
+	public static final Toggle BADGE_TAB = BADGE.add(new Toggle("tab", "In the tab list", "The badge by Eventide players' names in the tab list too",
+			true));
 	public static final Module MENU_NAME = new Module("menu_name", "Menu Logo",
 			"The Eventide logo in the corner of menus, chests and your inventory, or on your HUD", Category.COSMETICS, true)
 			.icon("badge").markNew();
@@ -453,7 +460,7 @@ public final class Modules {
 			WAYPOINTS, FULLBRIGHT, NO_FOG,
 			CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS,
 			FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, HOTBAR, MUSIC, MODULE_LIST,
-			KNIVES, MENU_NAME,
+			KNIVES, BADGE, MENU_NAME,
 			THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */

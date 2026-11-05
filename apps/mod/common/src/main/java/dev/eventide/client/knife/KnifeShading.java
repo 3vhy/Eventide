@@ -23,6 +23,10 @@ public final class KnifeShading {
 	public static final int RING = 9;
 	public static final int ENERGY = 10;
 	public static final int HANDLE_PAINT = 11;
+	/** A set crystal: dark violet facets lit from inside by the glow colour. */
+	public static final int GEM = 12;
+	/** The glowing frame round a crystal, and glowing studs. */
+	public static final int GEM_RIM = 13;
 
 	private KnifeShading() {
 	}
@@ -65,7 +69,8 @@ public final class KnifeShading {
 			case WOOD -> 0xFF4A2E1C;
 			case CORD -> 0xFF1C1C22;
 			case CARBON -> 0xFF1A1A1E;
-			case ENERGY -> glow | 0xFF000000;
+			case ENERGY, GEM_RIM -> glow | 0xFF000000;
+			case GEM -> 0xFF2A1450;
 			default -> 0xFF808080;
 		};
 	}

@@ -11,7 +11,8 @@ import java.util.List;
  * lofted handles and guards, rings, rounded plates and pins. Units are pixels (a sixteenth of a block).
  * A knife's blade points up (+Y) with its edge towards +X and its flats facing ±Z. Every vertex records
  * its {@link KnifeShading} material, how near the cutting edge it is, and where it is on the part for the
- * finish pattern; the finish itself is chosen when it's drawn.
+ * finish pattern (on a blade: across it from its middle line, and along it from its root, in pixels, so
+ * patterns follow a curved blade); the finish itself is chosen when it's drawn.
  */
 final class Shape {
 	private static final int STRIDE = 10;
@@ -20,6 +21,18 @@ final class Shape {
 
 	int quads() {
 		return quads;
+	}
+
+	/** Widens {@code box} (min x, min y, max x, max y) to take in every point of the shape. */
+	void bounds(float[] box) {
+		for (int i = 0; i < quads * 4; i++) {
+			float x = data[i * STRIDE];
+			float y = data[i * STRIDE + 1];
+			box[0] = Math.min(box[0], x);
+			box[1] = Math.min(box[1], y);
+			box[2] = Math.max(box[2], x);
+			box[3] = Math.max(box[3], y);
+		}
 	}
 
 	/** A vertex: position, normal, pattern position, edge nearness (0..1) and material. */
@@ -126,6 +139,9 @@ final class Shape {
 		float fullerDepth = 0;
 		int flatColumns = 4;
 		int bevelColumns = 3;
+		/** Each station's distance along the blade's middle line, and its width, filled in when it's built. */
+		float[] along;
+		float[] width;
 
 		Blade station(float sx, float sy, float ex, float ey, float half) {
 			stations.add(new float[] {sx, sy, ex, ey, half});
@@ -136,6 +152,16 @@ final class Shape {
 	void blade(Blade b) {
 		int n = b.stations.size();
 		float[][] st = b.stations.toArray(new float[0][]);
+		b.along = new float[n];
+		b.width = new float[n];
+		float run = (st[0][1] + st[0][3]) / 2;
+		for (int i = 0; i < n; i++) {
+			if (i > 0) {
+				run += (float) Math.hypot((st[i][0] + st[i][2] - st[i - 1][0] - st[i - 1][2]) / 2, (st[i][1] + st[i][3] - st[i - 1][1] - st[i - 1][3]) / 2);
+			}
+			b.along[i] = run;
+			b.width[i] = (float) Math.hypot(st[i][2] - st[i][0], st[i][3] - st[i][1]);
+		}
 		List<float[]> regions = new ArrayList<>();
 		if (b.doubleEdged) {
 			regions.add(new float[] {0, b.grind, b.bevelColumns, KnifeShading.EDGE});
@@ -225,14 +251,19 @@ final class Shape {
 		}
 		for (int i = 0; i + 1 < n; i++) {
 			for (int j = 0; j + 1 < m; j++) {
-				quad(bv(p[i][j], normal[i][j], fs[j], material, b), bv(p[i + 1][j], normal[i + 1][j], fs[j], material, b),
-						bv(p[i + 1][j + 1], normal[i + 1][j + 1], fs[j + 1], material, b), bv(p[i][j + 1], normal[i][j + 1], fs[j + 1], material, b));
+				quad(bv(p[i][j], normal[i][j], i, fs[j], material, b), bv(p[i + 1][j], normal[i + 1][j], i + 1, fs[j], material, b),
+						bv(p[i + 1][j + 1], normal[i + 1][j + 1], i + 1, fs[j + 1], material, b), bv(p[i][j + 1], normal[i][j + 1], i, fs[j + 1], material, b));
 			}
 		}
 	}
 
-	private static float[] bv(float[] p, float[] n, float f, int material, Blade b) {
-		return vertex(p[0], p[1], p[2], n[0], n[1], n[2], p[0], p[1], edgeOf(b, f), material);
+	private static float[] bv(float[] p, float[] n, int i, float f, int material, Blade b) {
+		return vertex(p[0], p[1], p[2], n[0], n[1], n[2], (f - 0.5f) * b.width[i], b.along[i], edgeOf(b, f), material);
+	}
+
+	/** Where a point on station {@code i}, {@code f} across, is on the blade's pattern: across from the middle line, then along. */
+	private static float[] bladeUv(Blade b, int i, float f) {
+		return new float[] {(f - 0.5f) * b.width[i], b.along[i]};
 	}
 
 	/** The spine ({@code f} 0) or edge ({@code f} 1) wall, its normals smooth along gentle curves and sharp at teeth. */
@@ -255,9 +286,13 @@ final class Shape {
 			float[] nb = wallNormal(segment, i, false);
 			float[] a = point[i];
 			float[] c = point[i + 1];
+			float[] ua = bladeUv(b, i, f);
+			float[] uc = bladeUv(b, i + 1, f);
 			float edge = 1;
-			quad(vertex(a[0], a[1], a[2], na[0], na[1], na[2], a[0], a[1], edge, material), vertex(c[0], c[1], c[2], nb[0], nb[1], nb[2], c[0], c[1], edge, material),
-					vertex(c[0], c[1], -c[2], nb[0], nb[1], nb[2], c[0], c[1], edge, material), vertex(a[0], a[1], -a[2], na[0], na[1], na[2], a[0], a[1], edge, material));
+			quad(vertex(a[0], a[1], a[2], na[0], na[1], na[2], ua[0], ua[1], edge, material),
+					vertex(c[0], c[1], c[2], nb[0], nb[1], nb[2], uc[0], uc[1], edge, material),
+					vertex(c[0], c[1], -c[2], nb[0], nb[1], nb[2], uc[0], uc[1], edge, material),
+					vertex(a[0], a[1], -a[2], na[0], na[1], na[2], ua[0], ua[1], edge, material));
 		}
 	}
 
@@ -281,11 +316,13 @@ final class Shape {
 			float f1 = (k + 1) / (float) steps;
 			float[] a = bladePoint(b, st, i, f0, 1);
 			float[] c = bladePoint(b, st, i, f1, 1);
+			float[] ua = bladeUv(b, i, f0);
+			float[] uc = bladeUv(b, i, f1);
 			float glow = direction > 0 ? 1 : 0;
-			quad(vertex(a[0], a[1], a[2], n[0], n[1], 0, a[0], a[1], glow, KnifeShading.BLADE),
-					vertex(c[0], c[1], c[2], n[0], n[1], 0, c[0], c[1], glow, KnifeShading.BLADE),
-					vertex(c[0], c[1], -c[2], n[0], n[1], 0, c[0], c[1], glow, KnifeShading.BLADE),
-					vertex(a[0], a[1], -a[2], n[0], n[1], 0, a[0], a[1], glow, KnifeShading.BLADE));
+			quad(vertex(a[0], a[1], a[2], n[0], n[1], 0, ua[0], ua[1], glow, KnifeShading.BLADE),
+					vertex(c[0], c[1], c[2], n[0], n[1], 0, uc[0], uc[1], glow, KnifeShading.BLADE),
+					vertex(c[0], c[1], -c[2], n[0], n[1], 0, uc[0], uc[1], glow, KnifeShading.BLADE),
+					vertex(a[0], a[1], -a[2], n[0], n[1], 0, ua[0], ua[1], glow, KnifeShading.BLADE));
 		}
 	}
 

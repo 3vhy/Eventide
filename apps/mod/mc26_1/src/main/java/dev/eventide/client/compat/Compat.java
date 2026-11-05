@@ -218,4 +218,30 @@ public final class Compat {
 		}
 		return knifeOutline;
 	}
+
+	private static net.minecraft.client.renderer.rendertype.RenderType knifeLine;
+
+	/**
+	 * A crisp line of colour round a silhouette (the glow shader's OUTLINE and LINE defines): the far faces of a
+	 * slightly bigger shell, blended over what's behind it so the colour holds on bright skies too.
+	 */
+	public static net.minecraft.client.renderer.rendertype.RenderType knifeLine() {
+		if (knifeLine == null) {
+			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline
+					.builder(net.minecraft.client.renderer.RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("eventide", "pipeline/knife_line"))
+					.withVertexShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withFragmentShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
+					.withShaderDefine("OUTLINE")
+					.withShaderDefine("LINE")
+					.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
+					.withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.LESS_THAN_OR_EQUAL, false))
+					.withCull(false)
+					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+					.build();
+			knifeLine = net.minecraft.client.renderer.rendertype.RenderType.create("eventide_knife_line",
+					net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline).createRenderSetup());
+		}
+		return knifeLine;
+	}
 }

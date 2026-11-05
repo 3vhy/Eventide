@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import dev.eventide.client.Hooks;
 import dev.eventide.client.compat.Compat;
+import dev.eventide.client.gui.Accent;
 import dev.eventide.client.module.Knives;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.ui.Widgets;
@@ -59,8 +60,8 @@ public final class KnifeRenderer {
 	private static final float NEAR = 0.12f;
 	/** How far the glowing shell stands off the knife, in its pixels. */
 	private static final float GLOW_WIDTH = 0.34f;
-	/** Points around a knife, in pixels, that must stay in front of the near plane. */
-	private static final float[][] REACH = {{0, 11}, {0, -7.5f}, {5.5f, 3}, {-2.5f, 3}};
+	/** How far the crisp outline stands off the knife, in its pixels. */
+	private static final float LINE_WIDTH = 0.12f;
 
 	private static final PoseStack PROBE = new PoseStack();
 	private static final Vector3f POINT = new Vector3f();
@@ -306,7 +307,7 @@ public final class KnifeRenderer {
 		fist(PROBE, right, slim);
 		knife(PROBE, model);
 		float nearest = Float.NEGATIVE_INFINITY;
-		for (float[] p : REACH) {
+		for (float[] p : model.reach()) {
 			nearest = Math.max(nearest, PROBE.last().pose().transformPosition(POINT.set(p[0], p[1], 0)).z);
 		}
 		PROBE.popPose();
@@ -454,7 +455,7 @@ public final class KnifeRenderer {
 	 * shading under a shader pack) in one batch, then their glowing shells.
 	 */
 	private static void drawParts(KnifeModel model, PoseStack pose, SubmitNodeCollector collector, int light, boolean glow) {
-		Finish finish = finish();
+		Finish finish = finish(model);
 		boolean custom = KnifeShading.custom();
 		var type = custom ? Compat.knifeShaded() : Compat.knifeRenderType(KnifeAtlas.get(), false);
 		int glowRgb = Modules.KNIVES_GLOW_COLOR.get();
@@ -462,6 +463,7 @@ public final class KnifeRenderer {
 		float strength = Modules.KNIVES_GLOW.get() ? (float) (Modules.KNIVES_GLOW_STRENGTH.get() / 100.0) * (1 + 0.6f * glintPulse()) : 0;
 		int frame = KnifeShading.frame(model.ordinal(), glint(), strength, (float) (Modules.KNIVES_LIGHT.get() / 100.0));
 		int shell = glowColor(1);
+		int line = lineColor();
 		float open = Math.max(0, POSE[Clip.OPEN]);
 		for (KnifeModel.Part part : model.parts()) {
 			pose.pushPose();
@@ -495,6 +497,7 @@ public final class KnifeRenderer {
 				collector.submitCustomGeometry(pose, type, (last, out) -> mesh.emit(last, out, light, finishId, hsv[0], hsv[1], frame));
 				if (glow && strength > 0.01f) {
 					float width = part.kind() == KnifeModel.PartKind.ENERGY ? GLOW_WIDTH * 2.2f : GLOW_WIDTH;
+					collector.submitCustomGeometry(pose, Compat.knifeLine(), (last, out) -> mesh.emitGlow(last, out, line, LINE_WIDTH));
 					collector.submitCustomGeometry(pose, Compat.knifeGlow(), (last, out) -> mesh.emitGlow(last, out, shell, width));
 				}
 			} else {
@@ -504,10 +507,17 @@ public final class KnifeRenderer {
 		}
 	}
 
-	/** The finish picked in the settings. */
-	static Finish finish() {
+	/** The finish {@code model} wears: the one picked in the settings, or its own signature finish. */
+	static Finish finish(KnifeModel model) {
 		Finish finish = Finish.byLabel(Modules.KNIVES_FINISH.get());
-		return finish == null ? Finish.OBSIDIAN : finish;
+		return finish == null ? model.signature : finish;
+	}
+
+	/** The crisp outline's colour: the glow colour, nearly solid, a touch brighter after a swing. */
+	private static int lineColor() {
+		float strength = (float) (Modules.KNIVES_GLOW_STRENGTH.get() / 100.0) * (1 + 0.4f * glintPulse());
+		int a = Math.round(Math.max(0, Math.min(1, 0.35f + 0.55f * strength)) * 255);
+		return a << 24 | (Accent.lighten(Modules.KNIVES_GLOW_COLOR.get(), 0.12f) & 0xFFFFFF);
 	}
 
 	/** Where the glint after a swing is along the blade (0..1), or 0 when there isn't one. */

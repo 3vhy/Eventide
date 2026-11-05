@@ -16,6 +16,8 @@
 #define M_RING 9
 #define M_ENERGY 10
 #define M_HANDLE_PAINT 11
+#define M_GEM 12
+#define M_GEM_RIM 13
 
 #define F_OBSIDIAN 0
 #define F_CRYSTAL 1
@@ -26,6 +28,8 @@
 #define F_ROSE 6
 #define F_VOID 7
 #define F_CHROME 8
+#define F_ENGRAVED 9
+#define F_ONYX 10
 
 struct Surface {
     vec3 albedo;
@@ -49,24 +53,21 @@ Surface k_surface(vec3 albedo, float metal, float rough) {
     return s;
 }
 
-// Each knife's blade, from where it leaves the guard to its tip, in pixels along the knife; and a hole
-// through it (centre and radii, in pixels; zero radius for none).
+// Each knife's blade, from where it leaves the guard to its tip, in pixels along its middle line (a blade's
+// pattern position is across it from that line, then along it).
 const vec2 BLADE_RANGE[24] = vec2[24](
-    vec2(-0.5, 5.6), vec2(1.3, 11.8), vec2(1.2, 11.0), vec2(0.2, 9.2),
-    vec2(1.2, 9.6), vec2(0.2, 5.6), vec2(0.0, 9.2), vec2(1.0, 11.6),
-    vec2(1.3, 13.7), vec2(-1.0, 4.0), vec2(0.6, 9.2), vec2(1.0, 9.4),
-    vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0),
+    vec2(1.2, 9.0), vec2(1.3, 11.8), vec2(1.2, 11.23), vec2(0.2, 9.21),
+    vec2(1.25, 10.65), vec2(1.1, 9.6), vec2(0.0, 9.2), vec2(1.0, 11.6),
+    vec2(1.45, 16.25), vec2(5.7, 19.16), vec2(0.6, 9.28), vec2(1.0, 9.86),
+    vec2(1.1, 10.6), vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0),
     vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0),
     vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0), vec2(0.0, 1.0)
 );
-const vec4 HOLE[24] = vec4[24](
-    vec4(-0.5, 2.61, 0.36, 0.36), vec4(0.0), vec4(0.0), vec4(0.0),
-    vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0),
-    vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0),
-    vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0),
-    vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0),
-    vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0)
-);
+
+float k_bladeLength(int knife) {
+    vec2 range = BLADE_RANGE[clamp(knife, 0, 23)];
+    return max(range.y - range.x, 0.01);
+}
 
 float k_bladeT(int knife, vec2 p) {
     vec2 range = BLADE_RANGE[clamp(knife, 0, 23)];
@@ -102,12 +103,74 @@ vec2 k_crystal(vec2 p) {
     return vec2(shade, 1.0 - line);
 }
 
-// The finish on a blade (or a finished guard, ring or handle inlay). p is the point on the knife in pixels,
-// t how far along the blade (0 at the guard), edge how near the outline. glowColor is the edge glow's colour.
-Surface k_finish(int finish, vec2 p, float t, float edge, vec3 glowColor) {
+// A line of width w (in the pattern's pixels) where d is zero, smoothed over px, a screen pixel's size in them.
+float k_line(float d, float w, float px) {
+    return 1.0 - smoothstep(w - px * 0.7, w + px * 0.7, abs(d));
+}
+
+// The engraving: a rose at the middle of the blade, a vine winding from it down towards the guard with a leaf
+// at each turn, and a slim leaf rising above it, all cut as fine lines. p is across the blade from its middle
+// line and along it, t how far along (0..1) and len the blade's length. Returns how much a point is on a line.
+float k_engraving(vec2 p, float t, float len) {
+    float px = max(length(fwidth(p)), 1e-4);
+    float y = (t - 0.47) * len;
+    vec2 c = vec2(p.x, y);
+    float r = length(c);
+    float a = atan(c.y, c.x);
+    float R = 0.62;
+    float lines = 0.0;
+    if (r < R * 1.2) {
+        lines = max(lines, k_line(r - R * (0.8 + 0.2 * cos(5.0 * a)), 0.035, px));
+        lines = max(lines, k_line(r - R * 0.58 * (0.8 + 0.2 * cos(5.0 * a + 1.3)), 0.03, px));
+        if (r < R * 0.4) {
+            float spiral = (fract(r / (R * 0.16) - a / 6.2832) - 0.5) * R * 0.16;
+            lines = max(lines, k_line(spiral, 0.022, px));
+        }
+    }
+    float below = -y - R * 0.95;
+    if (below > 0.0 && t > 0.05) {
+        float amp = 0.26;
+        float k = below * 3.0;
+        float wave = amp * sin(k);
+        lines = max(lines, k_line(p.x - wave, 0.03, px));
+        float n = floor(k / 3.14159) + 0.5;
+        float side = mod(floor(k / 3.14159), 2.0) < 1.0 ? 1.0 : -1.0;
+        vec2 leaf = vec2(p.x - side * (amp + 0.16), (below - n * 3.14159 / 3.0) * 0.65);
+        lines = max(lines, k_line(length(leaf) - 0.12, 0.028, px));
+        lines *= smoothstep(0.03, 0.09, t);
+    }
+    float above = y - R * 0.95;
+    float reach = len * 0.24;
+    if (above > 0.0 && above < reach) {
+        float u = above / reach;
+        float w = 0.3 * sin(3.14159 * u) * (1.0 - 0.4 * u);
+        lines = max(lines, k_line(abs(p.x) - w, 0.028, px));
+        lines = max(lines, k_line(p.x, 0.022, px) * (1.0 - u));
+    }
+    return lines;
+}
+
+// The finish on a blade (or a finished guard, ring or handle inlay). On a blade p is across it from its middle
+// line and along it, in pixels; elsewhere it's the point on the knife. t is how far along the blade (0 at the
+// guard), edge how near the outline, len the blade's length. glowColor is the edge glow's colour.
+Surface k_finish(int finish, vec2 p, float t, float edge, vec3 glowColor, bool blade, float len) {
     Surface s = k_surface(vec3(0.16, 0.16, 0.19), 1.0, 0.3);
     float fil = k_filigree(p, t);
-    if (finish == F_CRYSTAL) {
+    if (finish == F_ENGRAVED) {
+        s.albedo = vec3(0.07, 0.075, 0.095) * (0.9 + k_noise(p * vec2(7.0, 0.6)) * 0.14);
+        s.metal = 0.85;
+        s.rough = 0.3;
+        s.aniso = 0.6;
+        float cut = blade ? k_engraving(p, t, len) * (1.0 - smoothstep(0.55, 0.85, edge)) : 0.0;
+        s.albedo = mix(s.albedo, vec3(0.2, 0.62, 0.48), cut * 0.8);
+        s.emissive = vec3(0.16, 0.85, 0.6) * cut * 0.55;
+    } else if (finish == F_ONYX) {
+        s.albedo = vec3(0.018, 0.016, 0.026);
+        s.metal = 0.55;
+        s.rough = 0.1;
+        s.coat = 1.0;
+        s.emissive = glowColor * pow(clamp(edge, 0.0, 1.0), 2.0) * 0.06;
+    } else if (finish == F_CRYSTAL) {
         vec2 c = k_crystal(p);
         s.albedo = mix(vec3(0.07, 0.03, 0.14), vec3(0.24, 0.11, 0.42), c.x);
         s.metal = 0.75;

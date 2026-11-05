@@ -347,20 +347,21 @@ public final class EventideGameTest implements FabricClientGameTest {
 							&& HudWidgets.MUSIC.visible(client)));
 			check(failed, "music cover uploaded as a texture (NativeImage, DynamicTexture)", Hooks.musicArtUploaded);
 			check(failed, "music app icon uploaded as a texture", Hooks.musicIconUploaded);
-			check(failed, "menu logo on the HUD with Show in game, above the music HUD", context.computeOnClient(client -> {
+			check(failed, "menu logo on the HUD with Show in game, clear of the music HUD", context.computeOnClient(client -> {
 				int w = client.getWindow().getGuiScaledWidth();
 				int h = client.getWindow().getGuiScaledHeight();
 				int logoBottom = HudWidgets.MENU_LOGO.position(client, w, h)[1] + HudWidgets.MENU_LOGO.height(client);
-				return HudWidgets.MENU_LOGO.shown() && HudWidgets.MENU_LOGO.visible(client)
-						&& logoBottom <= HudWidgets.MUSIC.position(client, w, h)[1];
+				int[] music = HudWidgets.MUSIC.position(client, w, h);
+				boolean clear = logoBottom <= music[1] || HudWidgets.MENU_LOGO.position(client, w, h)[0] + HudWidgets.MENU_LOGO.width(client) <= music[0];
+				return HudWidgets.MENU_LOGO.shown() && HudWidgets.MENU_LOGO.visible(client) && clear;
 			}));
 			server.runCommand("bossbar add eventide:test \"Boss\"");
 			server.runCommand("bossbar set eventide:test players @a");
 			context.waitTicks(10);
-			int musicY = context.computeOnClient(client -> HudWidgets.MUSIC.position(client,
+			int logoY = context.computeOnClient(client -> HudWidgets.MENU_LOGO.position(client,
 					client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight())[1]);
-			EventideClient.LOG.info("eventide-check: music HUD top with a boss bar: {}", musicY);
-			check(failed, "music HUD moves below boss bars (BossHealthOverlay)", musicY > 17);
+			EventideClient.LOG.info("eventide-check: top-centre HUD top with a boss bar: {}", logoY);
+			check(failed, "widgets at the top centre move below boss bars (BossHealthOverlay)", logoY > 17);
 			shot(context, "eventide-music-under-bossbar");
 			server.runCommand("bossbar remove eventide:test");
 			context.setScreen(() -> new MusicShowcase(HudWidgets.MENU_LOGO));
@@ -888,9 +889,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "own nametag in third person (shouldShowName)", Hooks.ownNametagRan);
 		check(failed, "nametags drawn in Eventide's style (submitNameTag)", Hooks.styledNametagRan);
 		check(failed, "your name tag carries the Eventide Badge (AvatarRenderer.extractRenderState)", Hooks.badgeShown);
-		check(failed, "the server passes Eventide's skin-settings bit on, so other Eventide players can see the badge", context.computeOnClient(client ->
-				(client.player.getEntityData().get(dev.eventide.client.mixin.AvatarAccessor.eventide$customisation())
-						& dev.eventide.client.module.EventideBadge.MARK) != 0));
 		check(failed, "shiny pots (ItemStack.hasFoil)", Hooks.shinyPotRan);
 		check(failed, "TPS from server time (handleSetTime)", Hooks.timePacketRan);
 		check(failed, "custom crosshair replaces Minecraft's", Hooks.crosshairRan);
@@ -1078,6 +1076,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 		var server = singleplayer.getServer();
 		server.runCommand("time set midnight");
 		server.runCommand("weather clear");
+		check(failed, "the server passes Eventide's skin-settings bit on, so other Eventide players can see the badge", context.computeOnClient(client ->
+				(client.player.getEntityData().get(dev.eventide.client.mixin.AvatarAccessor.eventide$customisation())
+						& dev.eventide.client.module.EventideBadge.MARK) != 0));
 		context.runOnClient(client -> {
 			Modules.KILL_EFFECTS.set(true);
 			Modules.KILL_EFFECTS_MOBS.set(true);
@@ -1784,17 +1785,15 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> MenuScreen.settings(null, Modules.KNIVES));
 		context.waitTicks(20);
 		shot(context, "eventide-menu-knives");
-		float[] origin = context.computeOnClient(client -> ((MenuScreen) client.screen).view().sheetContent());
-		float unit = origin[2];
-		float width = 408;
-		float slot = (width - 8 * 6) / 9f;
-		context.getInput().setCursorPos((origin[0] + (8 * (slot + 6) + slot / 2f) * unit) * scale, (origin[1] + (26 + slot / 2f) * unit) * scale);
+		float[] slot9 = context.computeOnClient(client -> ((MenuScreen) client.screen).view().knifeSlot(8));
+		context.getInput().setCursorPos(slot9[0] * scale, slot9[1] * scale);
 		context.waitTicks(2);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 		context.waitTicks(5);
 		check(failed, "clicking a slot in the Knives settings marks it", context.computeOnClient(client -> Knives.slot(8) != null));
-		float firstRow = 26 + slot + 12 + 24;
-		context.getInput().setCursorPos((origin[0] + (width - 48 - 75) * unit) * scale, (origin[1] + (firstRow + 22) * unit) * scale);
+		context.waitTicks(3);
+		float[] picker = context.computeOnClient(client -> ((MenuScreen) client.screen).view().knifePicker());
+		context.getInput().setCursorPos(picker[0] * scale, picker[1] * scale);
 		context.waitTicks(2);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 		context.waitTicks(10);

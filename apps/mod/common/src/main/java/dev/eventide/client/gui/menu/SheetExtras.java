@@ -77,6 +77,9 @@ final class SheetExtras implements SettingsSheet.Extras {
 	private Waypoint renaming = null;
 	private String waypointName = "";
 	private int knifeMenu = -1;
+	/** Where the knife slots were last drawn ({x, y, size}), and the first marked slot's knife picker ({x1, y1, x2, y2}), for the in-game test. */
+	final float[] knifeSlotsAt = new float[3];
+	final float[] knifePickerAt = new float[4];
 	private KeyMapping binding = null;
 	private float mx;
 	private float my;
@@ -734,7 +737,11 @@ final class SheetExtras implements SettingsSheet.Extras {
 		section(d, x, y, "Knife slots");
 		y += SECTION;
 		float size = slotSize(w);
+		knifeSlotsAt[0] = x;
+		knifeSlotsAt[1] = y;
+		knifeSlotsAt[2] = size;
 		int accent = Accent.get();
+		boolean pickerNoted = false;
 		for (int i = 0; i < 9; i++) {
 			final int slot = i;
 			float sx = x + i * (size + SLOT_GAP);
@@ -795,6 +802,13 @@ final class SheetExtras implements SettingsSheet.Extras {
 			float py = y + (ITEM - 30) / 2f;
 			boolean open = knifeMenu == slot;
 			boolean hover = over(px1, py, px2, py + 30);
+			if (!pickerNoted) {
+				knifePickerAt[0] = px1;
+				knifePickerAt[1] = py;
+				knifePickerAt[2] = px2;
+				knifePickerAt[3] = py + 30;
+				pickerNoted = true;
+			}
 			if (open) {
 				Paint.rect(d, px1, py, px2, py + 30, 15, Paint.fade(accent, 0.25f));
 				Paint.stroke(d, px1, py, px2, py + 30, 15, 1, Accent.lighten(accent, 0.25f));

@@ -224,6 +224,19 @@ public final class MenuView {
 		return new float[] {(winX + origin[0]) * unit, (winY + origin[1]) * unit, unit};
 	}
 
+	/** The middle of knife slot {@code slot} in the Knives settings as last drawn, in GUI units, for the in-game test. */
+	public float[] knifeSlot(int slot) {
+		float[] at = ((SheetExtras) sheet.extras()).knifeSlotsAt;
+		float cx = at[0] + slot * (at[2] + 6) + at[2] / 2f;
+		return new float[] {(winX + cx) * unit, (winY + at[1] + at[2] / 2f) * unit};
+	}
+
+	/** The middle of the first knife slot's knife picker in the Knives settings as last drawn, in GUI units, for the in-game test. */
+	public float[] knifePicker() {
+		float[] at = ((SheetExtras) sheet.extras()).knifePickerAt;
+		return new float[] {(winX + (at[0] + at[2]) / 2f) * unit, (winY + (at[1] + at[3]) / 2f) * unit};
+	}
+
 	/** Draws the menu over a {@code guiW} x {@code guiH} screen, its window scaled to fit; the mouse is in GUI units. */
 	public void draw(Draw d, float guiW, float guiH, double mouseX, double mouseY) {
 		long now = System.currentTimeMillis();

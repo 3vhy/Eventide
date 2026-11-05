@@ -459,11 +459,11 @@ public final class Modules {
 	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
 			0, 100, 5, 60, "%"));
 	public static final Module MODEL_SKIN = new Module("model_skin", "3D Skins",
-			"Be a whole 3D character in third person and your inventory: the Grim Reaper, Timber the log, the Void Walker or an Astronaut",
+			"Be a whole 3D character in third person and your inventory: the Grim Reaper, Timber the log, Galaxy or an Astronaut",
 			Category.COSMETICS, false).icon("person-standing").markNew();
 	public static final Choice MODEL_SKIN_TYPE = MODEL_SKIN.add(new Choice("type", "Character", "Who you are", 0, dev.eventide.client.knife.ModelSkins.SKINS));
 	public static final Toggle MODEL_SKIN_PROP = MODEL_SKIN.add(new Toggle("prop", "Hold their weapon",
-			"The Reaper's scythe, Timber's bat or the Void Walker's dagger in your hand instead of your item", true));
+			"The Reaper's scythe and lantern, Timber's bat or Galaxy's dagger in your hand instead of your item", true));
 	public static final Module HATS = new Module("hats", "Hats",
 			"A hat on your head in third person and your inventory: a glowing cone, a halo, a crown, a top hat, a witch hat, horns or cat ears",
 			Category.COSMETICS, false).icon("crown").markNew();

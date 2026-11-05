@@ -26,6 +26,8 @@ out float edge;
 flat out ivec4 info;
 flat out vec4 frameInfo;
 out vec4 lightMapColor;
+out vec3 orthoEye;
+flat out int orthographic;
 
 void main() {
     vec4 view = ModelViewMat * vec4(Position, 1.0);
@@ -39,5 +41,7 @@ void main() {
     edge = Color.a;
     info = ivec4(c.r, c.g & 63, c.g >> 6, UV1.x & 63);
     frameInfo = vec4(float(UV1.x >> 6) / 63.0, float(UV1.y & 127) / 50.0, float(UV1.y >> 7) / 100.0, float(c.b) / 255.0);
+    orthographic = ProjMat[3][3] > 0.5 ? 1 : 0;
+    orthoEye = transpose(mat3(ModelViewMat)) * vec3(0.0, 0.0, 1.0);
     lightMapColor = texture(Sampler2, clamp(vec2(UV2) / 256.0 + 0.5 / 16.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
 }

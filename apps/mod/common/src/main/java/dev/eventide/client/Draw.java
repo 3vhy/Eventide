@@ -29,6 +29,12 @@ public interface Draw {
 
 	void item(ItemStack stack, int x, int y);
 
+	/**
+	 * Draws a living entity standing in the box from (x0, y0) to (x1, y1), {@code scale} pixels a block, turned
+	 * to look at (lookX, lookY), as the inventory draws your player.
+	 */
+	void entity(net.minecraft.world.entity.LivingEntity entity, int x0, int y0, int x1, int y1, int scale, float lookX, float lookY);
+
 	/** Durability bar and count label; pass null to use the stack's own count. */
 	void itemOverlay(ItemStack stack, int x, int y, String countLabel);
 

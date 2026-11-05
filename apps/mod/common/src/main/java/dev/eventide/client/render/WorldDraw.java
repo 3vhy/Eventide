@@ -238,6 +238,10 @@ public final class WorldDraw implements Draw {
 	}
 
 	@Override
+	public void entity(net.minecraft.world.entity.LivingEntity entity, int x0, int y0, int x1, int y1, int scale, float lookX, float lookY) {
+	}
+
+	@Override
 	public void itemOverlay(ItemStack stack, int x, int y, String countLabel) {
 	}
 

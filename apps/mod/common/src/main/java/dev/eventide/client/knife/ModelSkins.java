@@ -16,13 +16,14 @@ import net.minecraft.world.entity.HumanoidArm;
 
 /**
  * 3D skins: your player drawn as a whole 3D character instead of a flat skin, built from code and shaded by the
- * knife shader: the Grim Reaper (a deep hood round a skull, a cape and a robe to the ground, his scythe and an
- * hourglass lantern), Timber (a tall golden log with cartoon eyes and a grin, on stick limbs, with a bat), the Void
- * Walker (a body made of the night sky) and the Astronaut (a bulky white suit, a gold visor and a backpack). Each limb is built round its joint in
- * Minecraft's player model (pixels, Y down), so it moves with your own walk, swing and sneak.
+ * knife shader: the Grim Reaper (a skull in a deep hood, a cowl and a robe to the ground, his scythe and an
+ * hourglass lantern), Timber (a tall round golden log with cartoon eyes and a grin, on stick limbs, with a bat),
+ * Galaxy (a sleek body made of the night sky) and the Astronaut (a puffy white suit, a gold visor and a backpack).
+ * Each limb is built round its joint in Minecraft's player model (pixels, Y down), so it moves with your own walk,
+ * swing and sneak.
  */
 public final class ModelSkins {
-	public static final String[] SKINS = {"Grim Reaper", "Timber", "Void Walker", "Astronaut"};
+	public static final String[] SKINS = {"Grim Reaper", "Timber", "Galaxy", "Astronaut"};
 
 	/** The parts of the player model a skin dresses. */
 	private enum Limb {
@@ -70,7 +71,7 @@ public final class ModelSkins {
 		for (Limb limb : Limb.values()) out.put(limb, new Shape());
 		switch (skin) {
 			case "Timber" -> timber(out);
-			case "Void Walker" -> voidWalker(out);
+			case "Galaxy" -> galaxy(out);
 			case "Astronaut" -> astronaut(out);
 			default -> reaper(out);
 		}
@@ -85,11 +86,6 @@ public final class ModelSkins {
 				20, squareness, material, Shape.CAP, Shape.CAP, false);
 	}
 
-	/** A tube along Y from y0 to y1, its radius running from r0 to r1. */
-	private static void tube(Shape m, float x, float z, float y0, float y1, float r0, float r1, int material) {
-		m.loft(new Shape.Ring[] {Shape.Ring.along(x, y0, z, r0, r0), Shape.Ring.along(x, y1, z, r1, r1)}, 18, 0, material, Shape.CAP, Shape.CAP, false);
-	}
-
 	/** A thin rod from one point to another, rounded at both ends, its radius running from r0 to r1. */
 	private static void twig(Shape m, float x0, float y0, float z0, float x1, float y1, float z1, float r0, float r1, int material) {
 		float ax = x1 - x0;
@@ -101,208 +97,399 @@ public final class ModelSkins {
 
 	/** A ball. */
 	private static void ball(Shape m, float x, float y, float z, float r, int material) {
+		blob(m, x, y, z, r, r, r, material);
+	}
+
+	/** An ellipsoid with radii rx, ry and rz. */
+	private static void blob(Shape m, float x, float y, float z, float rx, float ry, float rz, int material) {
 		int n = 10;
 		Shape.Ring[] rings = new Shape.Ring[n + 1];
 		for (int i = 0; i <= n; i++) {
 			double a = Math.PI * i / n;
-			float rr = Math.max(0.01f, (float) Math.sin(a) * r);
-			rings[i] = Shape.Ring.along(x, y - (float) Math.cos(a) * r, z, rr, rr);
+			float k = Math.max(0.004f, (float) Math.sin(a));
+			rings[i] = Shape.Ring.along(x, y - (float) Math.cos(a) * ry, z, rx * k, rz * k);
 		}
 		m.loft(rings, 18, 0, material, Shape.OPEN, Shape.OPEN, false);
 	}
 
-	/** A smooth tube down Y through rings of {y, x radius, z radius, z centre}, closed at the bottom when {@code capped}. */
-	private static void sleeve(Shape m, float x, float[][] rings, int material, boolean capped) {
+	/** A tube through points of {x, y, z, radius}, rounded at both ends. */
+	private static void path(Shape m, float[][] points, int material) {
+		Shape.Ring[] rings = new Shape.Ring[points.length];
+		for (int i = 0; i < points.length; i++) {
+			float[] a = points[Math.max(0, i - 1)];
+			float[] c = points[Math.min(points.length - 1, i + 1)];
+			rings[i] = new Shape.Ring(points[i][0], points[i][1], points[i][2], c[0] - a[0], c[1] - a[1], c[2] - a[2], points[i][3], points[i][3], null);
+		}
+		m.loft(rings, 10, 0, material, Shape.DOME, Shape.DOME, false);
+	}
+
+	/** A smooth body down Y through rings of {y, x radius, z radius, z centre}. */
+	private static void column(Shape m, float x, float[][] rings, float squareness, int material, int top, int bottom) {
 		Shape.Ring[] out = new Shape.Ring[rings.length];
 		for (int i = 0; i < rings.length; i++) out[i] = Shape.Ring.along(x, rings[i][0], rings[i][3], rings[i][1], rings[i][2]);
-		m.loft(out, 24, 0.35f, material, Shape.OPEN, capped ? Shape.CAP : Shape.OPEN, false);
+		m.loft(out, 24, squareness, material, top, bottom, false);
+	}
+
+	/** The ring of {@code rings} (as {@link #column} takes them) at height y: {x radius, z radius, z centre}. */
+	private static float[] ringAt(float[][] rings, float y) {
+		if (y <= rings[0][0]) return new float[] {rings[0][1], rings[0][2], rings[0][3]};
+		for (int i = 0; i + 1 < rings.length; i++) {
+			if (y <= rings[i + 1][0]) {
+				float t = (y - rings[i][0]) / (rings[i + 1][0] - rings[i][0]);
+				return new float[] {rings[i][1] + (rings[i + 1][1] - rings[i][1]) * t, rings[i][2] + (rings[i + 1][2] - rings[i][2]) * t,
+						rings[i][3] + (rings[i + 1][3] - rings[i][3]) * t};
+			}
+		}
+		float[] last = rings[rings.length - 1];
+		return new float[] {last[1], last[2], last[3]};
+	}
+
+	/** Where the front of a body made of {@code rings} is at (x, y): its z. */
+	private static float front(float[][] rings, float x, float y) {
+		float[] r = ringAt(rings, y);
+		float k = Math.min(0.98f, Math.abs(x) / r[0]);
+		return r[2] - r[1] * (float) Math.sqrt(1 - k * k);
+	}
+
+	/**
+	 * A flat shape laid on the front of a body made of {@code rings}, turned to face out from it:
+	 * {@code outline} (x, y pairs round (0, 0)) centred at (x, y), standing {@code lift} out of the surface and
+	 * sinking {@code sink} into it.
+	 */
+	private static void decal(Shape m, float[][] rings, float[] outline, float x, float y, float lift, float sink, int material) {
+		float[] r = ringAt(rings, y);
+		float k = Math.min(0.98f, Math.abs(x) / r[0]);
+		float z = r[2] - r[1] * (float) Math.sqrt(1 - k * k);
+		float nx = x / (r[0] * r[0]);
+		float nz = (z - r[2]) / (r[1] * r[1]);
+		float angle = -(float) Math.toDegrees(Math.atan2(nx, -nz));
+		float[] placed = outline.clone();
+		for (int i = 1; i < placed.length; i += 2) placed[i] += y;
+		Shape piece = new Shape();
+		piece.plate(placed, -lift, sink, Math.min(0.05f, (lift + sink) / 2), material);
+		m.addTurned(piece, angle, x, 0, z);
+	}
+
+	private static float[] ellipse(float rx, float ry, int n) {
+		float[] out = new float[n * 2];
+		for (int i = 0; i < n; i++) {
+			double a = 2 * Math.PI * i / n;
+			out[i * 2] = (float) Math.cos(a) * rx;
+			out[i * 2 + 1] = (float) Math.sin(a) * ry;
+		}
+		return out;
 	}
 
 	private static float[] rect(float x0, float y0, float x1, float y1) {
 		return new float[] {x0, y0, x1, y0, x1, y1, x0, y1};
 	}
 
-	private static float[] diamond(float x, float y, float hx, float hy) {
-		return new float[] {x, y - hy, x + hx, y, x, y + hy, x - hx, y};
-	}
+	private static final float[][] REAPER_SKULL = {{-8.15f, 1.0f, 1.2f, 0.2f}, {-7.7f, 2.4f, 2.8f, 0.2f}, {-6.8f, 3.0f, 3.4f, 0.25f},
+			{-5.4f, 3.1f, 3.5f, 0.25f}, {-4.2f, 2.9f, 3.4f, 0.15f}, {-3.2f, 2.45f, 3.25f, -0.05f}, {-2.2f, 1.95f, 2.85f, -0.25f},
+			{-1.2f, 1.75f, 2.45f, -0.3f}, {-0.45f, 1.3f, 1.9f, -0.25f}};
+	private static final float[][] REAPER_HOOD = {{-10.5f, 0.9f, 0.9f, 1.0f}, {-10.1f, 2.8f, 3.0f, 1.0f}, {-9.1f, 4.0f, 4.1f, 0.9f},
+			{-7.4f, 4.5f, 4.4f, 0.95f}, {-5.6f, 4.6f, 4.5f, 1.35f}, {-3.6f, 4.5f, 4.45f, 1.9f}, {-1.6f, 4.3f, 4.3f, 2.3f}, {0.4f, 4.2f, 4.2f, 2.4f},
+			{1.4f, 4.3f, 4.3f, 2.4f}};
 
 	/**
-	 * The Grim Reaper: a deep pointed hood round a skull with violet eyes, a cape over the shoulders, a robe to
-	 * the ground with wide sleeves and bony hands; his scythe and an hourglass lantern are in {@link #reaperProps}.
+	 * The Grim Reaper: an ivory skull (deep sockets, a nose hole and a row of teeth) looking out of a deep charcoal
+	 * hood, a cowl over the shoulders closed with toggles, a long robe pooling on the ground, wide bell sleeves and
+	 * bony hands; his scythe and an hourglass lantern are in {@link #reaperProps}.
 	 */
 	private static void reaper(EnumMap<Limb, Shape> s) {
 		Shape head = s.get(Limb.HEAD);
-		head.loft(new Shape.Ring[] {Shape.Ring.along(0, 0.9f, 0.4f, 4.9f, 4.9f), Shape.Ring.along(0, -4, 0.6f, 5.4f, 5.3f),
-				Shape.Ring.along(0, -8.4f, 1.0f, 4.9f, 5.0f), Shape.Ring.along(0, -9.9f, 2.0f, 3.2f, 3.6f), Shape.Ring.along(0, -10.7f, 3.5f, 0.6f, 0.8f)},
-				28, 0.15f, KnifeShading.RUBBER, Shape.OPEN, Shape.DOME, false);
-		head.plate(rect(-3.8f, -7.8f, 3.8f, 0.4f), -4.75f, -4.6f, 0.8f, KnifeShading.RUBBER);
-		box(head, -2.6f, -7.0f, -4.95f, 2.6f, -1.2f, -3.3f, 0.78f, KnifeShading.FEATHER);
+		column(head, 0, REAPER_SKULL, 0, KnifeShading.BONE, Shape.DOME, Shape.DOME);
 		for (int side = -1; side <= 1; side += 2) {
-			head.plate(diamond(side * 1.1f, -4.4f, 0.85f, 0.8f), -5.05f, -4.9f, 0.1f, KnifeShading.RUBBER);
-			head.pin(side * 1.1f, -4.4f, -5.15f, -5.0f, 0.34f, KnifeShading.GEM_RIM);
+			decal(head, REAPER_SKULL, ellipse(0.98f, 1.08f, 16), side * 1.28f, -4.55f, 0.1f, 0.4f, KnifeShading.DARK);
+			decal(head, REAPER_SKULL, ellipse(0.55f, 0.32f, 12), side * 2.1f, -3.35f, 0.04f, 0.3f, KnifeShading.CLOTH);
 		}
-		head.plate(new float[] {-0.4f, -3.0f, 0.4f, -3.0f, 0, -3.8f}, -5.05f, -4.9f, 0.05f, KnifeShading.RUBBER);
-		for (int i = -2; i <= 2; i++) head.plate(rect(i * 0.85f - 0.28f, -2.0f, i * 0.85f + 0.28f, -1.5f), -5.05f, -4.9f, 0.05f, KnifeShading.RUBBER);
+		decal(head, REAPER_SKULL, new float[] {0, -0.6f, 0.28f, -0.1f, 0.5f, 0.3f, 0.3f, 0.5f, 0, 0.32f, -0.3f, 0.5f, -0.5f, 0.3f, -0.28f, -0.1f}, 0,
+				-3.15f, 0.08f, 0.4f, KnifeShading.DARK);
+		for (int i = -3; i <= 3; i++) {
+			decal(head, REAPER_SKULL, rect(-0.27f, -0.09f, 0.27f, 0.09f), i * 0.5f, -1.72f, 0.07f, 0.3f, KnifeShading.DARK);
+		}
+		for (int i = -2; i <= 3; i++) {
+			decal(head, REAPER_SKULL, rect(-0.05f, -0.42f, 0.05f, 0.42f), (i - 0.5f) * 0.5f, -1.72f, 0.06f, 0.3f, KnifeShading.DARK);
+		}
+		column(head, 0, REAPER_HOOD, 0, KnifeShading.CLOTH, Shape.DOME, Shape.OPEN);
+		twig(head, 0, -10.0f, 1.0f, 0, -11.0f, 2.2f, 1.5f, 0.35f, KnifeShading.CLOTH);
+		int n = 26;
+		float[][] rim = new float[n + 1][];
+		for (int i = 0; i <= n; i++) {
+			double a = Math.toRadians(120 + 300.0 * i / n);
+			float x = (float) Math.cos(a) * 3.45f;
+			float y = -4.1f + (float) Math.sin(a) * 4.75f;
+			rim[i] = new float[] {x, y, front(REAPER_HOOD, x, y) - 0.08f, 0.52f};
+		}
+		path(head, rim, KnifeShading.CLOTH);
 
 		Shape body = s.get(Limb.BODY);
-		sleeve(body, 0, new float[][] {{-0.3f, 4.5f, 2.7f, 0}, {6, 4.8f, 3.0f, 0}, {12, 5.4f, 3.4f, 0.1f}, {18, 6.1f, 3.9f, 0.2f}, {23.6f, 6.7f, 4.4f, 0.3f}},
-				KnifeShading.RUBBER, true);
-		sleeve(body, 0, new float[][] {{-0.7f, 4.6f, 3.0f, 0}, {2.6f, 6.1f, 3.9f, 0.1f}, {5.6f, 6.8f, 4.4f, 0.2f}}, KnifeShading.RUBBER, false);
-		body.pin(0, 1.6f, -3.35f, -2.9f, 0.32f, KnifeShading.HARDWARE);
-		body.pin(0, 3.6f, -4.1f, -3.6f, 0.32f, KnifeShading.HARDWARE);
+		column(body, 0, new float[][] {{-0.6f, 3.6f, 2.6f, 0.2f}, {1.5f, 4.4f, 2.7f, 0.2f}, {6, 4.6f, 2.9f, 0.2f}, {12, 5.3f, 3.4f, 0.3f},
+				{18, 6.1f, 3.9f, 0.4f}, {22.6f, 6.9f, 4.5f, 0.5f}, {23.9f, 7.2f, 4.8f, 0.5f}}, 0.1f, KnifeShading.CLOTH, Shape.OPEN, Shape.CAP);
+		float[][] cowl = {{-1.4f, 3.3f, 3.0f, 0.4f}, {-0.6f, 4.8f, 3.4f, 0.3f}, {0.6f, 6.8f, 3.8f, 0.2f}, {2.0f, 8.0f, 4.1f, 0.2f},
+				{4.2f, 8.4f, 4.3f, 0.2f}, {6.3f, 8.4f, 4.4f, 0.2f}, {6.7f, 8.0f, 4.1f, 0.2f}};
+		column(body, 0, cowl, 0, KnifeShading.CLOTH, Shape.OPEN, Shape.OPEN);
+		for (int i = 0; i < 3; i++) {
+			float y = 1.4f + i * 1.9f;
+			float z = front(cowl, 0, y) - 0.15f;
+			twig(body, -0.65f, y, z, 0.65f, y, z, 0.2f, 0.2f, KnifeShading.WOOD);
+			twig(body, 0, y - 0.5f, z + 0.1f, 0, y + 0.5f, z + 0.1f, 0.09f, 0.09f, KnifeShading.CORD);
+		}
 
 		for (Limb arm : new Limb[] {Limb.RIGHT_ARM, Limb.LEFT_ARM}) {
 			Shape m = s.get(arm);
 			float x = arm == Limb.RIGHT_ARM ? -1 : 1;
-			sleeve(m, x, new float[][] {{-2.4f, 2.5f, 2.5f, 0}, {5, 2.8f, 2.8f, 0}, {9.2f, 3.7f, 3.7f, 0}}, KnifeShading.RUBBER, false);
-			box(m, x - 1.2f, 8.6f, -1.2f, x + 1.2f, 10.8f, 1.2f, 0.65f, KnifeShading.FEATHER);
-			for (int f = -1; f <= 1; f++) twig(m, x + f * 0.7f, 10.6f, -0.4f, x + f * 0.9f, 12.4f, -0.9f, 0.22f, 0.18f, KnifeShading.FEATHER);
+			float in = -x;
+			float sx = x * 0.6f;
+			column(m, sx, new float[][] {{-0.6f, 1.9f, 1.9f, 0}, {2, 2.3f, 2.3f, 0}, {6, 3.0f, 3.0f, 0}, {9.4f, 3.7f, 3.6f, -0.2f}, {10.2f, 3.9f, 3.8f, -0.2f}},
+					0.1f, KnifeShading.CLOTH, Shape.DOME, Shape.OPEN);
+			column(m, sx, new float[][] {{9.2f, 3.5f, 3.4f, -0.2f}, {10.0f, 3.6f, 3.5f, -0.2f}}, 0, KnifeShading.DARK, Shape.OPEN, Shape.CAP);
+			blob(m, x, 10.9f, -0.3f, 0.85f, 0.95f, 0.45f, KnifeShading.BONE);
+			for (int f = 0; f < 4; f++) {
+				float fx = x - 0.72f + f * 0.48f;
+				path(m, new float[][] {{fx, 11.4f, -0.4f, 0.17f}, {fx, 12.6f, -0.75f, 0.15f}, {fx + in * 0.05f, 13.5f, -0.45f, 0.12f}}, KnifeShading.BONE);
+				ball(m, fx, 12.6f, -0.75f, 0.2f, KnifeShading.BONE);
+			}
+			path(m, new float[][] {{x + in * 0.85f, 11.0f, -0.6f, 0.18f}, {x + in * 1.1f, 11.9f, -1.1f, 0.15f}, {x + in * 0.9f, 12.6f, -1.4f, 0.12f}},
+					KnifeShading.BONE);
 		}
 	}
 
-	/** The Reaper's scythe, upright in his right hand with its blade sweeping forward, and an hourglass lantern hanging from his left. */
+	/** The Reaper's scythe, upright in his right hand with its long curved blade over his head, and an hourglass lantern hanging from his left. */
 	private static void reaperProps(EnumMap<Limb, Shape> props) {
 		Shape right = props.get(Limb.RIGHT_ARM);
 		float x = -1;
-		twig(right, x, -22, -0.6f, x, 21, -0.1f, 0.62f, 0.55f, KnifeShading.TAN_WOOD);
-		twig(right, x, 1.8f, -0.5f, x, 1.8f, -4.2f, 0.42f, 0.42f, KnifeShading.TAN_WOOD);
-		twig(right, x, 13.5f, -0.2f, x, 13.5f, -3.6f, 0.42f, 0.42f, KnifeShading.TAN_WOOD);
+		float z = -0.7f;
+		path(right, new float[][] {{x + 0.6f, -12.6f, z, 0.42f}, {x + 0.25f, -4, z, 0.47f}, {x, 4, z, 0.48f}, {x - 0.25f, 13, z, 0.46f},
+				{x - 0.4f, 22, z, 0.42f}}, KnifeShading.TAN_WOOD);
+		path(right, new float[][] {{x - 0.3f, 16.6f, z, 0.32f}, {x + 1.1f, 16.3f, z - 0.6f, 0.3f}, {x + 2.0f, 16.0f, z - 1.0f, 0.3f}}, KnifeShading.TAN_WOOD);
+		blob(right, x + 0.6f, -12.3f, z, 0.75f, 1.0f, 0.75f, KnifeShading.HARDWARE);
 		Shape blade = new Shape();
 		Shape.Blade b = new Shape.Blade();
 		int steps = 48;
+		float rootX = x + 0.6f;
+		float rootY = -12.9f;
 		for (int i = 0; i <= steps; i++) {
 			float t = i / (float) steps;
-			double angle = Math.toRadians(-38 - 132 * t);
-			float cx = -8.5f;
-			float cy = -14.5f;
-			float r = 10.6f;
-			float width = 2.8f * (1 - (float) Math.pow(t, 1.25)) + 0.04f;
-			float sx = cx + (float) Math.cos(angle) * r;
-			float sy = cy + (float) Math.sin(angle) * r;
-			float ex = cx + (float) Math.cos(angle) * (r - width);
-			float ey = cy + (float) Math.sin(angle) * (r - width);
-			b.station(sx, sy, ex, ey, 0.32f - 0.22f * t);
+			float sx = rootX + 12.5f * t;
+			float sy = rootY - 2.7f * (float) Math.sin(Math.PI * t) + 4.4f * t * t * t;
+			float t2 = Math.min(1, t + 0.01f);
+			float tx = 12.5f * (t2 - t);
+			float ty = -2.7f * (float) (Math.sin(Math.PI * t2) - Math.sin(Math.PI * t)) + 4.4f * (t2 * t2 * t2 - t * t * t);
+			float len = (float) Math.max(1e-5, Math.hypot(tx, ty));
+			float nx = -ty / len;
+			float ny = tx / len;
+			float width = 2.7f * (1 - (float) Math.pow(t, 1.35)) + 0.05f;
+			b.station(sx, sy, sx + nx * width, sy + ny * width, 0.3f - 0.2f * t);
 		}
-		b.grind = 0.55f;
+		b.grind = 0.5f;
 		b.flatColumns = 5;
 		blade.blade(b);
-		right.addTurned(blade, -90, x, 0, -0.6f);
+		blade.recolor(KnifeShading.BLADE, KnifeShading.STEEL);
+		blade.recolor(KnifeShading.EDGE, KnifeShading.STEEL);
+		right.add(blade, 0, 0, z);
 
 		Shape left = props.get(Limb.LEFT_ARM);
 		float lx = 1;
-		left.torus(lx, 11.9f, 0, 0.75f, 0.16f, 0.16f, 20, 6, KnifeShading.HARDWARE);
-		twig(left, lx, 12.6f, 0, lx, 13.6f, 0, 0.12f, 0.12f, KnifeShading.HARDWARE);
-		tube(left, lx, 0, 13.6f, 14.1f, 1.45f, 1.45f, KnifeShading.HARDWARE);
-		tube(left, lx, 0, 18.6f, 19.1f, 1.45f, 1.45f, KnifeShading.HARDWARE);
+		left.torus(lx, 12.3f, -0.4f, 0.75f, 0.16f, 0.16f, 20, 6, KnifeShading.HARDWARE);
+		twig(left, lx, 13.0f, -0.4f, lx, 13.7f, -0.4f, 0.12f, 0.12f, KnifeShading.HARDWARE);
+		column(left, lx, new float[][] {{13.6f, 1.45f, 1.45f, -0.4f}, {14.1f, 1.45f, 1.45f, -0.4f}}, 0.3f, KnifeShading.HARDWARE, Shape.CAP, Shape.CAP);
+		column(left, lx, new float[][] {{18.6f, 1.45f, 1.45f, -0.4f}, {19.1f, 1.45f, 1.45f, -0.4f}}, 0.3f, KnifeShading.HARDWARE, Shape.CAP, Shape.CAP);
 		for (int k = 0; k < 3; k++) {
-			double a = Math.PI * 2 * k / 3;
-			float px = lx + (float) Math.cos(a) * 1.15f;
-			float pz = (float) Math.sin(a) * 1.15f;
-			twig(left, px, 14.0f, pz, px, 18.7f, pz, 0.13f, 0.13f, KnifeShading.HARDWARE);
+			double a = Math.PI * 2 * k / 3 + Math.PI / 2;
+			float px = lx + (float) Math.cos(a) * 1.18f;
+			float pz = -0.4f + (float) Math.sin(a) * 1.18f;
+			twig(left, px, 14.0f, pz, px, 18.7f, pz, 0.12f, 0.12f, KnifeShading.HARDWARE);
 		}
-		ball(left, lx, 15.2f, 0, 1.0f, KnifeShading.GEM);
-		ball(left, lx, 17.4f, 0, 1.0f, KnifeShading.GEM);
-		ball(left, lx, 17.9f, 0, 0.55f, KnifeShading.FEATHER);
+		column(left, lx, new float[][] {{14.1f, 0.3f, 0.3f, -0.4f}, {14.6f, 0.95f, 0.95f, -0.4f}, {15.4f, 1.0f, 1.0f, -0.4f}, {16.1f, 0.5f, 0.5f, -0.4f},
+				{16.45f, 0.17f, 0.17f, -0.4f}, {16.8f, 0.5f, 0.5f, -0.4f}, {17.5f, 1.0f, 1.0f, -0.4f}, {18.3f, 0.95f, 0.95f, -0.4f},
+				{18.6f, 0.3f, 0.3f, -0.4f}}, 0, KnifeShading.GLASS, Shape.OPEN, Shape.OPEN);
+		column(left, lx, new float[][] {{17.3f, 0.96f, 0.96f, -0.4f}, {18.25f, 0.99f, 0.99f, -0.4f}, {18.58f, 0.34f, 0.34f, -0.4f}}, 0,
+				KnifeShading.SAND, Shape.OPEN, Shape.CAP);
+		column(left, lx, new float[][] {{15.85f, 0.66f, 0.66f, -0.4f}, {16.15f, 0.48f, 0.48f, -0.4f}, {16.42f, 0.2f, 0.2f, -0.4f}}, 0, KnifeShading.SAND,
+				Shape.CAP, Shape.OPEN);
 	}
 
+	private static final float[][] LOG = {{-10.9f, 3.75f, 3.75f, 0}, {-10.4f, 3.95f, 3.95f, 0}, {-5, 4.2f, 4.2f, 0}, {3, 4.35f, 4.35f, 0},
+			{10, 4.3f, 4.3f, 0}, {14.0f, 4.15f, 4.15f, 0}, {14.5f, 3.9f, 3.9f, 0}};
+
 	/**
-	 * Timber: a tall golden log for head and body with big cartoon eyes under heavy brows, a long nose and a wide
-	 * grin, on thin stick arms with twig fingers and thin legs with big flat feet.
+	 * Timber: one tall, wide round log of light golden wood for head and body, its face in the top half (big
+	 * bulging cartoon eyes under heavy lids and brows, a long round nose, full cheeks and a wide grin), thin stick
+	 * arms coming out low on its sides with long twig fingers, and short thin legs with big bare feet.
 	 */
 	private static void timber(EnumMap<Limb, Shape> s) {
-		Shape head = s.get(Limb.HEAD);
-		tube(head, 0, 0, 0.6f, -9.4f, 4.7f, 4.6f, KnifeShading.TAN_WOOD);
+		Shape body = s.get(Limb.BODY);
+		column(body, 0, LOG, 0, KnifeShading.LOG, Shape.CAP, Shape.CAP);
 		for (int side = -1; side <= 1; side += 2) {
-			ball(head, side * 1.8f, -5.0f, -4.15f, 1.4f, KnifeShading.FEATHER);
-			ball(head, side * 1.62f, -4.95f, -5.2f, 0.78f, KnifeShading.RUBBER);
-			ball(head, side * 1.35f, -5.3f, -5.9f, 0.22f, KnifeShading.FEATHER);
-			head.plate(new float[] {side * 0.5f, -6.7f, side * 3.3f, -7.2f, side * 3.3f, -6.4f, side * 0.5f, -6.1f}, -5.0f, -4.35f, 0.2f,
-					KnifeShading.TAN_WOOD);
+			float ex = side * 1.85f;
+			ball(body, ex, -4.6f, -3.22f, 1.45f, KnifeShading.GLOSS);
+			blob(body, side * 1.74f, -4.5f, -4.6f, 0.72f, 0.78f, 0.25f, KnifeShading.HARDWARE);
+			blob(body, side * 1.74f, -4.5f, -4.86f, 0.36f, 0.38f, 0.12f, KnifeShading.DARK);
+			ball(body, side * 1.5f, -4.82f, -4.93f, 0.15f, KnifeShading.GLOSS);
+			blob(body, ex, -5.25f, -3.3f, 1.58f, 0.75f, 1.42f, KnifeShading.LOG);
+			blob(body, ex, -3.4f, -3.45f, 1.3f, 0.45f, 1.0f, KnifeShading.LOG);
+			blob(body, side * 1.95f, -6.6f, -3.5f, 1.75f, 0.55f, 0.75f, KnifeShading.LOG);
+			blob(body, side * 2.45f, -1.5f, -2.85f, 1.2f, 1.05f, 0.95f, KnifeShading.LOG);
+			blob(body, side * 0.7f, -1.35f, -4.45f, 0.55f, 0.5f, 0.55f, KnifeShading.LOG);
 		}
-		tube(head, 0, -4.95f, -4.9f, -2.5f, 0.55f, 0.72f, KnifeShading.TAN_WOOD);
-		ball(head, 0, -2.5f, -5.05f, 0.8f, KnifeShading.TAN_WOOD);
-		head.plate(new float[] {-2.8f, -1.75f, 2.8f, -1.75f, 2.2f, -0.75f, 0, -0.35f, -2.2f, -0.75f}, -4.8f, -4.5f, 0.15f, KnifeShading.RUBBER);
-		head.plate(rect(-2.1f, -1.72f, 2.1f, -1.3f), -4.92f, -4.75f, 0.08f, KnifeShading.FEATHER);
-		head.plate(new float[] {-3.0f, -1.95f, 3.0f, -1.95f, 2.9f, -1.6f, -2.9f, -1.6f}, -4.95f, -4.6f, 0.12f, KnifeShading.TAN_WOOD);
-		tube(s.get(Limb.BODY), 0, 0, -0.4f, 12.8f, 4.7f, 4.35f, KnifeShading.TAN_WOOD);
+		twig(body, 0, -5.3f, -4.0f, 0, -2.2f, -4.85f, 0.55f, 0.75f, KnifeShading.LOG);
+		blob(body, 0, -1.65f, -4.95f, 0.95f, 0.85f, 0.8f, KnifeShading.LOG);
+		int n = 13;
+		float[][] mouth = new float[n][];
+		float[][] upper = new float[n][];
+		float[][] lower = new float[n][];
+		for (int i = 0; i < n; i++) {
+			float x = -2.7f + 5.4f * i / (n - 1);
+			float k = x / 2.7f;
+			float y = 0.55f + 0.95f * (1 - k * k);
+			float z = -(float) Math.sqrt(4.3f * 4.3f - x * x) - 0.25f;
+			float lip = 0.4f * (1 - 0.55f * k * k);
+			mouth[i] = new float[] {x, y, z, 0.24f};
+			upper[i] = new float[] {x, y - 0.36f, z - 0.07f, lip};
+			lower[i] = new float[] {x * 0.94f, y + 0.44f, z - 0.05f, lip * 1.1f};
+		}
+		path(body, mouth, KnifeShading.DARK);
+		path(body, upper, KnifeShading.LOG);
+		path(body, lower, KnifeShading.LOG);
+		blob(body, 0, 2.95f, -3.85f, 1.4f, 0.85f, 0.65f, KnifeShading.LOG);
+
 		for (Limb arm : new Limb[] {Limb.RIGHT_ARM, Limb.LEFT_ARM}) {
 			Shape m = s.get(arm);
-			float x = arm == Limb.RIGHT_ARM ? -1.6f : 1.6f;
 			float out = arm == Limb.RIGHT_ARM ? -1 : 1;
-			twig(m, x, -1.0f, 0, x, 9.6f, 0, 0.55f, 0.45f, KnifeShading.TAN_WOOD);
-			twig(m, x, 9.6f, 0, x - out * 0.9f, 11.6f, -0.5f, 0.24f, 0.16f, KnifeShading.TAN_WOOD);
-			twig(m, x, 9.6f, 0, x, 12.0f, -0.6f, 0.24f, 0.16f, KnifeShading.TAN_WOOD);
-			twig(m, x, 9.6f, 0, x + out * 0.9f, 11.6f, -0.4f, 0.24f, 0.16f, KnifeShading.TAN_WOOD);
-			twig(m, x, 9.4f, 0, x + out * 0.4f, 10.6f, -1.3f, 0.22f, 0.15f, KnifeShading.TAN_WOOD);
+			float ax = -out * 0.8f;
+			float ex = ax + out * 0.9f;
+			float wx = ax + out * 1.3f;
+			ball(m, ax, 5.4f, 0, 0.6f, KnifeShading.LOG);
+			path(m, new float[][] {{ax, 5.4f, 0, 0.5f}, {ex, 9.8f, 0.2f, 0.38f}, {wx, 13.8f, -0.1f, 0.32f}}, KnifeShading.LOG);
+			ball(m, ex, 9.8f, 0.2f, 0.44f, KnifeShading.LOG);
+			blob(m, wx, 14.4f, -0.15f, 0.48f, 0.6f, 0.32f, KnifeShading.LOG);
+			for (int f = 0; f < 4; f++) {
+				float fx = wx + (f - 1.5f) * 0.24f;
+				float tip = wx + (f - 1.5f) * 0.62f;
+				path(m, new float[][] {{fx, 14.7f, -0.2f, 0.14f}, {(fx + tip) / 2, 15.7f, -0.4f, 0.12f}, {tip, 16.5f, -0.45f, 0.09f}}, KnifeShading.LOG);
+			}
+			path(m, new float[][] {{wx - out * 0.38f, 14.4f, -0.35f, 0.14f}, {wx - out * 0.78f, 15.0f, -0.7f, 0.11f}, {wx - out * 0.95f, 15.5f, -0.95f, 0.09f}},
+					KnifeShading.LOG);
 		}
 		for (Limb leg : new Limb[] {Limb.RIGHT_LEG, Limb.LEFT_LEG}) {
 			Shape m = s.get(leg);
-			twig(m, 0, 0.2f, 0, 0, 11.0f, -0.2f, 0.62f, 0.55f, KnifeShading.TAN_WOOD);
-			box(m, -1.7f, 10.8f, -3.6f, 1.7f, 12.0f, 1.2f, 0.85f, KnifeShading.TAN_WOOD);
-			for (int t = 0; t < 4; t++) ball(m, -1.2f + t * 0.8f, 11.5f, -3.65f, 0.45f, KnifeShading.TAN_WOOD);
-		}
-	}
-
-	/** A body made of the night sky: smooth, starry nebula all over, with two glowing eyes. */
-	private static void voidWalker(EnumMap<Limb, Shape> s) {
-		Shape head = s.get(Limb.HEAD);
-		box(head, -4.0f, -8.2f, -4.0f, 4.0f, 0.1f, 4.0f, 0.55f, KnifeShading.GUARD);
-		for (int side = -1; side <= 1; side += 2) {
-			head.plate(new float[] {side * 0.7f, -4.9f, side * 2.6f, -5.2f, side * 2.5f, -4.4f, side * 0.7f, -4.3f}, -4.3f, -4.05f, 0.1f,
-					KnifeShading.GEM_RIM);
-		}
-		Shape body = s.get(Limb.BODY);
-		sleeve(body, 0, new float[][] {{-0.2f, 4.2f, 2.2f, 0}, {4, 4.4f, 2.4f, 0}, {8, 3.9f, 2.1f, 0}, {12.2f, 4.1f, 2.2f, 0}}, KnifeShading.GUARD, true);
-		body.loft(new Shape.Ring[] {Shape.Ring.along(0, -0.25f, 0, 4.2f, 2.2f), Shape.Ring.along(0, -0.2f, 0, 0.01f, 0.01f)}, 24, 0.35f,
-				KnifeShading.GUARD, Shape.OPEN, Shape.OPEN, false);
-		for (Limb arm : new Limb[] {Limb.RIGHT_ARM, Limb.LEFT_ARM}) {
-			float x = arm == Limb.RIGHT_ARM ? -1 : 1;
-			sleeve(s.get(arm), x, new float[][] {{-2.3f, 2.1f, 2.1f, 0}, {1.0f, 2.3f, 2.2f, 0}, {4.0f, 1.9f, 1.9f, 0}, {7.0f, 2.1f, 2.0f, 0},
-					{10.2f, 1.8f, 1.8f, 0}}, KnifeShading.GUARD, true);
-		}
-		for (Limb leg : new Limb[] {Limb.RIGHT_LEG, Limb.LEFT_LEG}) {
-			sleeve(s.get(leg), 0, new float[][] {{-0.2f, 2.2f, 2.2f, 0}, {4.0f, 2.3f, 2.3f, 0}, {7.0f, 1.9f, 1.9f, 0}, {12.2f, 2.0f, 2.3f, -0.3f}},
-					KnifeShading.GUARD, true);
+			float in = leg == Limb.RIGHT_LEG ? 1 : -1;
+			path(m, new float[][] {{0, 1.6f, 0, 0.52f}, {0, 6.6f, -0.25f, 0.44f}, {0, 11.0f, 0.1f, 0.4f}}, KnifeShading.LOG);
+			ball(m, 0, 6.6f, -0.25f, 0.52f, KnifeShading.LOG);
+			blob(m, 0, 11.45f, -1.5f, 1.35f, 0.62f, 2.4f, KnifeShading.LOG);
+			blob(m, 0, 11.25f, 0.35f, 0.85f, 0.7f, 0.9f, KnifeShading.LOG);
+			for (int t = 0; t < 5; t++) {
+				float tx = in * (1.0f - t * 0.5f);
+				float r = t == 0 ? 0.44f : 0.35f - t * 0.02f;
+				ball(m, tx, 11.65f, -3.65f + t * 0.15f, r, KnifeShading.LOG);
+			}
 		}
 	}
 
 	/**
-	 * The Astronaut: a bulky white suit with rings at the elbows, a chest unit with dials and hoses, a backpack,
-	 * grey gloves and big boots, and a round helmet with a gold visor.
+	 * Galaxy: a sleek, muscular figure whose whole body is the night sky (violet and pink clouds over deep indigo,
+	 * scattered with stars), with a smooth head and two glowing white eyes.
+	 */
+	private static void galaxy(EnumMap<Limb, Shape> s) {
+		Shape head = s.get(Limb.HEAD);
+		float[][] skull = {{-6, 2.98f, 3.28f, 0.15f}, {-2, 2.98f, 3.28f, 0.15f}};
+		int rings = 14;
+		Shape.Ring[] egg = new Shape.Ring[rings + 1];
+		for (int i = 0; i <= rings; i++) {
+			float t = i / (float) rings;
+			float round = (float) Math.pow(Math.max(0.0001, Math.sin(Math.PI * t)), 0.62);
+			float taper = 1 - 0.3f * t * t;
+			egg[i] = Shape.Ring.along(0, -7.3f + 6.4f * t, 0.2f - 0.55f * t, Math.max(0.01f, 3.0f * round * taper), Math.max(0.01f, 3.3f * round * taper));
+		}
+		head.loft(egg, 24, 0, KnifeShading.GALAXY, Shape.OPEN, Shape.OPEN, false);
+		column(head, 0, new float[][] {{-2.4f, 1.4f, 1.35f, 0.2f}, {0.8f, 1.55f, 1.45f, 0.2f}}, 0, KnifeShading.GALAXY, Shape.OPEN, Shape.OPEN);
+		for (int side = -1; side <= 1; side += 2) {
+			decal(head, skull, new float[] {-0.75f * side, 0.12f, -0.1f * side, -0.26f, 0.75f * side, -0.08f, 0.05f * side, 0.22f}, side * 1.15f, -4.25f,
+					0.06f, 0.3f, KnifeShading.STAR);
+		}
+		Shape body = s.get(Limb.BODY);
+		column(body, 0, new float[][] {{-0.4f, 2.0f, 1.5f, 0.1f}, {0.5f, 4.0f, 2.2f, 0}, {2.6f, 4.3f, 2.5f, -0.15f}, {5.0f, 3.8f, 2.25f, -0.05f},
+				{7.4f, 3.2f, 1.9f, 0.05f}, {9.6f, 3.4f, 2.0f, 0.05f}, {12.3f, 3.6f, 2.0f, 0}}, 0.15f, KnifeShading.GALAXY, Shape.DOME, Shape.CAP);
+		for (int side = -1; side <= 1; side += 2) {
+			blob(body, side * 2.2f, 0.1f, 0.3f, 1.6f, 0.8f, 1.3f, KnifeShading.GALAXY);
+		}
+		for (Limb arm : new Limb[] {Limb.RIGHT_ARM, Limb.LEFT_ARM}) {
+			Shape m = s.get(arm);
+			float x = arm == Limb.RIGHT_ARM ? -1 : 1;
+			float in = -x;
+			blob(m, x, -0.8f, 0, 1.95f, 1.7f, 1.9f, KnifeShading.GALAXY);
+			column(m, x, new float[][] {{-0.6f, 1.6f, 1.65f, 0}, {2.0f, 1.65f, 1.6f, 0.05f}, {4.4f, 1.3f, 1.35f, 0}, {5.4f, 1.2f, 1.25f, 0},
+					{7.2f, 1.35f, 1.35f, -0.05f}, {9.4f, 0.95f, 1.0f, 0}}, 0, KnifeShading.GALAXY, Shape.OPEN, Shape.CAP);
+			blob(m, x, 10.5f, -0.1f, 0.85f, 1.25f, 0.55f, KnifeShading.GALAXY);
+			blob(m, x + in * 0.7f, 10.0f, -0.5f, 0.35f, 0.7f, 0.35f, KnifeShading.GALAXY);
+		}
+		for (Limb leg : new Limb[] {Limb.RIGHT_LEG, Limb.LEFT_LEG}) {
+			Shape m = s.get(leg);
+			column(m, 0, new float[][] {{-1.0f, 1.9f, 1.9f, 0}, {0.6f, 2.0f, 2.0f, 0}, {3.0f, 1.85f, 1.85f, -0.05f}, {5.6f, 1.35f, 1.4f, 0},
+					{6.4f, 1.3f, 1.35f, 0}, {8.4f, 1.5f, 1.55f, 0.1f}, {10.6f, 1.05f, 1.1f, 0.05f}, {11.2f, 1.15f, 1.2f, 0}}, 0, KnifeShading.GALAXY, Shape.DOME,
+					Shape.CAP);
+			blob(m, 0, 11.35f, -0.9f, 1.2f, 0.75f, 2.1f, KnifeShading.GALAXY);
+		}
+	}
+
+	/**
+	 * The Astronaut: a round white helmet with a big dark gold visor, a puffy off-white suit with a chest unit,
+	 * blue and red hose connectors and white hoses, a big backpack, grey gloves, knee pads and chunky white boots.
 	 */
 	private static void astronaut(EnumMap<Limb, Shape> s) {
 		Shape head = s.get(Limb.HEAD);
-		ball(head, 0, -4.4f, 0, 5.7f, KnifeShading.FEATHER);
-		box(head, -3.9f, -7.2f, -6.0f, 3.9f, -1.9f, -4.3f, 0.88f, KnifeShading.VISOR);
-		tube(head, 0, 0, -0.2f, 1.0f, 4.6f, 4.6f, KnifeShading.HARDWARE);
+		ball(head, 0, -4.6f, 0.3f, 5.2f, KnifeShading.GLOSS);
+		blob(head, 0, -4.4f, -0.1f, 4.8f, 4.2f, 5.2f, KnifeShading.VISOR);
+		column(head, 0, new float[][] {{-0.6f, 3.7f, 3.7f, 0.3f}, {1.0f, 3.8f, 3.8f, 0.3f}}, 0.1f, KnifeShading.GLOVE, Shape.OPEN, Shape.OPEN);
+
 		Shape body = s.get(Limb.BODY);
-		box(body, -5.0f, -0.4f, -3.0f, 5.0f, 12.4f, 3.0f, 0.72f, KnifeShading.FEATHER);
-		box(body, -2.7f, 2.0f, -3.8f, 2.7f, 6.4f, -2.8f, 0.8f, KnifeShading.HARDWARE);
-		for (int i = 0; i < 4; i++) {
-			float px = -1.4f + (i % 2) * 2.8f;
-			float py = 3.2f + (i / 2) * 2.2f;
-			body.pin(px, py, -4.25f, -3.7f, 0.5f, i % 3 == 0 ? KnifeShading.GEM_RIM : KnifeShading.HANDLE_PAINT);
+		float[][] suit = {{-0.8f, 3.8f, 2.8f, 0.2f}, {0.6f, 4.9f, 3.1f, 0.1f}, {4, 5.0f, 3.3f, 0}, {8, 4.7f, 3.1f, 0}, {11, 4.8f, 3.1f, 0},
+				{12.8f, 4.5f, 2.9f, 0}};
+		column(body, 0, suit, 0.35f, KnifeShading.SUIT, Shape.DOME, Shape.CAP);
+		box(body, -2.0f, 2.2f, -3.95f, 2.0f, 5.3f, -3.0f, 0.7f, KnifeShading.GLOSS);
+		body.plate(rect(-1.4f, 2.7f, -0.2f, 3.6f), -4.05f, -3.9f, 0.05f, KnifeShading.DARK);
+		body.plate(rect(0.3f, 2.7f, 1.4f, 3.6f), -4.05f, -3.9f, 0.05f, KnifeShading.DARK);
+		for (int i = 0; i < 3; i++) body.pin(-1.0f + i, 4.5f, -4.15f, -3.9f, 0.22f, KnifeShading.GLOVE);
+		for (int side = -1; side <= 1; side += 2) {
+			float bz = front(suit, side * 1.4f, 6.6f);
+			float rz = front(suit, side * 1.4f, 8.7f);
+			body.pin(side * 1.4f, 6.6f, bz - 0.75f, bz + 0.3f, 0.62f, KnifeShading.BLUE);
+			body.pin(side * 1.4f, 6.6f, bz - 0.95f, bz - 0.6f, 0.32f, KnifeShading.GLOSS);
+			body.pin(side * 1.4f, 8.7f, rz - 0.75f, rz + 0.3f, 0.62f, KnifeShading.RED);
+			body.pin(side * 1.4f, 8.7f, rz - 0.95f, rz - 0.6f, 0.32f, KnifeShading.GLOSS);
+			path(body, new float[][] {{side * 1.4f, 6.6f, bz - 0.9f, 0.42f}, {side * 2.9f, 7.5f, bz - 1.05f, 0.42f}, {side * 4.3f, 9.1f, -3.3f, 0.42f},
+					{side * 5.0f, 10.6f, -2.0f, 0.42f}}, KnifeShading.SUIT);
+			path(body, new float[][] {{side * 1.4f, 8.7f, rz - 0.9f, 0.4f}, {side * 2.4f, 10.0f, rz - 0.95f, 0.4f}, {side * 3.6f, 11.0f, -3.3f, 0.4f},
+					{side * 4.6f, 11.6f, -2.2f, 0.4f}}, KnifeShading.SUIT);
 		}
-		twig(body, -2.7f, 4.2f, -3.3f, -4.4f, 6.6f, -3.4f, 0.38f, 0.38f, KnifeShading.FEATHER);
-		twig(body, -4.4f, 6.6f, -3.4f, -5.0f, 9.2f, -2.2f, 0.38f, 0.38f, KnifeShading.FEATHER);
-		twig(body, 2.7f, 4.2f, -3.3f, 4.4f, 6.6f, -3.4f, 0.38f, 0.38f, KnifeShading.FEATHER);
-		twig(body, 4.4f, 6.6f, -3.4f, 5.0f, 9.2f, -2.2f, 0.38f, 0.38f, KnifeShading.FEATHER);
-		box(body, -4.3f, -0.8f, 2.8f, 4.3f, 11.2f, 6.6f, 0.75f, KnifeShading.FEATHER);
-		box(body, -3.0f, -1.6f, 3.4f, 3.0f, -0.6f, 6.0f, 0.75f, KnifeShading.FEATHER);
-		body.plate(new float[] {-4.6f, 1.0f, -3.4f, 1.0f, -3.4f, 2.4f, -4.6f, 2.4f}, -3.15f, -2.95f, 0.3f, KnifeShading.HANDLE_PAINT);
+		column(body, 0, new float[][] {{9.3f, 4.85f, 3.2f, 0}, {9.9f, 4.85f, 3.2f, 0}}, 0.35f, KnifeShading.GLOVE, Shape.OPEN, Shape.OPEN);
+		box(body, -4.4f, -1.6f, 2.6f, 4.4f, 10.2f, 7.0f, 0.75f, KnifeShading.GLOSS);
+		box(body, -3.4f, -2.4f, 3.4f, 3.4f, -1.4f, 6.2f, 0.75f, KnifeShading.GLOSS);
 		for (Limb arm : new Limb[] {Limb.RIGHT_ARM, Limb.LEFT_ARM}) {
-			float x = arm == Limb.RIGHT_ARM ? -1.2f : 1.2f;
 			Shape m = s.get(arm);
-			box(m, x - 2.7f, -2.7f, -2.7f, x + 2.7f, 3.0f, 2.7f, 0.78f, KnifeShading.FEATHER);
-			box(m, x - 2.9f, 3.0f, -2.9f, x + 2.9f, 4.0f, 2.9f, 0.8f, KnifeShading.FEATHER);
-			box(m, x - 2.6f, 4.0f, -2.6f, x + 2.6f, 9.0f, 2.6f, 0.78f, KnifeShading.FEATHER);
-			box(m, x - 2.3f, 8.8f, -2.3f, x + 2.3f, 11.2f, 2.3f, 0.8f, KnifeShading.HARDWARE);
+			float x = arm == Limb.RIGHT_ARM ? -1.2f : 1.2f;
+			float in = arm == Limb.RIGHT_ARM ? 1 : -1;
+			blob(m, x, -0.6f, 0, 2.6f, 2.3f, 2.6f, KnifeShading.SUIT);
+			column(m, x, new float[][] {{-1.0f, 2.45f, 2.45f, 0}, {2.8f, 2.4f, 2.4f, 0}, {4.0f, 2.2f, 2.2f, 0}, {5.4f, 2.35f, 2.35f, 0},
+					{8.4f, 2.15f, 2.15f, 0}, {9.0f, 2.05f, 2.05f, 0}}, 0, KnifeShading.SUIT, Shape.OPEN, Shape.OPEN);
+			column(m, x, new float[][] {{3.7f, 2.45f, 2.45f, 0}, {4.3f, 2.45f, 2.45f, 0}}, 0, KnifeShading.SUIT, Shape.OPEN, Shape.OPEN);
+			column(m, x, new float[][] {{8.7f, 2.3f, 2.3f, 0}, {9.5f, 2.3f, 2.3f, 0}}, 0.1f, arm == Limb.RIGHT_ARM ? KnifeShading.BLUE : KnifeShading.RED,
+					Shape.OPEN, Shape.CAP);
+			blob(m, x, 10.6f, -0.2f, 1.35f, 1.5f, 0.95f, KnifeShading.GLOVE);
+			blob(m, x + in * 1.0f, 10.2f, -0.9f, 0.45f, 0.8f, 0.45f, KnifeShading.GLOVE);
+			blob(m, x, 11.7f, -0.35f, 1.2f, 0.9f, 0.8f, KnifeShading.GLOVE);
 		}
 		for (Limb leg : new Limb[] {Limb.RIGHT_LEG, Limb.LEFT_LEG}) {
 			Shape m = s.get(leg);
-			box(m, -2.8f, -0.4f, -2.8f, 2.8f, 9.6f, 2.8f, 0.78f, KnifeShading.FEATHER);
-			box(m, -2.4f, 4.0f, -3.3f, 2.4f, 7.4f, -2.6f, 0.8f, KnifeShading.FEATHER);
-			box(m, -3.0f, 9.4f, -3.8f, 3.0f, 12.5f, 3.0f, 0.82f, KnifeShading.FEATHER);
+			column(m, 0, new float[][] {{-0.2f, 2.5f, 2.5f, 0}, {3.5f, 2.45f, 2.5f, 0}, {5.5f, 2.25f, 2.3f, 0}, {7.0f, 2.35f, 2.4f, 0},
+					{9.6f, 2.25f, 2.3f, 0}}, 0, KnifeShading.SUIT, Shape.OPEN, Shape.OPEN);
+			blob(m, 0, 5.4f, -2.0f, 1.7f, 1.9f, 0.8f, KnifeShading.SUIT);
+			box(m, -1.4f, 6.8f, -2.75f, 1.4f, 9.2f, -2.15f, 0.7f, KnifeShading.SUIT);
+			column(m, 0, new float[][] {{9.2f, 2.5f, 2.6f, 0}, {10.6f, 2.6f, 2.8f, -0.3f}, {11.8f, 2.6f, 3.0f, -0.6f}}, 0.3f, KnifeShading.GLOSS, Shape.OPEN,
+					Shape.CAP);
+			blob(m, 0, 11.1f, -2.3f, 2.3f, 1.0f, 1.6f, KnifeShading.GLOSS);
+			column(m, 0, new float[][] {{11.7f, 2.7f, 3.2f, -0.7f}, {12.2f, 2.7f, 3.2f, -0.7f}}, 0.35f, KnifeShading.GLOVE, Shape.CAP, Shape.CAP);
 		}
 	}
 
@@ -320,12 +507,8 @@ public final class ModelSkins {
 	private static void emit(Shape mesh, PoseStack pose, SubmitNodeCollector collector, int light) {
 		int glowRgb = Accent.get();
 		float[] hsv = Widgets.toHsv(glowRgb);
-		int frame = KnifeShading.frame(63, 0, 1.0f, 0.3f);
-		Finish finish = switch (Modules.MODEL_SKIN_TYPE.get()) {
-			case "Void Walker" -> Finish.NEBULA;
-			case "Astronaut" -> Finish.ROSE;
-			default -> Finish.VOID;
-		};
+		int frame = KnifeShading.frame(62, 0, 0, 0.3f);
+		Finish finish = Finish.VOID;
 		if (KnifeShading.custom()) {
 			collector.submitCustomGeometry(pose, Compat.knifeShaded(), (last, out) -> mesh.emit(last, out, light, finish.id, hsv[0], hsv[1], frame));
 		} else {
@@ -370,6 +553,7 @@ public final class ModelSkins {
 		if (skin.equals("Timber")) {
 			boolean left = arm == HumanoidArm.LEFT;
 			pose.pushPose();
+			pose.translate(0, 0, -4.2f / 16f);
 			pose.translate(0, 4 / 16f, 0.5f / 16f);
 			pose.mulPose(Axis.YP.rotationDegrees(left ? 90 : -90));
 			pose.mulPose(Axis.ZP.rotationDegrees(left ? -55 : 55));

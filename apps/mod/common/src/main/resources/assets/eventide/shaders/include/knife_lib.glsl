@@ -78,6 +78,15 @@ vec3 k_cells(vec2 p) {
 // The world around the knife, as its metal reflects it: a midnight sky with a violet nebula band and a
 // cyan glow low on one side, bright points of starlight, and dark ground. It's fixed to the world, so the
 // glints move as you look around.
+/** A neutral photo studio: a bright softbox overhead, grey walls and a dark floor. */
+vec3 k_studio(vec3 r, float rough) {
+    float y = r.y;
+    vec3 c = mix(vec3(0.42, 0.43, 0.45), vec3(0.85, 0.86, 0.88), smoothstep(0.0, 0.8, y));
+    c = mix(c, vec3(0.16, 0.16, 0.17), smoothstep(0.0, -0.6, y));
+    float box = exp(-pow((y - 0.55) / (0.12 + rough * 0.5), 2.0)) * (1.0 - rough) * 0.6;
+    return c + vec3(box);
+}
+
 vec3 k_environment(vec3 r, float rough) {
     float y = r.y;
     float blur = 0.03 + rough * 0.55;

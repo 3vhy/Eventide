@@ -21,6 +21,20 @@
 #define M_FEATHER 14
 #define M_TAN_WOOD 15
 #define M_VISOR 16
+#define M_BONE 17
+#define M_CLOTH 18
+#define M_SUIT 19
+#define M_GLASS 20
+#define M_SAND 21
+#define M_STEEL 22
+#define M_GALAXY 23
+#define M_LOG 24
+#define M_GLOSS 25
+#define M_DARK 26
+#define M_GLOVE 27
+#define M_BLUE 28
+#define M_RED 29
+#define M_STAR 30
 
 #define F_OBSIDIAN 0
 #define F_CRYSTAL 1
@@ -293,9 +307,88 @@ Surface k_knifePart(int material, vec2 p, int finish, vec3 glowColor) {
         return k_surface(cord * (0.6 + twist * 1.0), 0.0, 0.85);
     }
     if (material == M_VISOR) {
-        Surface s = k_surface(vec3(0.86, 0.6, 0.24), 0.35, 0.12);
+        Surface s = k_surface(vec3(0.32, 0.21, 0.08), 1.0, 0.06);
         s.coat = 1.0;
-        s.emissive = vec3(0.32, 0.2, 0.06);
+        s.emissive = vec3(0.03, 0.02, 0.005);
+        return s;
+    }
+    if (material == M_BONE) {
+        float pores = k_noise(p * 3.0) * 0.05 + k_noise(p * 0.8) * 0.07;
+        return k_surface(vec3(0.84, 0.8, 0.69) * (0.9 + pores), 0.0, 0.6);
+    }
+    if (material == M_CLOTH) {
+        float folds = sin(p.y * 1.3 + k_fbm3(p * vec2(0.07, 0.3)) * 3.0) * 0.5 + 0.5;
+        float weave = k_noise(p * 6.0) * 0.05;
+        return k_surface(vec3(0.15, 0.15, 0.16) * (0.72 + folds * 0.42 + weave), 0.0, 0.94);
+    }
+    if (material == M_SUIT) {
+        float crease = smoothstep(0.38, 0.5, abs(fract(p.x * 0.32 + k_fbm3(p * 0.18) * 0.7) - 0.5));
+        float weave = k_noise(p * 7.0) * 0.04;
+        return k_surface(vec3(0.86, 0.86, 0.84) * (0.92 + weave - crease * 0.1), 0.0, 0.84);
+    }
+    if (material == M_GLASS) {
+        Surface s = k_surface(vec3(0.6, 0.66, 0.72), 0.0, 0.04);
+        s.coat = 1.0;
+        return s;
+    }
+    if (material == M_SAND) {
+        return k_surface(vec3(0.86, 0.72, 0.46) * (0.9 + k_noise(p * 9.0) * 0.12), 0.0, 0.95);
+    }
+    if (material == M_STEEL) {
+        Surface s = k_surface(vec3(0.4, 0.41, 0.44) * (0.92 + k_noise(p * vec2(0.5, 6.0)) * 0.1), 1.0, 0.3);
+        s.aniso = 0.5;
+        return s;
+    }
+    if (material == M_GALAXY) {
+        vec2 q = p * 0.14;
+        float a = k_fbm3(q);
+        float b = k_fbm3(q * 1.9 + 4.3);
+        vec3 col = vec3(0.02, 0.012, 0.05);
+        col = mix(col, vec3(0.24, 0.07, 0.44), smoothstep(0.4, 0.8, a));
+        col = mix(col, vec3(0.75, 0.28, 0.66), smoothstep(0.6, 0.9, b) * 0.8);
+        col = mix(col, vec3(0.12, 0.2, 0.6), smoothstep(0.7, 0.95, a * b * 1.7) * 0.45);
+        Surface s = k_surface(col, 0.2, 0.38);
+        vec2 g = p * 1.4;
+        vec2 cell = floor(g);
+        vec2 off = vec2(k_hash12(cell + 1.7), k_hash12(cell + 5.3)) * 0.6 + 0.2;
+        float star = step(0.86, k_hash12(cell)) * smoothstep(0.2, 0.0, length(fract(g) - off));
+        vec2 g2 = p * 3.1 + 11.0;
+        vec2 cell2 = floor(g2);
+        vec2 off2 = vec2(k_hash12(cell2 + 2.1), k_hash12(cell2 + 8.7)) * 0.6 + 0.2;
+        float small = step(0.9, k_hash12(cell2)) * smoothstep(0.16, 0.0, length(fract(g2) - off2));
+        s.emissive = col * 0.35 + vec3(1.0, 0.96, 1.0) * (star * 1.2 + small * 0.6);
+        s.coat = 0.35;
+        return s;
+    }
+    if (material == M_LOG) {
+        float grain = sin(p.y * 2.4 + k_fbm3(p * vec2(0.1, 0.6)) * 4.0) * 0.5 + 0.5;
+        vec3 col = mix(vec3(0.76, 0.52, 0.26), vec3(0.88, 0.63, 0.34), grain) * (0.95 + k_noise(p * 2.0) * 0.07);
+        Surface s = k_surface(col, 0.0, 0.55);
+        s.coat = 0.12;
+        return s;
+    }
+    if (material == M_GLOSS) {
+        Surface s = k_surface(vec3(0.93, 0.93, 0.91), 0.0, 0.22);
+        s.coat = 0.6;
+        return s;
+    }
+    if (material == M_DARK) {
+        Surface s = k_surface(vec3(0.035, 0.03, 0.03), 0.0, 0.3);
+        s.coat = 0.5;
+        return s;
+    }
+    if (material == M_GLOVE) {
+        return k_surface(vec3(0.5, 0.51, 0.53) * (0.95 + k_noise(p * 5.0) * 0.06), 0.0, 0.62);
+    }
+    if (material == M_BLUE) {
+        return k_surface(vec3(0.1, 0.22, 0.7), 0.5, 0.3);
+    }
+    if (material == M_RED) {
+        return k_surface(vec3(0.72, 0.1, 0.08), 0.5, 0.3);
+    }
+    if (material == M_STAR) {
+        Surface s = k_surface(vec3(1.0), 0.0, 0.5);
+        s.emissive = vec3(1.4, 1.35, 1.5);
         return s;
     }
     if (material == M_TAN_WOOD) {

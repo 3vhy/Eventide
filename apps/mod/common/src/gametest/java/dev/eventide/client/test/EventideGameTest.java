@@ -82,6 +82,34 @@ public final class EventideGameTest implements FabricClientGameTest {
 	 * the Eventide sky (clear of toasts), the others on plain grey like 67's pictures, the module list in
 	 * the top right corner where it sits in game.
 	 */
+	/** Your player drawn large on grey, from the front and turned each way, to compare a 3D skin with its reference. */
+	private static final class SkinShowcase extends CompatScreen {
+		SkinShowcase() {
+			super(Component.literal("Skin close-up"));
+		}
+
+		@Override
+		protected void drawBackdrop(Draw d) {
+			d.fill(0, 0, this.width, this.height, 0xFFC9CACD);
+		}
+
+		@Override
+		protected void draw(Draw d, int mouseX, int mouseY, float delta) {
+			Minecraft mc = Minecraft.getInstance();
+			int third = this.width / 3;
+			int top = 4;
+			int bottom = this.height - 4;
+			int scale = Math.round((bottom - top) / 2.6f);
+			float eye = top + (bottom - top) * 0.5f;
+			for (int i = 0; i < 3; i++) {
+				int x0 = i * third;
+				int x1 = x0 + third;
+				float look = i == 1 ? (x0 + x1) / 2f : i == 0 ? x1 + 60 : x0 - 60;
+				d.entity(mc.player, x0, top, x1, bottom, scale, look, eye);
+			}
+		}
+	}
+
 	private static final class MusicShowcase extends CompatScreen {
 		private final HudWidget widget;
 		private final List<HudWidget> row;
@@ -1209,6 +1237,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			shot(context, "eventide-skin-" + skin.toLowerCase(java.util.Locale.ROOT).replace(' ', '-'));
 		}
+		skinCloseups(context);
 		check(failed, "a 3D skin is drawn on your player (PlayerModel.setupAnim, the cosmetics layer)", Hooks.modelSkinDrawn);
 		context.runOnClient(client -> {
 			Modules.MODEL_SKIN.set(false);
@@ -1252,6 +1281,23 @@ public final class EventideGameTest implements FabricClientGameTest {
 			client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
 			for (Module module : hudOn) module.set(true);
 		});
+	}
+
+	/** Each 3D skin up close on grey (SkinShowcase), holding its weapon, to set beside its reference picture. */
+	private static void skinCloseups(ClientGameTestContext context) {
+		boolean was = context.computeOnClient(client -> Modules.MODEL_SKIN.enabled());
+		context.runOnClient(client -> {
+			Modules.MODEL_SKIN.set(true);
+			client.getToastManager().clear();
+		});
+		for (String skin : dev.eventide.client.knife.ModelSkins.SKINS) {
+			context.runOnClient(client -> Modules.MODEL_SKIN_TYPE.set(skin));
+			context.setScreen(SkinShowcase::new);
+			context.waitTicks(4);
+			shot(context, "eventide-skin-" + skin.toLowerCase(java.util.Locale.ROOT).replace(' ', '-') + "-closeup");
+		}
+		context.setScreen(() -> null);
+		context.runOnClient(client -> Modules.MODEL_SKIN.set(was));
 	}
 
 	/** Sword Models, Item Physics, Shulker Preview, Stay Open, Own Nametag and UI Animations. */
@@ -1452,6 +1498,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("fx")) worldFx(context, singleplayer, failed);
 			if (focus.contains("cosmetics")) cosmetics(context, singleplayer, failed);
 			if (focus.contains("extras")) extras(context, singleplayer, failed);
+			if (focus.contains("skins")) skinCloseups(context);
 			if (focus.contains("hud")) hudLook(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);

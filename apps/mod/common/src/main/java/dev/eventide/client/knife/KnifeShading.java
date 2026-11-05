@@ -33,6 +33,34 @@ public final class KnifeShading {
 	public static final int TAN_WOOD = 15;
 	/** Gold-tinted glass, for the Astronaut's visor. */
 	public static final int VISOR = 16;
+	/** Ivory bone, for the Reaper's skull and hands. */
+	public static final int BONE = 17;
+	/** Heavy charcoal cloth with soft folds, for the Reaper's robe and hood. */
+	public static final int CLOTH = 18;
+	/** Off-white suit fabric with creases, for the Astronaut. */
+	public static final int SUIT = 19;
+	/** Clear glass, for the hourglass. */
+	public static final int GLASS = 20;
+	/** Sand, for the hourglass. */
+	public static final int SAND = 21;
+	/** Plain dark steel, for the scythe's blade. */
+	public static final int STEEL = 22;
+	/** A body of night sky: violet and pink clouds over deep indigo, with stars. */
+	public static final int GALAXY = 23;
+	/** Smooth light golden wood with a fine grain, for Timber. */
+	public static final int LOG = 24;
+	/** Glossy white: eyes, the helmet shell, boots. */
+	public static final int GLOSS = 25;
+	/** Glossy near-black: pupils, mouths, eye sockets. */
+	public static final int DARK = 26;
+	/** Grey rubber, for gloves and suit rings. */
+	public static final int GLOVE = 27;
+	/** Blue anodised metal, for the Astronaut's connectors. */
+	public static final int BLUE = 28;
+	/** Red anodised metal, for the Astronaut's connectors. */
+	public static final int RED = 29;
+	/** Glowing white, for eyes that shine. */
+	public static final int STAR = 30;
 
 	private KnifeShading() {
 	}
@@ -79,7 +107,21 @@ public final class KnifeShading {
 			case GEM -> 0xFF2A1450;
 			case FEATHER -> 0xFFEDEDF5;
 			case TAN_WOOD -> 0xFFC08A4C;
-			case VISOR -> 0xFFD9A040;
+			case VISOR -> 0xFF3A2A12;
+			case BONE -> 0xFFDAD0B4;
+			case CLOTH -> 0xFF26262A;
+			case SUIT -> 0xFFDCDCD6;
+			case GLASS -> 0xFFA8B4BE;
+			case SAND -> 0xFFDCB878;
+			case STEEL -> 0xFF6A6C72;
+			case GALAXY -> 0xFF2A1450;
+			case LOG -> 0xFFD0A060;
+			case GLOSS -> 0xFFEEEEEA;
+			case DARK -> 0xFF0A0808;
+			case GLOVE -> 0xFF808286;
+			case BLUE -> 0xFF1C3AB4;
+			case RED -> 0xFFB81C14;
+			case STAR -> 0xFFFFFFFF;
 			default -> 0xFF808080;
 		};
 	}

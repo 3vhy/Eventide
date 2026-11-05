@@ -63,6 +63,11 @@ public final class DrawImpl implements Draw {
 	}
 
 	@Override
+	public void entity(net.minecraft.world.entity.LivingEntity entity, int x0, int y0, int x1, int y1, int scale, float lookX, float lookY) {
+		net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(graphics, x0, y0, x1, y1, scale, 0.0625f, lookX, lookY, entity);
+	}
+
+	@Override
 	public void itemOverlay(ItemStack stack, int x, int y, String countLabel) {
 		graphics.itemDecorations(Minecraft.getInstance().font, stack, x, y, countLabel);
 	}

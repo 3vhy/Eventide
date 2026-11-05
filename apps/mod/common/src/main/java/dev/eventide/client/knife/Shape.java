@@ -82,6 +82,13 @@ final class Shape {
 		}
 	}
 
+	/** Gives every vertex of material {@code from} the material {@code to}. */
+	void recolor(int from, int to) {
+		for (int i = 0; i < quads * 4; i++) {
+			if (data[i * STRIDE + 9] == from) data[i * STRIDE + 9] = to;
+		}
+	}
+
 	/** Adds every quad of {@code other}, moved by {@code (dx, dy, dz)}. */
 	void add(Shape other, float dx, float dy, float dz) {
 		for (int q = 0; q < other.quads; q++) {

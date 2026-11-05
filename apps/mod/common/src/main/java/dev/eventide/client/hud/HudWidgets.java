@@ -54,6 +54,12 @@ public final class HudWidgets {
 	private HudWidgets() {
 	}
 
+	/** A pill's accent icon, with a soft shadow under it when there's little or no glass behind it. */
+	private static void pillIcon(Draw d, String name, float x, float y, float size, boolean shadow) {
+		if (shadow) Paint.icon(d, name, x + 0.6f, y + 0.6f, size, 0x99000000);
+		Paint.icon(d, name, x, y, size, shadow ? Accent.lighten(Accent.text(), 0.25f) : Accent.text());
+	}
+
 	/**
 	 * A glass pill: an icon in the accent colour, the value in bold and a dim unit after it (and for some a tiny
 	 * graph or bar). It stands alone or sticks to other pills into one bar (see {@link Pills}).
@@ -133,7 +139,7 @@ public final class HudWidgets {
 			boolean shadow = textShadow();
 			float cx = x + PAD;
 			float cy = y + Hud.PILL_H / 2f;
-			Paint.icon(d, icon(), cx, cy - ICON / 2f, ICON, Accent.text());
+			pillIcon(d, icon(), cx, cy - ICON / 2f, ICON, shadow);
 			cx += ICON + 4;
 			float vw = valueWidth(value, template());
 			Hud.text(d, value, cx, cy - VALUE / 2f, VALUE, Weight.BOLD, color(mc), shadow);
@@ -356,10 +362,6 @@ public final class HudWidgets {
 					facing.substring(0, 1).toUpperCase(Locale.ROOT)};
 		}
 
-		private static float cell(String value, String template) {
-			return Math.max(Hud.width(value, VALUE, Weight.SEMIBOLD), Hud.width(template, VALUE, Weight.SEMIBOLD));
-		}
-
 		@Override
 		public boolean pill() {
 			return true;
@@ -369,7 +371,7 @@ public final class HudWidgets {
 		public int width(Minecraft mc) {
 			String[] v = values(mc);
 			float w = PAD + 8 + 4;
-			for (int i = 0; i < 3; i++) w += Hud.width(AXES[i], LETTER, Weight.BOLD) + 2.4f + cell(v[i], i == 1 ? "000" : "-0000") + (i < 2 ? 5 : 0);
+			for (int i = 0; i < 3; i++) w += Hud.width(AXES[i], LETTER, Weight.BOLD) + 2.4f + Hud.width(v[i], VALUE, Weight.SEMIBOLD) + (i < 2 ? 5 : 0);
 			if (Modules.COORDS_FACING.get()) w += 9 + Hud.width("W", VALUE, Weight.SEMIBOLD);
 			return (int) Math.ceil(w + PAD);
 		}
@@ -391,7 +393,7 @@ public final class HudWidgets {
 			boolean shadow = textShadow();
 			float cy = y + Hud.PILL_H / 2f;
 			float cx = x + PAD;
-			Paint.icon(d, "navigation", cx, cy - 4, 8, Accent.text());
+			pillIcon(d, "navigation", cx, cy - 4, 8, shadow);
 			cx += 8 + 4;
 			for (int i = 0; i < 3; i++) {
 				cx += Hud.text(d, AXES[i], cx, cy - VALUE / 2f + (VALUE - LETTER), LETTER, Weight.BOLD, Accent.text(), shadow) + 2.4f;

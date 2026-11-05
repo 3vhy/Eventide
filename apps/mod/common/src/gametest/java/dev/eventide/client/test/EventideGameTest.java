@@ -311,7 +311,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 				Modules.SHINY_POTS.set(true);
 				Modules.CROSSHAIR.set(true);
 				Modules.NAMETAGS.set(true);
-				Modules.CPS.sliderSetting("background").set(0);
 				Modules.KEYSTROKES.sliderSetting("background").set(25);
 				Modules.MUSIC.set(true);
 				MusicBridge.simulate(SAMPLE_SONG);
@@ -404,6 +403,10 @@ public final class EventideGameTest implements FabricClientGameTest {
 			});
 			check(failed, "menu logo leaves the HUD when Show in game is off", context.computeOnClient(client ->
 					!HudWidgets.MENU_LOGO.shown()));
+			context.runOnClient(client -> Modules.CPS.sliderSetting("background").set(0));
+			context.setScreen(() -> new MusicShowcase(HudWidgets.FPS, HudWidgets.CPS, HudWidgets.PING));
+			context.waitTicks(5);
+			shot(context, "eventide-stats-closeup-cps-without-glass");
 			context.runOnClient(client -> {
 				Modules.CPS.sliderSetting("background").reset();
 				Modules.THEME_PANEL_COLOR.set(0xFFFF5A5F);

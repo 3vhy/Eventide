@@ -115,7 +115,7 @@ public abstract class HudWidget {
 		int h = height(mc);
 		return switch (anchor) {
 			case TOP_LEFT, TOP_RIGHT -> {
-				int y = MARGIN + stackedBefore(mc);
+				int y = MARGIN + stackedBefore(mc) + bossBarClearance(mc, screenWidth);
 				yield new int[] {anchor == Anchor.TOP_LEFT ? MARGIN : screenWidth - w - MARGIN, y};
 			}
 			case TOP_CENTER -> {
@@ -128,6 +128,20 @@ public abstract class HudWidget {
 			case BELOW_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 + 20};
 			case ABOVE_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 - 22 - h};
 		};
+	}
+
+	/** How far this top corner's column moves down to clear the boss bars, when one of its widgets would reach under them. */
+	private int bossBarClearance(Minecraft mc, int screenWidth) {
+		int bottom = bossBarsBottom(mc);
+		if (bottom == 0) return 0;
+		int left = (screenWidth - 182) / 2 - MARGIN;
+		int right = (screenWidth + 182) / 2 + MARGIN;
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor != anchor || other.storedPosition() != null || !other.shown() || !other.visible(mc)) continue;
+			int w = other.width(mc);
+			if (anchor == Anchor.TOP_LEFT ? MARGIN + w > left : screenWidth - MARGIN - w < right) return bottom;
+		}
+		return 0;
 	}
 
 	/** {@code x}, moved left if a widget in the top right (the Music Player) would cover a widget at (x, y), w x h. */

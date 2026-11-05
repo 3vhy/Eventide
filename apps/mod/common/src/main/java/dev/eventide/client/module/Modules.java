@@ -457,7 +457,7 @@ public final class Modules {
 	public static final Toggle MODEL_SKIN_PROP = MODEL_SKIN.add(new Toggle("prop", "Hold their weapon",
 			"The Reaper's scythe, Timber's bat or the Void Walker's dagger in your hand instead of your item", true));
 	public static final Module HATS = new Module("hats", "Hats",
-			"A hat on your head in third person and your inventory: a halo, a crown, a top hat, a witch hat, horns or cat ears; only you see it",
+			"A hat on your head in third person and your inventory: a glowing cone, a halo, a crown, a top hat, a witch hat, horns or cat ears",
 			Category.COSMETICS, false).icon("crown").markNew();
 	public static final Choice HATS_TYPE = HATS.add(new Choice("type", "Hat", "Which hat you wear", 0, dev.eventide.client.knife.Cosmetics.HATS));
 	public static final Module WINGS = new Module("wings", "Wings",

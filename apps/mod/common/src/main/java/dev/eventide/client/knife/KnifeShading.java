@@ -29,6 +29,10 @@ public final class KnifeShading {
 	public static final int GEM_RIM = 13;
 	/** Soft white feathers, for angel wings. */
 	public static final int FEATHER = 14;
+	/** Light golden wood with its grain, for Timber and wooden handles. */
+	public static final int TAN_WOOD = 15;
+	/** Gold-tinted glass, for the Astronaut's visor. */
+	public static final int VISOR = 16;
 
 	private KnifeShading() {
 	}
@@ -74,6 +78,8 @@ public final class KnifeShading {
 			case ENERGY, GEM_RIM -> glow | 0xFF000000;
 			case GEM -> 0xFF2A1450;
 			case FEATHER -> 0xFFEDEDF5;
+			case TAN_WOOD -> 0xFFC08A4C;
+			case VISOR -> 0xFFD9A040;
 			default -> 0xFF808080;
 		};
 	}

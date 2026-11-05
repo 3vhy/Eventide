@@ -13,12 +13,13 @@ import net.minecraft.world.entity.HumanoidArm;
 
 /**
  * Hats and wings for your player, and your knife in your hand in third person, all built from code and shaded
- * by the knife shader like the knives: a Halo, a Crown, a Top Hat, a Witch Hat, Horns and Cat Ears; Angel,
+ * by the knife shader like the knives: a Glow Cone (a see-through cone of light), a Halo, a Crown, a Top Hat, a Witch
+ * Hat, Horns and Cat Ears; Angel,
  * Demon and Energy wings that flap gently. Shapes are made the first time they're worn and kept. Units are
  * pixels, Y up; the callers turn Minecraft's model space (Y down) round.
  */
 public final class Cosmetics {
-	public static final String[] HATS = {"Halo", "Crown", "Top Hat", "Witch Hat", "Horns", "Cat Ears"};
+	public static final String[] HATS = {"Glow Cone", "Halo", "Crown", "Top Hat", "Witch Hat", "Horns", "Cat Ears"};
 	public static final String[] WINGS = {"Angel", "Demon", "Energy"};
 	private static final Map<String, Shape> SHAPES = new HashMap<>();
 
@@ -33,6 +34,9 @@ public final class Cosmetics {
 		Shape m = new Shape();
 		switch (key) {
 			case "Halo" -> m.torus(0, 0, 0, 3.6f, 0.32f, 0.32f, 40, 10, KnifeShading.ENERGY);
+			case "Glow Cone" -> m.loft(new Shape.Ring[] {Shape.Ring.along(0, 0, 0, 7.2f, 7.2f), Shape.Ring.along(0, 3.0f, 0, 0.04f, 0.04f)}, 48, 0,
+					KnifeShading.ENERGY, Shape.OPEN, Shape.OPEN, false);
+			case "Glow Cone rim" -> hoop(m, 0, 7.2f, 0.18f, KnifeShading.ENERGY);
 			case "Crown" -> crown(m);
 			case "Top Hat" -> topHat(m);
 			case "Witch Hat" -> witchHat(m);
@@ -45,6 +49,19 @@ public final class Cosmetics {
 			}
 		}
 		return m;
+	}
+
+	/** A flat ring lying round the Y axis at height {@code y}, {@code radius} across to the middle of its tube. */
+	private static void hoop(Shape m, float y, float radius, float tube, int material) {
+		int around = 48;
+		Shape.Ring[] rings = new Shape.Ring[around + 1];
+		for (int i = 0; i <= around; i++) {
+			double a = 2 * Math.PI * i / around;
+			float c = (float) Math.cos(a);
+			float sn = (float) Math.sin(a);
+			rings[i] = new Shape.Ring(c * radius, y, sn * radius, -sn, 0, c, tube, tube, new float[] {c, 0, sn});
+		}
+		m.loft(rings, 8, 0, material, Shape.OPEN, Shape.OPEN, false);
 	}
 
 	/** A band of four zigzag-topped plates round the head, a jewel on each side. */
@@ -238,6 +255,18 @@ public final class Cosmetics {
 				pose.mulPose(Axis.XP.rotationDegrees(-8));
 			}
 			case "Horns" -> finish = Finish.VOID;
+			case "Glow Cone" -> {
+				pose.translate(0, 0.6f, 0);
+				int color = 0xA0000000 | Accent.get() & 0xFFFFFF;
+				Shape cone = shape("Glow Cone");
+				if (KnifeShading.custom()) {
+					collector.submitCustomGeometry(pose, Compat.knifeGlow(), (last, out) -> cone.emitGlow(last, out, color, 0));
+					collector.submitCustomGeometry(pose, Compat.knifeLine(), (last, out) -> cone.emitGlow(last, out, color, 0.08f));
+				}
+				emit(shape("Glow Cone rim"), pose, collector, light, finish, true);
+				pose.popPose();
+				return;
+			}
 			case "Cat Ears" -> pose.translate(0, -0.2f, 1.0f);
 			default -> {
 			}

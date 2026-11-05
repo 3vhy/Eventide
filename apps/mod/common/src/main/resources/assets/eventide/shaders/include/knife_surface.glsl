@@ -19,6 +19,8 @@
 #define M_GEM 12
 #define M_GEM_RIM 13
 #define M_FEATHER 14
+#define M_TAN_WOOD 15
+#define M_VISOR 16
 
 #define F_OBSIDIAN 0
 #define F_CRYSTAL 1
@@ -289,6 +291,18 @@ Surface k_knifePart(int material, vec2 p, int finish, vec3 glowColor) {
         float twist = abs(fract(p.x * 1.6 + p.y * 1.2) - 0.5);
         vec3 cord = mix(vec3(0.06, 0.05, 0.09), glowColor * 0.25, 0.25);
         return k_surface(cord * (0.6 + twist * 1.0), 0.0, 0.85);
+    }
+    if (material == M_VISOR) {
+        Surface s = k_surface(vec3(0.86, 0.6, 0.24), 0.35, 0.12);
+        s.coat = 1.0;
+        s.emissive = vec3(0.32, 0.2, 0.06);
+        return s;
+    }
+    if (material == M_TAN_WOOD) {
+        float grain = sin((p.y * 1.3 + k_fbm3(p * vec2(0.45, 0.12)) * 5.0) * 2.4) * 0.5 + 0.5;
+        Surface s = k_surface(mix(vec3(0.6, 0.41, 0.2), vec3(0.8, 0.6, 0.34), grain), 0.0, 0.5);
+        s.coat = 0.25;
+        return s;
     }
     if (material == M_FEATHER) {
         float barbs = abs(fract(p.y * 3.0 + abs(p.x) * 1.4) - 0.5);

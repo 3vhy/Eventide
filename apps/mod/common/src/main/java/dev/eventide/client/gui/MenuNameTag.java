@@ -13,9 +13,7 @@ import dev.eventide.client.ui.Type;
 import dev.eventide.client.ui.Type.Weight;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -43,8 +41,7 @@ public final class MenuNameTag {
 
 	/** The menus it shows on; other screens often have buttons in that corner. */
 	public static boolean shows(Screen screen) {
-		return screen instanceof PauseScreen || screen instanceof AbstractContainerScreen<?>
-				|| screen instanceof TitleScreen;
+		return screen instanceof AbstractContainerScreen<?>;
 	}
 
 	private static Layout layout(Minecraft mc) {

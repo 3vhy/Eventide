@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.discord.DiscordPresence;
 import dev.eventide.client.gui.MenuNameTag;
-import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.gui.menu.MenuHost;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.hud.Hotbar;
@@ -114,12 +113,11 @@ public final class EventideClient implements ClientModInitializer {
 		});
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if (screen instanceof PauseScreen) PauseMenuButton.add(client, screen);
 			if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((shown, event) ->
 						!(event.button() == 0 && HudWidgets.musicClick(event.x(), event.y())));
 			}
-			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen || screen instanceof PauseScreen) {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.afterKeyPress(screen).register((shown, event) -> {
 					if (openSettingsKey != null && openSettingsKey.matches(event) && client.screen == shown) {
 						client.setScreen(dev.eventide.client.gui.menu.MenuHost.fromKey(shown));

@@ -9,7 +9,6 @@ import dev.eventide.client.Hooks;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.compat.CompatScreen;
 import dev.eventide.client.gui.HudEditorScreen;
-import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.gui.menu.FloatingMenu;
 import dev.eventide.client.gui.menu.FloatingMenuScreen;
@@ -774,73 +773,20 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(10);
 			shot(context, "eventide-pause-menu");
-			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-			int[][] pauseButtons = context.computeOnClient(client -> {
-				AbstractWidget mods = null;
-				AbstractWidget ours = null;
-				AbstractWidget stats = null;
-				AbstractWidget options = null;
-				AbstractWidget disconnect = null;
-				AbstractWidget modMenu = null;
-				boolean feedback = false;
+			check(failed, "the pause menu is Minecraft's own, with no Eventide buttons", context.computeOnClient(client -> {
 				for (AbstractWidget widget : Compat.widgets(client.screen)) {
-					if (!widget.visible) continue;
-					String label = widget.getMessage().getString();
-					if (label.equals(PauseMenuButton.LABEL)) mods = widget;
-					if (label.equals("Mods")) modMenu = widget;
-					if (label.equals(PauseMenuButton.OPTIONS_LABEL)) ours = widget;
-					if (ConfirmDisconnect.isDisconnect(widget.getMessage())) disconnect = widget;
-					if (widget.getMessage().getContents() instanceof TranslatableContents key) {
-						if (key.getKey().equals("gui.stats")) stats = widget;
-						if (key.getKey().equals("menu.options")) options = widget;
-						if (key.getKey().equals("menu.sendFeedback") || key.getKey().equals("menu.reportBugs")) feedback = true;
-					}
+					if (widget.getMessage().getString().startsWith("Eventide")) return false;
 				}
-				if (mods == null || ours == null || stats == null || options == null || disconnect == null) return null;
-				EventideClient.LOG.info("eventide-check: pause menu: Statistics {}, Mods {} ({} wide), Options {}, Eventide Options {}, Disconnect {}",
-						stats.getY(), mods.getY(), mods.getWidth(), options.getY(), ours.getY(), disconnect.getY());
-				AbstractWidget above = modMenu != null && modMenu.getY() > stats.getY() && modMenu.getY() < mods.getY() ? modMenu : stats;
-				boolean modsRow = mods.getY() == above.getY() + above.getHeight() + 4 && mods.getX() == disconnect.getX()
-						&& mods.getWidth() == disconnect.getWidth();
-				boolean optionsRow = ours.getY() == options.getY() && ours.getX() > options.getX();
-				return new int[][] {
-						{mods.getX() + mods.getWidth() / 2, mods.getY() + mods.getHeight() / 2},
-						{ours.getX() + ours.getWidth() / 2, ours.getY() + ours.getHeight() / 2},
-						{modsRow ? 1 : 0, optionsRow ? 1 : 0, feedback ? 1 : 0}};
-			});
-			check(failed, "pause menu has Eventide and Eventide Options...", pauseButtons != null);
-			check(failed, "Eventide is a full row right under Advancements and Statistics (or Mod Menu's Mods)", pauseButtons != null && pauseButtons[2][0] == 1);
-			check(failed, "Eventide Options... sits beside Options...", pauseButtons != null && pauseButtons[2][1] == 1);
-			check(failed, "pause menu leaves out the feedback links", pauseButtons != null && pauseButtons[2][2] == 0);
-			if (pauseButtons != null) {
-				context.getInput().setCursorPos(pauseButtons[0][0] * scale, pauseButtons[0][1] * scale);
-				context.waitTicks(2);
-				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-				context.waitTicks(15);
-			}
+				return client.screen instanceof PauseScreen;
+			}));
+			context.getInput().pressKey(EventideClient.openSettingsKey);
+			context.waitTicks(15);
 			shot(context, "eventide-menu-from-pause");
-			check(failed, "pause menu's Eventide opens the menu",
-					context.computeOnClient(client -> client.screen instanceof MenuScreen));
+			check(failed, "Right Shift on the pause menu opens the menu", context.computeOnClient(client -> client.screen instanceof MenuScreen));
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(5);
-			check(failed, "closing the mod menu goes back to the pause menu",
-					context.computeOnClient(client -> client.screen instanceof PauseScreen));
-			if (pauseButtons != null) {
-				context.getInput().setCursorPos(pauseButtons[1][0] * scale, pauseButtons[1][1] * scale);
-				context.waitTicks(2);
-				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-				context.waitTicks(15);
-			}
-			check(failed, "Eventide Options... opens Eventide's settings",
-					context.computeOnClient(client -> client.screen instanceof MenuScreen menu && menu.view().sheetModule() == Modules.THEME));
-			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-			context.waitTicks(5);
-			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-			context.waitTicks(5);
-			if (context.computeOnClient(client -> !(client.screen instanceof PauseScreen))) {
-				context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-				context.waitTicks(10);
-			}
+			check(failed, "closing the menu goes back to the pause menu", context.computeOnClient(client -> client.screen instanceof PauseScreen));
+			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
 
 			int[] quit = context.computeOnClient(client -> {
 				for (AbstractWidget widget : Compat.widgets(client.screen)) {

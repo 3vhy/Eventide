@@ -9,6 +9,7 @@ import dev.eventide.client.Hooks;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.compat.CompatScreen;
 import dev.eventide.client.gui.HudEditorScreen;
+import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.gui.menu.FloatingMenu;
 import dev.eventide.client.gui.menu.FloatingMenuScreen;
@@ -773,12 +774,38 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(10);
 			shot(context, "eventide-pause-menu");
-			check(failed, "the pause menu is Minecraft's own, with no Eventide buttons", context.computeOnClient(client -> {
+			int[] eventideButton = context.computeOnClient(client -> {
+				AbstractWidget ours = null;
+				AbstractWidget stats = null;
+				AbstractWidget disconnect = null;
+				AbstractWidget modMenu = null;
+				int eventideButtons = 0;
 				for (AbstractWidget widget : Compat.widgets(client.screen)) {
-					if (widget.getMessage().getString().startsWith("Eventide")) return false;
+					if (!widget.visible) continue;
+					String label = widget.getMessage().getString();
+					if (label.equals(PauseMenuButton.LABEL)) ours = widget;
+					if (label.startsWith("Eventide")) eventideButtons++;
+					if (label.equals("Mods")) modMenu = widget;
+					if (ConfirmDisconnect.isDisconnect(widget.getMessage())) disconnect = widget;
+					if (widget.getMessage().getContents() instanceof TranslatableContents key && key.getKey().equals("gui.stats")) stats = widget;
 				}
-				return client.screen instanceof PauseScreen;
-			}));
+				if (ours == null || stats == null || disconnect == null) return null;
+				AbstractWidget above = modMenu != null && modMenu.getY() > stats.getY() && modMenu.getY() < ours.getY() ? modMenu : stats;
+				boolean row = ours.getY() == above.getY() + above.getHeight() + 4 && ours.getX() == disconnect.getX() && ours.getWidth() == disconnect.getWidth();
+				return new int[] {ours.getX() + ours.getWidth() / 2, ours.getY() + ours.getHeight() / 2, row ? 1 : 0, eventideButtons};
+			});
+			check(failed, "the pause menu has one Eventide button, a full row under Advancements and Statistics",
+					eventideButton != null && eventideButton[2] == 1 && eventideButton[3] == 1);
+			if (eventideButton != null) {
+				int pauseScale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+				context.getInput().setCursorPos(eventideButton[0] * pauseScale, eventideButton[1] * pauseScale);
+				context.waitTicks(2);
+				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+				context.waitTicks(15);
+				check(failed, "the pause menu's Eventide button opens the menu", context.computeOnClient(client -> client.screen instanceof MenuScreen));
+				context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+				context.waitTicks(5);
+			}
 			context.getInput().pressKey(EventideClient.openSettingsKey);
 			context.waitTicks(15);
 			shot(context, "eventide-menu-from-pause");

@@ -28,6 +28,7 @@
 		"ItemStackMixin",
 		"LevelWeatherMixin",
 		"LivingEntityMixin",
+		"LivingEntityRendererInvoker",
 		"LivingEntityRendererMixin",
 		"LocalPlayerMixin",
 		"MinecraftMixin",

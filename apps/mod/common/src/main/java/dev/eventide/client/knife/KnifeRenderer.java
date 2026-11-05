@@ -53,6 +53,15 @@ public final class KnifeRenderer {
 	 */
 	private static final Quaternionf HOLD = new Quaternionf().setFromNormalized(new Matrix3f(0.0728f, -0.4603f, 0.8848f, -0.4473f, 0.7779f, 0.4415f,
 			-0.8914f, -0.4278f, -0.1493f));
+	/**
+	 * A karambit's reverse grip, turned from {@link #HOLD} about the fist: the ring over the top of the fist for
+	 * your index finger, the curved blade coming out underneath and sweeping out to the side.
+	 */
+	private static Quaternionf REVERSE = new Quaternionf().rotateZ((float) Math.toRadians(175)).rotateY((float) Math.toRadians(35)).rotateX((float) Math.toRadians(30));
+	/** How far the arm moves in (left) and up for a reverse grip, so the blade under the fist stays in view. */
+	private static final float[] REVERSE_SHIFT = {0.06f, 0.14f};
+	/** Whether the knife being framed is held in a reverse grip. */
+	private static boolean reversed = false;
 	/** The viewmodel field of view the framing above is made for. */
 	private static final float CLASSIC_FOV = 70;
 	/** How far the animations' moves (in blocks) carry. */
@@ -232,6 +241,11 @@ public final class KnifeRenderer {
 		return worst;
 	}
 
+	/** Sets the reverse grip's turn (degrees about the knife's Z, then Y, then X), for the in-game test's knife lab. */
+	public static void reverseGrip(float z, float y, float x) {
+		REVERSE = new Quaternionf().rotateZ((float) Math.toRadians(z)).rotateY((float) Math.toRadians(y)).rotateX((float) Math.toRadians(x));
+	}
+
 	/** Whether an inspect is playing, for the in-game test. */
 	public static boolean inspecting() {
 		KnifeModel model = lastModel;
@@ -273,6 +287,7 @@ public final class KnifeRenderer {
 		boolean right = preset == 2 ? false : arm == HumanoidArm.RIGHT;
 		mirrored = !right;
 		boolean slim = player.getSkin().model() == PlayerModelType.SLIM;
+		reversed = model.family == KnifeModel.Family.CURVED;
 		float push = nearPush(model, right, slim);
 
 		poseStack.pushPose();
@@ -332,8 +347,8 @@ public final class KnifeRenderer {
 	private static void armFrame(PoseStack pose, boolean right, float push) {
 		float f = right ? 1 : -1;
 		boolean center = Modules.KNIVES_PRESET.index() == 1;
-		float x = Modules.KNIVES_X.getFloat() / 100f * 0.3f - (center ? 0.16f : 0);
-		float y = Modules.KNIVES_Y.getFloat() / 100f * 0.3f + (center ? 0.04f : 0);
+		float x = Modules.KNIVES_X.getFloat() / 100f * 0.3f - (center ? 0.16f : 0) - (reversed ? REVERSE_SHIFT[0] : 0);
+		float y = Modules.KNIVES_Y.getFloat() / 100f * 0.3f + (center ? 0.04f : 0) + (reversed ? REVERSE_SHIFT[1] : 0);
 		float z = Modules.KNIVES_Z.getFloat() / 100f * 0.3f;
 		pose.translate(f * (BASE_X + x + POSE[Clip.X] * MOVE), BASE_Y + y + POSE[Clip.Y] * MOVE, BASE_Z + z + POSE[Clip.Z] * MOVE + push);
 		pose.mulPose(Axis.ZP.rotationDegrees(f * POSE[Clip.SWEEP]));
@@ -358,6 +373,7 @@ public final class KnifeRenderer {
 		pose.mulPose(Axis.YP.rotationDegrees(f * -(Modules.KNIVES_ROLL.getFloat() + POSE[Clip.ROLL])));
 		if (!right) pose.scale(-1, 1, 1);
 		pose.mulPose(HOLD);
+		if (reversed) pose.mulPose(REVERSE);
 		float unit = UNIT * (float) (Modules.KNIVES_SCALE.get() / 100.0);
 		pose.scale(unit, unit, unit);
 	}
@@ -441,13 +457,23 @@ public final class KnifeRenderer {
 				if (glow && strength > 0.01f) {
 					float width = part.kind() == KnifeModel.PartKind.ENERGY ? GLOW_WIDTH * 2.2f : GLOW_WIDTH;
 					collector.submitCustomGeometry(pose, Compat.knifeLine(), (last, out) -> mesh.emitGlow(last, out, line, LINE_WIDTH));
-					collector.submitCustomGeometry(pose, Compat.knifeGlow(), (last, out) -> mesh.emitGlow(last, out, shell, width));
+					var softGlow = part.kind() == KnifeModel.PartKind.ENERGY ? Compat.knifeGlow() : Compat.knifeOutline();
+					collector.submitCustomGeometry(pose, softGlow, (last, out) -> mesh.emitGlow(last, out, shell, width));
 				}
 			} else {
 				collector.submitCustomGeometry(pose, type, (last, out) -> mesh.emitPlain(last, out, light, OverlayTexture.NO_OVERLAY, finishId, glowRgb));
 			}
 			pose.popPose();
 		}
+	}
+
+	/** Draws {@code model} at rest, open and glowing, where {@code pose} already is (for your knife in third person). */
+	static void drawStill(KnifeModel model, PoseStack pose, SubmitNodeCollector collector, int light) {
+		float[] saved = POSE.clone();
+		System.arraycopy(Clip.rest(), 0, POSE, 0, Clip.CHANNELS);
+		drawParts(model, pose, collector, light, Modules.KNIVES_GLOW.get() && KnifeShading.custom());
+		System.arraycopy(saved, 0, POSE, 0, Clip.CHANNELS);
+		Hooks.knifeThirdPerson = true;
 	}
 
 	/** The finish {@code model} wears: the one picked in the settings, or its own signature finish. */

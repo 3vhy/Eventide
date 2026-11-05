@@ -18,7 +18,7 @@ public enum Finish {
 	ROSE(6, "Rose", "Pink gold, warm and bright", 0xFFD88AA8, 0xFFFFC4D8, 0xFF8A4A62),
 	VOID(7, "Void", "Black as space, with a scatter of stars", 0xFF0A0A0E, 0xFF2A2A34, 0xFF000000),
 	CHROME(8, "Chrome", "A mirror polish", 0xFFD8DCE2, 0xFFFFFFFF, 0xFF8C9096),
-	ENGRAVED(9, "Engraved", "Dark steel with a glowing teal rose and vines cut into the blade", 0xFF1C1E24, 0xFF4FD8A8, 0xFF08090C),
+	ENGRAVED(9, "Engraved", "Dark steel with a glowing gold-green rose and vines cut into the blade", 0xFF1C1E24, 0xFF4FD8A8, 0xFF08090C),
 	ONYX(10, "Onyx", "Polished black stone with a violet sheen", 0xFF0C0A12, 0xFF3A2A5C, 0xFF000000);
 
 	/** The Finish setting's first choice: every knife in its own signature finish. */

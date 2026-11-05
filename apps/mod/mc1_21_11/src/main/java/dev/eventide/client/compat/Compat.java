@@ -151,6 +151,8 @@ public final class Compat {
 					.withVertexShader(Identifier.fromNamespaceAndPath("eventide", "core/knife"))
 					.withFragmentShader(Identifier.fromNamespaceAndPath("eventide", "core/knife"))
 					.withSampler("Sampler2")
+					.withDepthWrite(true)
+					.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withCull(false)
 					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.NEW_ENTITY, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
 					.build();
@@ -189,6 +191,7 @@ public final class Compat {
 					.withFragmentShader(Identifier.fromNamespaceAndPath("eventide", "core/knife_glow"))
 					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.ADDITIVE)
 					.withDepthWrite(false)
+					.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withCull(false)
 					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
 					.build();
@@ -200,7 +203,10 @@ public final class Compat {
 
 	private static net.minecraft.client.renderer.rendertype.RenderType knifeOutline;
 
-	/** The glow shader drawing only far faces (its OUTLINE define), for a line of light round a box's silhouette. */
+	/**
+	 * The glow shader drawing only the far side of a shell (its OUTLINE define), added on top: a soft glow round a
+	 * knife's silhouette that never lies over the knife itself.
+	 */
 	public static net.minecraft.client.renderer.rendertype.RenderType knifeOutline() {
 		if (knifeOutline == null) {
 			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline
@@ -211,6 +217,7 @@ public final class Compat {
 					.withShaderDefine("OUTLINE")
 					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.ADDITIVE)
 					.withDepthWrite(false)
+					.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withCull(false)
 					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
 					.build();
@@ -237,6 +244,7 @@ public final class Compat {
 					.withShaderDefine("LINE")
 					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
 					.withDepthWrite(false)
+					.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withCull(false)
 					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
 					.build();
@@ -269,6 +277,7 @@ public final class Compat {
 					.withFragmentShader(Identifier.withDefaultNamespace("core/position_color"))
 					.withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
 					.withDepthWrite(false)
+					.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withCull(false)
 					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
 					.build();

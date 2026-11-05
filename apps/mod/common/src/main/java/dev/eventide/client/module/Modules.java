@@ -196,14 +196,16 @@ public final class Modules {
 	public static final Toggle NAME_PROTECT_RANKS = NAME_PROTECT.add(new Toggle("ranks", "Hide rank tags",
 			"Tags like [MVP+] or [VIP] show as [Rank]", false));
 	public static final Module SKIN_PROTECT = new Module("skin_protect", "Skin Protect",
-			"Wear a default skin, any player's, or your own file", Category.PLAYER, false).icon("shirt").markNew();
+			"Wear a default skin, one of Eventide's (Grim Reaper and more), any player's, or your own file", Category.PLAYER, false).icon("shirt").markNew();
 	public static final Toggle SKIN_PROTECT_OWN = SKIN_PROTECT.add(new Toggle("own", "Your skin",
 			"Change how you look", true));
 	public static final Toggle SKIN_PROTECT_OTHERS = SKIN_PROTECT.add(new Toggle("others", "Other players",
 			"Everyone else gets the same skin too", false));
 	public static final Choice SKIN_PROTECT_SOURCE = SKIN_PROTECT.add(new Choice("source", "Show as",
-			"Minecraft's default skins, any player's skin, or a skin file", 0,
-			CustomSkins.SOURCE_DEFAULT, CustomSkins.SOURCE_PLAYER, CustomSkins.SOURCE_FILE));
+			"Minecraft's default skins, one of Eventide's own, any player's skin, or a skin file", 0,
+			CustomSkins.SOURCE_DEFAULT, CustomSkins.SOURCE_BUILTIN, CustomSkins.SOURCE_PLAYER, CustomSkins.SOURCE_FILE));
+	public static final Choice SKIN_PROTECT_BUILTIN = SKIN_PROTECT.add(new Choice("builtin", "Eventide skin",
+			"For Eventide skin: a grim reaper, a carved log, a walker of the void, an astronaut or a phantom", 0, CustomSkins.BUILTIN));
 	public static final Text SKIN_PROTECT_PLAYER = SKIN_PROTECT.add(new Text("player", "Player",
 			"Whose skin to wear, for A player's skin", "", 16));
 	public static final Choice SKIN_PROTECT_ARMS = SKIN_PROTECT.add(new Choice("arms", "Arms",
@@ -408,6 +410,8 @@ public final class Modules {
 	public static final Slider KNIVES_GLOW_STRENGTH = KNIVES.add(new Slider("glow_strength", "Glow strength", "How bright the edge and its glow are",
 			0, 200, 5, 100, "%"));
 	public static final Toggle KNIVES_ARM = KNIVES.add(new Toggle("arm", "Show hand", "Your own arm holding the knife, in your skin", true).group("Hand"));
+	public static final Toggle KNIVES_THIRD_PERSON = KNIVES.add(new Toggle("third_person", "In third person",
+			"Your knife in your hand when you see yourself in third person and in your inventory", true));
 	public static final Toggle KNIVES_SLEEVE = KNIVES.add(new Toggle("sleeve", "Sleeve", "Your skin's sleeve layer on the arm, if it has one", true));
 	public static final Toggle KNIVES_ANIMATIONS = KNIVES.add(new Toggle("animations", "Custom animations",
 			"Off, knife slots show your usual held item again", true).group("Animation"));
@@ -443,6 +447,16 @@ public final class Modules {
 	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Wrist", "Twists the wrist, turning the blade", -90, 90, 1, 0, "°"));
 	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
 			0, 100, 5, 60, "%"));
+	public static final Module HATS = new Module("hats", "Hats",
+			"A hat on your head in third person and your inventory: a halo, a crown, a top hat, a witch hat, horns or cat ears; only you see it",
+			Category.COSMETICS, false).icon("crown").markNew();
+	public static final Choice HATS_TYPE = HATS.add(new Choice("type", "Hat", "Which hat you wear", 0, dev.eventide.client.knife.Cosmetics.HATS));
+	public static final Module WINGS = new Module("wings", "Wings",
+			"Wings on your back in third person and your inventory: angel, demon or energy; only you see them", Category.COSMETICS, false)
+			.icon("feather").markNew();
+	public static final Choice WINGS_TYPE = WINGS.add(new Choice("type", "Wings", "Which wings you wear", 0, dev.eventide.client.knife.Cosmetics.WINGS));
+	public static final Toggle WINGS_FLAP = WINGS.add(new Toggle("flap", "Flap", "The wings slowly beat", true));
+	public static final Slider WINGS_SIZE = WINGS.add(new Slider("size", "Size", "How big the wings are", 60, 160, 5, 100, "%"));
 	public static final Module JUMP_CIRCLES = new Module("jump_circles", "Jump Circles",
 			"A ring of light opening out on the ground each time you jump", Category.COSMETICS, false).icon("circle-dot").markNew();
 	public static final Color JUMP_CIRCLES_COLOR = JUMP_CIRCLES.add(new Color("color", "Colour", "The ring's colour", 0xFFB98BFF));
@@ -525,7 +539,7 @@ public final class Modules {
 			FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT,
 			NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT,
 			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC,
-			MODULE_LIST, KNIVES, HAND_AURA, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
+			MODULE_LIST, KNIVES, HAND_AURA, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {

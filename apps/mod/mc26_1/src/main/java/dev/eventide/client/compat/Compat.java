@@ -199,7 +199,10 @@ public final class Compat {
 
 	private static net.minecraft.client.renderer.rendertype.RenderType knifeOutline;
 
-	/** The glow shader drawing only far faces (its OUTLINE define), for a line of light round a box's silhouette. */
+	/**
+	 * The glow shader drawing only the far side of a shell (its OUTLINE define), added on top: a soft glow round a
+	 * knife's silhouette that never lies over the knife itself.
+	 */
 	public static net.minecraft.client.renderer.rendertype.RenderType knifeOutline() {
 		if (knifeOutline == null) {
 			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline

@@ -19,7 +19,11 @@ void main() {
     if (dot(n, v) > 0.0) {
         discard;
     }
+#ifdef LINE
     float rim = 1.0;
+#else
+    float rim = 0.35 + 0.65 * pow(1.0 - abs(dot(n, v)), 1.5);
+#endif
 #else
     float rim = pow(1.0 - abs(dot(n, v)), 2.2);
 #endif

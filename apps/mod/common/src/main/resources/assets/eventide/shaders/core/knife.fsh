@@ -50,7 +50,7 @@ void main() {
         s.coat = 1.0;
         s.emissive = glowColor * (0.14 + 0.2 * c.x + 0.55 * pow(1.0 - nv, 2.0));
     } else if (finished) {
-        s = k_finish(finish, p, t, edge, glowColor, blade, len);
+        s = k_finish(finish, p, t, edge, glowColor, blade, len, k_engravePlace(knife));
         if (material == M_EDGE) {
             s.rough *= 0.5;
             s.albedo = mix(s.albedo, vec3(0.85, 0.86, 0.9), 0.14);
@@ -99,12 +99,13 @@ void main() {
     vec3 coat = s.coat * (coatFresnel * k_environment(r, 0.03) * 0.7 + k_ggx(nh, 0.05) * nl * 0.08);
     vec3 color = (diffuse + specular) * s.ao + rim + coat;
 
-    // The luminous edge: the blade's outline lit in the glow colour, brightest right at the edge and seen edge-on.
+    // The luminous edge: a thin line of the glow colour right along the blade's outline, brightest seen edge-on.
     if (blade && glow > 0.0) {
-        float line = pow(clamp(edge, 0.0, 1.0), 3.0);
+        float line = smoothstep(0.72, 1.0, clamp(edge, 0.0, 1.0));
+        line *= line;
         float seen = 0.55 + 0.45 * pow(1.0 - nv, 1.5);
-        color += glowColor * glow * line * seen * 1.35;
-        color += glowColor * glow * pow(1.0 - nv, 3.0) * 0.12;
+        color += glowColor * glow * line * seen * 1.5;
+        color += glowColor * glow * pow(1.0 - nv, 4.0) * 0.04;
     }
 
     if (glint > 0.0 && (blade || material == M_RING)) {

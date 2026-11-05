@@ -21,7 +21,8 @@ public enum KnifeModel {
 			Family.FIXED, Finish.OBSIDIAN),
 	VESPER("Vesper", "A slim flipper in rose gold that snaps open with a flick", 1.0f, -0.25f, 0.45f, -2.25f, 1.0f, 0.6f, Family.FOLDING,
 			Finish.ROSE),
-	WRAITH("Wraith", "A butterfly knife with a rose engraved on its blade and open rail handles", 1.0f, -0.45f, 0.5f, -1.55f, 0.62f, 0.66f,
+	WRAITH("Wraith", "A butterfly knife with a long dagger blade, a rose engraved near its point and open rail handles", 0.95f, -0.45f, 0.5f,
+			-1.55f, 0.62f, 0.66f,
 			Family.BUTTERFLY, Finish.ENGRAVED),
 	HALO("Halo", "A leaf-bladed dagger with a halo for a guard", 0.95f, 0, -1.0f, -2.2f, 0.62f, 0.55f, Family.FIXED, Finish.AURORA),
 	LUMEN("Lumen", "A blade of pure light from a ringed hilt", 0.88f, 0, -1.0f, -1.8f, 0.72f, 0.72f, Family.FIXED, Finish.CHROME),
@@ -437,25 +438,25 @@ public enum KnifeModel {
 	}
 
 	/**
-	 * The balisong's blade, as in Eventide's reference: broad and straight, the spine cut down in a straight line
-	 * to a high point, a groove up its middle to the engraving, and a tang with a choil at its root.
+	 * The balisong's blade, as in Eventide's reference: long and straight with a dagger point, a groove with
+	 * bright rails up its middle to a rose engraved near the point, and at its root a tang that flares into
+	 * latches either side, each with a glowing pivot pin.
 	 */
 	private static void wraithBlade(Shape m) {
-		m.plate(new float[] {-0.8f, -0.15f, 0.8f, -0.15f, 0.8f, 0.75f, 0.55f, 1.0f, 0.55f, 1.3f, -0.8f, 1.3f}, -0.18f, 0.18f, 0.08f, KnifeShading.BLADE);
-		Shape.Blade b = blade(48, t -> {
-			float y = 1.25f + 9.4f * t;
-			float sx = t <= 0.74f ? -0.86f : -0.86f + (0.12f + 0.86f) * (t - 0.74f) / 0.26f;
-			float ex = t <= 0.7f ? 0.98f : 0.98f + (0.12f - 0.98f) * (float) Math.pow((t - 0.7f) / 0.3f, 1.35f);
-			return new float[] {sx, y, ex, y, 0.2f - 0.1f * t};
-		});
-		b.grind = 0.56f;
-		b.fullerFrom = 0.05f;
-		b.fullerTo = 0.36f;
-		b.fullerCentre = 0.48f;
-		b.fullerWidth = 0.1f;
-		b.fullerDepth = 0.05f;
-		b.flatColumns = 7;
-		b.bevelColumns = 4;
+		m.plate(new float[] {-0.95f, -0.2f, 0.95f, -0.2f, 0.95f, 0.55f, 1.35f, 0.75f, 1.35f, 1.55f, 0.95f, 1.75f, -0.95f, 1.75f, -1.35f, 1.55f,
+				-1.35f, 0.75f, -0.95f, 0.55f}, -0.2f, 0.2f, 0.08f, KnifeShading.BLADE);
+		m.pin(-0.8f, 1.15f, -0.27f, 0.27f, 0.2f, KnifeShading.GEM_RIM);
+		m.pin(0.8f, 1.15f, -0.27f, 0.27f, 0.2f, KnifeShading.GEM_RIM);
+		Shape.Blade b = blade(64, symmetric(1.7f, 13.0f, 0.92f, 0.2f, 0.1f, t -> t < 0.86f ? 1f : 1 - (t - 0.86f) / 0.14f));
+		b.doubleEdged = true;
+		b.grind = 0.24f;
+		b.fullerFrom = 0.03f;
+		b.fullerTo = 0.64f;
+		b.fullerCentre = 0.5f;
+		b.fullerWidth = 0.26f;
+		b.fullerDepth = 0.06f;
+		b.flatColumns = 10;
+		b.bevelColumns = 3;
 		m.blade(b);
 	}
 

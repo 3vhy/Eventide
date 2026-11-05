@@ -27,6 +27,8 @@ public final class KnifeShading {
 	public static final int GEM = 12;
 	/** The glowing frame round a crystal, and glowing studs. */
 	public static final int GEM_RIM = 13;
+	/** Soft white feathers, for angel wings. */
+	public static final int FEATHER = 14;
 
 	private KnifeShading() {
 	}
@@ -71,6 +73,7 @@ public final class KnifeShading {
 			case CARBON -> 0xFF1A1A1E;
 			case ENERGY, GEM_RIM -> glow | 0xFF000000;
 			case GEM -> 0xFF2A1450;
+			case FEATHER -> 0xFFEDEDF5;
 			default -> 0xFF808080;
 		};
 	}

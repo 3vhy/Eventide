@@ -1995,6 +1995,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> {
 			if (options.containsKey("finish")) Modules.KNIVES_FINISH.set(options.get("finish"));
 			if (options.containsKey("aura")) Modules.HAND_AURA.set(!options.get("aura").equals("off"));
+			if (options.containsKey("edge")) Modules.KNIVES_GLOW.set(!options.get("edge").equals("off"));
 			if (options.containsKey("glow")) Modules.KNIVES_GLOW_COLOR.set((int) Long.parseLong(options.get("glow"), 16));
 			if (options.containsKey("time")) client.getSingleplayerServer().getCommands().performPrefixedCommand(
 					client.getSingleplayerServer().createCommandSourceStack(), "time set " + options.get("time"));
@@ -2008,6 +2009,15 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> KnifeRenderer.preview(model, "channel0", 0));
 			context.waitTicks(2);
 			shot(context, "lab-" + name + "-rest");
+			if (options.containsKey("revs") && model == KnifeModel.ECLIPSE) {
+				String[] turns = options.get("revs").split("\\|");
+				for (int i = 0; i < turns.length; i++) {
+					String[] zyx = turns[i].split(",");
+					context.runOnClient(client -> KnifeRenderer.reverseGrip(Float.parseFloat(zyx[0]), Float.parseFloat(zyx[1]), Float.parseFloat(zyx[2])));
+					context.waitTicks(2);
+					shot(context, "lab-" + name + "-rev" + i);
+				}
+			}
 			List<String> frames = every ? List.of("slash0-15", "slash0-35", "slash0-55", "slash1-35", "use-35", "use-55", "draw-15", "draw-35", "draw-55",
 					"inspect-20", "inspect-40", "inspect-60", "inspect-80") : List.of("slash0-35", "use-35", "draw-35", "inspect-20", "inspect-60");
 			for (String frame : frames) {

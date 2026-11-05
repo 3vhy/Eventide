@@ -40,6 +40,8 @@ public final class Hooks {
 	public static volatile boolean jumpCircleShown = false;
 	public static volatile boolean playerOutlined = false;
 	public static volatile boolean disintegrated = false;
+	public static volatile boolean knifeThirdPerson = false;
+	public static volatile boolean cosmeticsDrawn = false;
 	public static volatile boolean knifeRendered = false;
 	public static volatile boolean knifeDrawRan = false;
 	public static volatile boolean knifeSlashRan = false;

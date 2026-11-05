@@ -40,6 +40,9 @@ public final class CustomSkins {
 	public static final String SOURCE_DEFAULT = "Default skin";
 	public static final String SOURCE_PLAYER = "A player's skin";
 	public static final String SOURCE_FILE = "Skin file";
+	public static final String SOURCE_BUILTIN = "Eventide skin";
+	/** Eventide's own skins, drawn for it (assets/eventide/skins), by name. */
+	public static final String[] BUILTIN = {"Grim Reaper", "Timber", "Void Walker", "Astronaut", "Phantom"};
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("eventide", "custom_skin");
 	private static final HttpClient HTTP = HttpClient.newBuilder()
 			.connectTimeout(Duration.ofSeconds(8))
@@ -94,6 +97,9 @@ public final class CustomSkins {
 			String name = Modules.SKIN_PROTECT_PLAYER.get().trim();
 			return PlayerList.isValidName(name) ? "player:" + name.toLowerCase(Locale.ROOT) : null;
 		}
+		if (Modules.SKIN_PROTECT_SOURCE.is(SOURCE_BUILTIN)) {
+			return "builtin:" + Modules.SKIN_PROTECT_BUILTIN.get().toLowerCase(Locale.ROOT).replace(' ', '_');
+		}
 		if (Modules.SKIN_PROTECT_SOURCE.is(SOURCE_FILE)) {
 			String file = Config.get().skinFile;
 			return file.isBlank() ? null : "file:" + file + ":" + (Modules.SKIN_PROTECT_ARMS.is("Slim") ? "slim" : "wide");
@@ -132,6 +138,20 @@ public final class CustomSkins {
 		if (wanted.equals(requestedKey)) return;
 		requestedKey = wanted;
 		status = "Loading...";
+		if (wanted.startsWith("builtin:")) {
+			String id = wanted.substring("builtin:".length());
+			try (var in = CustomSkins.class.getResourceAsStream("/assets/eventide/skins/" + id + ".png")) {
+				if (in == null) {
+					status = "Eventide doesn't have that skin";
+					return;
+				}
+				pending = new Loaded(wanted, in.readAllBytes(), false);
+				status = "Showing " + Modules.SKIN_PROTECT_BUILTIN.get();
+			} catch (IOException e) {
+				status = "Couldn't read that skin";
+			}
+			return;
+		}
 		if (wanted.startsWith("player:")) {
 			String name = Modules.SKIN_PROTECT_PLAYER.get().trim();
 			CompletableFuture.runAsync(() -> fetchPlayer(wanted, name), Util.backgroundExecutor());

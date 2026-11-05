@@ -59,6 +59,29 @@ final class Shape {
 		quad(a, b, c, c);
 	}
 
+	/** Adds every quad of {@code other} turned {@code degrees} about the Y axis, then moved by {@code (dx, dy, dz)}. */
+	void addTurned(Shape other, float degrees, float dx, float dy, float dz) {
+		float c = (float) Math.cos(Math.toRadians(degrees));
+		float s = (float) Math.sin(Math.toRadians(degrees));
+		for (int q = 0; q < other.quads; q++) {
+			float[][] corners = new float[4][];
+			for (int k = 0; k < 4; k++) {
+				float[] v = Arrays.copyOfRange(other.data, (q * 4 + k) * STRIDE, (q * 4 + k + 1) * STRIDE);
+				float x = v[0];
+				float z = v[2];
+				v[0] = x * c + z * s + dx;
+				v[1] += dy;
+				v[2] = -x * s + z * c + dz;
+				float nx = v[3];
+				float nz = v[5];
+				v[3] = nx * c + nz * s;
+				v[5] = -nx * s + nz * c;
+				corners[k] = v;
+			}
+			quad(corners[0], corners[1], corners[2], corners[3]);
+		}
+	}
+
 	/** Adds every quad of {@code other}, moved by {@code (dx, dy, dz)}. */
 	void add(Shape other, float dx, float dy, float dz) {
 		for (int q = 0; q < other.quads; q++) {

@@ -25,8 +25,9 @@ import net.minecraft.world.level.block.Blocks;
  * Kill Effects: when a player you were fighting falls (or any player, or mobs too, as you choose), a burst of
  * light marks the spot, in your colour. Five effects, all on your screen only: Nebula Burst (a sphere of
  * violet and cyan light with a ring rolling out along the ground), Soul Rise (a spiral of light lifting the
- * soul away), Starfall (stars raining down onto the spot), Thunder (a column of crackling light from the sky)
- * and Shatter (the body breaking into amethyst shards). Deaths come from the server's death event, so they
+ * soul away), Starfall (stars raining down onto the spot), Thunder (a column of crackling light from the sky),
+ * Shatter (the body breaking into amethyst shards) and Heaven (the body lifted up into a beam of light from the
+ * sky, glowing white, with a halo and feathers of light). Deaths come from the server's death event, so they
  * work on any server. Effects play over a second or so, a few particles a tick, and are dropped when you
  * leave the world.
  */
@@ -35,7 +36,14 @@ public final class KillEffects {
 	private static final long YOURS_MS = 8_000;
 	private static final byte DEATH = 3;
 
+	/** How long Heaven lifts a body, and how high. */
+	private static final float ASCEND_SECONDS = 1.6f;
+	private static final float ASCEND_HEIGHT = 3.2f;
+	public static final int HEAVEN_GLOW = 0xFFFFF4D6;
+
 	private static final Map<Integer, Long> HITS = new HashMap<>();
+	/** Bodies Heaven is lifting, by entity id, and when it started. */
+	private static final Map<Integer, Long> ASCENDING = new HashMap<>();
 	private static final List<Running> RUNNING = new ArrayList<>();
 	private static final RandomSource RANDOM = RandomSource.create();
 
@@ -89,7 +97,37 @@ public final class KillEffects {
 	/** Starts the chosen effect where {@code entity} fell, if it counts. */
 	public static void play(LivingEntity entity) {
 		if (!wanted(entity)) return;
-		start(Modules.KILL_EFFECTS_STYLE.index(), entity.getX(), entity.getY(), entity.getZ(), Math.max(0.6, entity.getBbHeight()));
+		int kind = Modules.KILL_EFFECTS_STYLE.index();
+		if (kind == HEAVEN) ASCENDING.put(entity.getId(), System.currentTimeMillis());
+		start(kind, entity.getX(), entity.getY(), entity.getZ(), Math.max(0.6, entity.getBbHeight()));
+	}
+
+	private static final int HEAVEN = 5;
+
+	/** How far into its lift a body is (0..1), or -1 when Heaven isn't lifting it. */
+	private static float ascent(Entity entity) {
+		Long at = ASCENDING.get(entity.getId());
+		if (at == null) return -1;
+		return Math.min(1, (System.currentTimeMillis() - at) / 1000f / ASCEND_SECONDS);
+	}
+
+	/** Whether Heaven is lifting {@code entity}, for its white glow. */
+	public static boolean ascending(Entity entity) {
+		return ASCENDING.containsKey(entity.getId());
+	}
+
+	/**
+	 * Heaven: a body being lifted rises (easing in, then gliding), stays upright instead of falling over, and
+	 * loses the red hurt flash; it glows white through the outline Minecraft draws for glowing entities.
+	 */
+	public static void ascend(Entity entity, net.minecraft.client.renderer.entity.state.LivingEntityRenderState state) {
+		float t = ascent(entity);
+		if (t < 0) return;
+		float eased = t * t * (3 - 2 * t);
+		state.y += eased * ASCEND_HEIGHT;
+		state.deathTime = 0;
+		state.hasRedOverlay = false;
+		Hooks.heavenLifted = true;
 	}
 
 	/** Starts effect {@code kind} at a spot (the in-game test uses this to picture each one). */
@@ -107,6 +145,7 @@ public final class KillEffects {
 				case 2 -> SoundEvents.AMETHYST_BLOCK_CHIME;
 				case 3 -> SoundEvents.TRIDENT_THUNDER.value();
 				case 4 -> SoundEvents.AMETHYST_CLUSTER_BREAK;
+				case 5 -> SoundEvents.BEACON_ACTIVATE;
 				default -> SoundEvents.BEACON_DEACTIVATE;
 			};
 			level.playLocalSound(x, y + height / 2, z, sound, SoundSource.PLAYERS, kind == 3 ? 0.55f : 0.9f, kind == 0 ? 1.6f : 1.0f, false);
@@ -124,10 +163,12 @@ public final class KillEffects {
 		if (level == null) {
 			RUNNING.clear();
 			HITS.clear();
+			ASCENDING.clear();
 			return;
 		}
 		long now = System.currentTimeMillis();
 		HITS.values().removeIf(at -> now - at > YOURS_MS * 2);
+		ASCENDING.values().removeIf(at -> now - at > 4000);
 		Iterator<Running> each = RUNNING.iterator();
 		while (each.hasNext()) {
 			Running effect = each.next();
@@ -136,6 +177,7 @@ public final class KillEffects {
 				case 2 -> starfall(level, effect);
 				case 3 -> thunder(level, effect);
 				case 4 -> shatter(level, effect);
+				case 5 -> heaven(level, effect);
 				default -> nebulaBurst(level, effect);
 			};
 			effect.age++;
@@ -264,5 +306,46 @@ public final class KillEffects {
 			spawn(level, ParticleTypes.END_ROD, e.x + spread() * 0.5, e.y + RANDOM.nextDouble() * e.height, e.z + spread() * 0.5, 0, 0.03, 0);
 		}
 		return e.age > 14;
+	}
+
+	/**
+	 * Heaven: a beam of light pours down from the sky onto the body as it's lifted, motes of warm light drift up
+	 * through it, a halo turns above where the head rises to, and feathers of light fall away to the sides.
+	 */
+	private static boolean heaven(ClientLevel level, Running e) {
+		float lift = Math.min(1, e.age / (ASCEND_SECONDS * 20));
+		double rise = lift * lift * (3 - 2 * lift) * ASCEND_HEIGHT;
+		double head = e.y + rise + e.height + 0.35;
+		if (e.age < 36) {
+			for (int i = 0; i < Math.round(5 * e.size); i++) {
+				double a = RANDOM.nextDouble() * Math.PI * 2;
+				double r = RANDOM.nextDouble() * 0.45 * e.size;
+				spawn(level, new DustParticleOptions(i % 3 == 0 ? HEAVEN_GLOW : 0xFFFFFFFF, 1.6f * e.size), e.x + Math.cos(a) * r,
+						e.y + 1 + RANDOM.nextDouble() * 12, e.z + Math.sin(a) * r, 0, -0.05, 0);
+			}
+			if (e.age % 2 == 0) {
+				spawn(level, ParticleTypes.END_ROD, e.x + spread() * 0.4, e.y + rise + RANDOM.nextDouble() * e.height, e.z + spread() * 0.4,
+						spread() * 0.01, 0.07, spread() * 0.01);
+			}
+			int ring = Math.round(14 * e.size);
+			double spin = e.age * 0.25;
+			for (int i = 0; i < ring; i++) {
+				double a = spin + Math.PI * 2 * i / ring;
+				spawn(level, new DustParticleOptions(0xFFFFE9A8, 0.8f * e.size), e.x + Math.cos(a) * 0.38, head, e.z + Math.sin(a) * 0.38, 0, 0, 0);
+			}
+		}
+		if (e.age > 4 && e.age < 30 && e.age % 3 == 0) {
+			for (int side = -1; side <= 1; side += 2) {
+				spawn(level, new DustColorTransitionOptions(0xFFFFFFFF, e.color, 1.2f * e.size), e.x + side * 0.5, e.y + rise + e.height * 0.7,
+						e.z, side * 0.06, -0.02, spread() * 0.02);
+			}
+		}
+		if (e.age == 0) {
+			for (int i = 0; i < Math.round(26 * e.size); i++) {
+				double a = RANDOM.nextDouble() * Math.PI * 2;
+				spawn(level, new DustParticleOptions(0xFFFFFFFF, 1.3f * e.size), e.x + Math.cos(a) * 0.9, e.y + 0.05, e.z + Math.sin(a) * 0.9, 0, 0.02, 0);
+			}
+		}
+		return e.age > 44;
 	}
 }

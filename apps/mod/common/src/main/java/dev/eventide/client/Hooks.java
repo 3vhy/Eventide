@@ -34,6 +34,10 @@ public final class Hooks {
 	public static volatile boolean customSkinLoaded = false;
 	public static volatile boolean menuNameDrawn = false;
 	public static volatile boolean badgeShown = false;
+	public static volatile boolean handAuraDrawn = false;
+	public static volatile boolean heavenLifted = false;
+	public static volatile boolean hitGlowShown = false;
+	public static volatile boolean jumpCircleShown = false;
 	public static volatile boolean knifeRendered = false;
 	public static volatile boolean knifeDrawRan = false;
 	public static volatile boolean knifeSlashRan = false;

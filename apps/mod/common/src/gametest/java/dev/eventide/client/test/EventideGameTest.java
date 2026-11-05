@@ -212,6 +212,16 @@ public final class EventideGameTest implements FabricClientGameTest {
 				fontWidths[1]);
 		check(failed, "clean font (Inter) loads from the mod's resources", fontWidths[0] > 20 && fontWidths[0] != fontWidths[1]);
 		check(failed, "the title screen is Minecraft's own again", context.computeOnClient(client -> client.screen instanceof TitleScreen));
+		List<String> unlisted = new ArrayList<>();
+		for (java.lang.reflect.Field field : Modules.class.getFields()) {
+			try {
+				if (Module.class.isAssignableFrom(field.getType()) && !Modules.ALL.contains((Module) field.get(null))) unlisted.add(field.getName());
+			} catch (IllegalAccessException e) {
+				unlisted.add(field.getName());
+			}
+		}
+		EventideClient.LOG.info("eventide-check: modules missing from the menu: {}", unlisted);
+		check(failed, "every mod is in the menu (Modules.ALL)", unlisted.isEmpty());
 		check(failed, "main menu keeps Singleplayer, Multiplayer, Realms, Options and Quit", context.computeOnClient(client -> {
 			int found = 0;
 			for (AbstractWidget widget : Compat.widgets(client.screen)) {
@@ -524,6 +534,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 			check(failed, "lyrics read from LRC", Lyrics.parse("[00:01.50] a\n[00:03.00][00:09.00] b").size() == 3);
 			context.runOnClient(client -> Modules.LYRICS.set(false));
 			knives(context, singleplayer, failed, false);
+			killEffects(context, singleplayer, failed);
+			worldFx(context, singleplayer, failed);
+			hudLook(context, singleplayer, failed);
 			skies(context, singleplayer, failed, false);
 			performance(context, failed);
 			context.runOnClient(client -> client.player.setXRot(10f));
@@ -1055,6 +1068,82 @@ public final class EventideGameTest implements FabricClientGameTest {
 	}
 
 	/**
+	 * Heaven lifting a body, Hit Glow on a mob you hit, the Weather Changer's rain with Ripple's rings, a jump
+	 * circle, and Hand Aura round an empty hand.
+	 */
+	private static void worldFx(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
+		var server = singleplayer.getServer();
+		server.runCommand("time set midnight");
+		server.runCommand("weather clear");
+		context.runOnClient(client -> {
+			Modules.KILL_EFFECTS.set(true);
+			Modules.KILL_EFFECTS_MOBS.set(true);
+			Modules.KILL_EFFECTS_STYLE.set("Heaven");
+			client.getToastManager().clear();
+		});
+		face(context, 0, 5);
+		server.runCommand("execute as @p at @s run summon zombie ^ ^ ^4 {NoAI:1b,Silent:1b,Tags:[\"eventide_heaven\"]}");
+		context.waitTicks(10);
+		context.runOnClient(client -> {
+			for (var entity : client.level.entitiesForRendering()) {
+				if (entity.getType() == net.minecraft.world.entity.EntityType.ZOMBIE) {
+					dev.eventide.client.module.KillEffects.onAttack(entity);
+					dev.eventide.client.module.HitGlow.onAttack(entity);
+				}
+			}
+		});
+		server.runCommand("damage @e[tag=eventide_heaven,limit=1] 2 minecraft:player_attack");
+		context.waitTicks(2);
+		shot(context, "eventide-hit-glow");
+		check(failed, "a mob you hit glows in your colour (Minecraft.shouldEntityAppearGlowing, Entity.getTeamColor)", Hooks.hitGlowShown);
+		context.waitTicks(15);
+		server.runCommand("kill @e[tag=eventide_heaven]");
+		context.waitTicks(12);
+		shot(context, "eventide-kill-heaven");
+		check(failed, "Heaven lifts the body into the light (LivingEntityRenderer.extractRenderState)", Hooks.heavenLifted);
+		context.waitTicks(40);
+		context.runOnClient(client -> {
+			Modules.KILL_EFFECTS.set(false);
+			Modules.KILL_EFFECTS_MOBS.reset();
+			Modules.KILL_EFFECTS_STYLE.reset();
+			Modules.WEATHER.set(true);
+			Modules.RIPPLE.set(true);
+		});
+		face(context, 20, 35);
+		context.waitTicks(40);
+		check(failed, "Weather Changer rains on your screen while the server's weather stays clear", context.computeOnClient(client ->
+				client.level.getRainLevel(1) > 0.9f && !client.getSingleplayerServer().overworld().isRaining()));
+		check(failed, "Ripple rings spread on the ground in the rain", context.computeOnClient(client -> dev.eventide.client.module.GroundFx.rings() > 0));
+		shot(context, "eventide-rain-ripples");
+		context.runOnClient(client -> Modules.WEATHER_TYPE.set("Snow"));
+		context.waitTicks(30);
+		shot(context, "eventide-weather-snow");
+		context.runOnClient(client -> {
+			Modules.WEATHER.set(false);
+			Modules.WEATHER_TYPE.reset();
+			Modules.RIPPLE.set(false);
+			Modules.JUMP_CIRCLES.set(true);
+		});
+		context.waitTicks(25);
+		context.runOnClient(client -> {
+			var look = client.player.getLookAngle();
+			dev.eventide.client.module.GroundFx.jumpAt(client.player.getX() + look.x * 3, client.player.getY(), client.player.getZ() + look.z * 3);
+		});
+		context.waitTicks(5);
+		shot(context, "eventide-jump-circle");
+		check(failed, "a jump circle opens on the ground", Hooks.jumpCircleShown);
+		context.runOnClient(client -> Modules.JUMP_CIRCLES.set(false));
+		server.runCommand("item replace entity @p hotbar.8 with minecraft:air");
+		context.getInput().pressKey(GLFW.GLFW_KEY_9);
+		face(context, 0, 10);
+		context.waitTicks(20);
+		shot(context, "eventide-hand-aura");
+		check(failed, "Hand Aura glows round an empty hand (ItemInHandRenderer.renderPlayerArm)", Hooks.handAuraDrawn);
+		context.getInput().pressKey(GLFW.GLFW_KEY_1);
+		server.runCommand("time set noon");
+	}
+
+	/**
 	 * The HUD as the reference composes it: the Watermark top left, the Music Player top right with the module
 	 * list under it, a server boss bar as a thin line, at night under the Galaxy sky; then close-ups.
 	 */
@@ -1115,6 +1204,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("knives")) knives(context, singleplayer, failed, true);
 			if (focus.contains("menu")) menu(context, failed);
 			if (focus.contains("kills")) killEffects(context, singleplayer, failed);
+			if (focus.contains("fx")) worldFx(context, singleplayer, failed);
 			if (focus.contains("hud")) hudLook(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);

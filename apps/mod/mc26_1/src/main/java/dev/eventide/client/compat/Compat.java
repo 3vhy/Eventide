@@ -244,4 +244,36 @@ public final class Compat {
 		}
 		return knifeLine;
 	}
+
+	/** Something drawn into the world each frame: {@code pose} is relative to the camera's position. */
+	public interface WorldHook {
+		void draw(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector);
+	}
+
+	/** Calls {@code hook} each frame once the world's entities are gathered, to add Eventide's own shapes to the world. */
+	public static void onWorldDraw(WorldHook hook) {
+		net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.COLLECT_SUBMITS.register(context ->
+				hook.draw(context.poseStack(), context.submitNodeCollector()));
+	}
+
+	private static net.minecraft.client.renderer.rendertype.RenderType worldFx;
+
+	/** Flat coloured shapes in the world (rings on the ground): blended, hidden behind blocks, leaving the depth alone. */
+	public static net.minecraft.client.renderer.rendertype.RenderType worldFx() {
+		if (worldFx == null) {
+			com.mojang.blaze3d.pipeline.RenderPipeline pipeline = com.mojang.blaze3d.pipeline.RenderPipeline
+					.builder(net.minecraft.client.renderer.RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("eventide", "pipeline/world_fx"))
+					.withVertexShader(Identifier.withDefaultNamespace("core/position_color"))
+					.withFragmentShader(Identifier.withDefaultNamespace("core/position_color"))
+					.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
+					.withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.LESS_THAN_OR_EQUAL, false))
+					.withCull(false)
+					.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+					.build();
+			worldFx = net.minecraft.client.renderer.rendertype.RenderType.create("eventide_world_fx",
+					net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline).createRenderSetup());
+		}
+		return worldFx;
+	}
 }

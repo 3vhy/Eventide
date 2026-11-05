@@ -73,7 +73,7 @@ public final class Modules {
 	public static final Module KILL_EFFECTS = new Module("kill_effects", "Kill Effects",
 			"A burst of light in your colour where a player you fought falls", Category.COMBAT, false).icon("skull").markNew();
 	public static final Choice KILL_EFFECTS_STYLE = KILL_EFFECTS.add(new Choice("style", "Effect", "What plays where they fall", 0,
-			"Nebula Burst", "Soul Rise", "Starfall", "Thunder", "Shatter"));
+			"Nebula Burst", "Soul Rise", "Starfall", "Thunder", "Shatter", "Heaven"));
 	public static final Color KILL_EFFECTS_COLOR = KILL_EFFECTS.add(new Color("color", "Colour", "The effect's main colour", 0xFF9A4DFF));
 	public static final Slider KILL_EFFECTS_SIZE = KILL_EFFECTS.add(new Slider("size", "Size", "How big and how full the effect is",
 			50, 200, 10, 100, "%"));
@@ -81,6 +81,15 @@ public final class Modules {
 			0, "Your kills", "Any player"));
 	public static final Toggle KILL_EFFECTS_MOBS = KILL_EFFECTS.add(new Toggle("mobs", "Mobs too", "Mobs you kill get the effect as well", false));
 	public static final Toggle KILL_EFFECTS_SOUND = KILL_EFFECTS.add(new Toggle("sound", "Sound", "A sound to go with it, only you hear", true));
+	public static final Module HIT_GLOW = new Module("hit_glow", "Hit Glow",
+			"Whatever you hit glows in your colour for a moment, and its hurt flash turns from red to your colour", Category.COMBAT, true)
+			.icon("sparkles").markNew();
+	public static final Color HIT_GLOW_COLOR = HIT_GLOW.add(new Color("color", "Colour", "The glow and the hurt flash's colour", 0xFFC27BFF));
+	public static final Toggle HIT_GLOW_OUTLINE = HIT_GLOW.add(new Toggle("outline", "Glow outline", "An outline of light round what you hit", true));
+	public static final Toggle HIT_GLOW_FLASH = HIT_GLOW.add(new Toggle("flash", "Coloured hurt flash",
+			"Hurt mobs and players flash in your colour instead of red", true));
+	public static final Choice HIT_GLOW_WHO = HIT_GLOW.add(new Choice("who", "Who glows", "Only what you hit, or anything that gets hurt", 0,
+			"What you hit", "Anything hurt"));
 	public static final Module TOTEM_WARNING = new Module("totem_warning", "Totem Warning",
 			"A warning when your offhand has no totem but your inventory does", Category.COMBAT, true).icon("triangle-alert");
 	public static final Module ITEM_HIGHLIGHTER = new Module("item_highlighter", "Item Highlighter",
@@ -220,6 +229,15 @@ public final class Modules {
 	public static final Module NO_FOG = new Module("no_fog", "No Fog", "A clear view all the way to the horizon",
 			Category.WORLD, false).icon("cloud-fog").markNew();
 
+	public static final Module WEATHER = new Module("weather", "Weather Changer",
+			"The weather you see: clear, rain, a thunderstorm or snow, whatever the server's weather. Only on your screen", Category.WORLD, false)
+			.icon("cloud-rain").markNew();
+	public static final Choice WEATHER_TYPE = WEATHER.add(new Choice("type", "Weather", "What you see falling", 0, "Rain", "Thunder", "Snow", "Clear"));
+	public static final Slider WEATHER_STRENGTH = WEATHER.add(new Slider("strength", "Strength", "How heavy the rain or snow is", 10, 100, 5, 100, "%"));
+	public static final Module RIPPLE = new Module("ripple", "Ripple",
+			"Rings spreading on the ground where raindrops land, like rain on a puddle", Category.WORLD, false).icon("droplets").markNew();
+	public static final Slider RIPPLE_AMOUNT = RIPPLE.add(new Slider("amount", "Amount", "How many drops ripple around you", 20, 200, 10, 100, "%"));
+
 	// Utility
 	public static final Module CHAT = new Module("chat", "Chat",
 			"Timestamps, stacked spam and a longer history", Category.UTILITY, true).icon("message-circle").markNew();
@@ -353,7 +371,6 @@ public final class Modules {
 			0xFF9A4DFF));
 	public static final Slider KNIVES_GLOW_STRENGTH = KNIVES.add(new Slider("glow_strength", "Glow strength", "How bright the edge and its glow are",
 			0, 200, 5, 100, "%"));
-	public static final Toggle KNIVES_HAND_GLOW = KNIVES.add(new Toggle("hand_glow", "Hand glow", "The same soft glow round your arm", true));
 	public static final Toggle KNIVES_ARM = KNIVES.add(new Toggle("arm", "Show hand", "Your own arm holding the knife, in your skin", true).group("Hand"));
 	public static final Toggle KNIVES_SLEEVE = KNIVES.add(new Toggle("sleeve", "Sleeve", "Your skin's sleeve layer on the arm, if it has one", true));
 	public static final Toggle KNIVES_ANIMATIONS = KNIVES.add(new Toggle("animations", "Custom animations",
@@ -390,6 +407,19 @@ public final class Modules {
 	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Wrist", "Twists the wrist, turning the blade", -90, 90, 1, 0, "°"));
 	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
 			0, 100, 5, 60, "%"));
+	public static final Module JUMP_CIRCLES = new Module("jump_circles", "Jump Circles",
+			"A ring of light opening out on the ground each time you jump", Category.COSMETICS, false).icon("circle-dot").markNew();
+	public static final Color JUMP_CIRCLES_COLOR = JUMP_CIRCLES.add(new Color("color", "Colour", "The ring's colour", 0xFFB98BFF));
+	public static final Toggle JUMP_CIRCLES_EVERYONE = JUMP_CIRCLES.add(new Toggle("everyone", "Other players too",
+			"Rings under other players when they jump", false));
+	public static final Module HAND_AURA = new Module("hand_aura", "Hand Aura",
+			"A soft glow of colour round your arm in first person, empty-handed or holding a knife", Category.COSMETICS, true)
+			.icon("hand").markNew();
+	public static final Color HAND_AURA_COLOR = HAND_AURA.add(new Color("color", "Colour", "The aura's colour", 0xFFA35CFF));
+	public static final Slider HAND_AURA_SIZE = HAND_AURA.add(new Slider("size", "Size", "How far the glow reaches out from your arm",
+			50, 200, 5, 100, "%"));
+	public static final Slider HAND_AURA_STRENGTH = HAND_AURA.add(new Slider("strength", "Strength", "How bright the glow is", 10, 100, 5, 75, "%"));
+	public static final Toggle HAND_AURA_PULSE = HAND_AURA.add(new Toggle("pulse", "Pulse", "The glow slowly breathes in and out", true));
 	public static final Module BADGE = new Module("badge", "Eventide Badge",
 			"The Eventide logo by the name of everyone playing with Eventide, on name tags and in the tab list", Category.COSMETICS, true)
 			.icon("badge-check").markNew();
@@ -454,13 +484,14 @@ public final class Modules {
 
 	/** Every module, in menu order: by tab, then as listed here. */
 	public static final List<Module> ALL = List.of(
-			TARGET_HUD, COMBO, POPS, ITEMS, CRYSTAL_OPTIMIZER, POP_NOTIFIER, TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM, JUMP_RESET,
+			TARGET_HUD, COMBO, POPS, ITEMS, CRYSTAL_OPTIMIZER, POP_NOTIFIER, KILL_EFFECTS, HIT_GLOW, TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM,
+			JUMP_RESET,
 			SKIES, CROSSHAIR, ZOOM, FREELOOK, NAMETAGS, FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS,
 			NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT,
-			WAYPOINTS, FULLBRIGHT, NO_FOG,
+			WAYPOINTS, FULLBRIGHT, NO_FOG, WEATHER, RIPPLE,
 			CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS,
-			FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, HOTBAR, MUSIC, MODULE_LIST,
-			KNIVES, BADGE, MENU_NAME,
+			WATERMARK, FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC, MODULE_LIST,
+			KNIVES, HAND_AURA, JUMP_CIRCLES, BADGE, MENU_NAME,
 			THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
@@ -500,6 +531,8 @@ public final class Modules {
 		CustomSkins.tick();
 		PlayerList.tick(mc);
 		KillEffects.tick(mc);
+		HitGlow.tick(mc);
+		GroundFx.tick(mc);
 		MusicBridge.tick();
 		if (LYRICS.enabled() || MUSIC.enabled() && MUSIC_LYRICS.get()) dev.eventide.client.music.Lyrics.want(MusicBridge.current());
 		if (SKIES.enabled()) dev.eventide.client.sky.SkyWeather.tick(mc);

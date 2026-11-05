@@ -95,6 +95,7 @@ public final class EventideClient implements ClientModInitializer {
 			Config.save();
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(EventideClient::tick);
+		dev.eventide.client.module.GroundFx.init();
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> {
 			PopTracker.reset();
 			TpsTracker.reset();
@@ -107,6 +108,7 @@ public final class EventideClient implements ClientModInitializer {
 				Target.onAttack(entity);
 				Combo.onAttack(entity);
 				dev.eventide.client.module.KillEffects.onAttack(entity);
+				dev.eventide.client.module.HitGlow.onAttack(entity);
 			}
 			return InteractionResult.PASS;
 		});

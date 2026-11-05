@@ -282,7 +282,7 @@ public final class KnifeRenderer {
 		boolean glow = Modules.KNIVES_GLOW.get() && KnifeShading.custom();
 		if (Modules.KNIVES_ARM.get() && !player.isInvisible()) {
 			drawArm(mc, player, right, poseStack, collector, light);
-			if (glow && Modules.KNIVES_HAND_GLOW.get()) drawArmGlow(poseStack, collector, right, slim);
+			dev.eventide.client.module.HandAura.draw(poseStack, collector, right);
 		}
 		fist(poseStack, right, slim);
 		knife(poseStack, model);
@@ -383,63 +383,6 @@ public final class KnifeRenderer {
 			renderer.renderLeftHand(pose, collector, light, skin, Modules.KNIVES_SLEEVE.get() && player.isModelPartShown(PlayerModelPart.LEFT_SLEEVE));
 		}
 		pose.popPose();
-	}
-
-	/**
-	 * A line of light round the arm's silhouette, for Hand glow: a slightly bigger box of which only the far
-	 * faces are drawn, so only the rim that shows past the arm's edges is seen.
-	 */
-	private static void drawArmGlow(PoseStack pose, SubmitNodeCollector collector, boolean right, boolean slim) {
-		float f = right ? 1 : -1;
-		pose.pushPose();
-		pose.translate(f * -5 / 16f, 2 / 16f, 0);
-		pose.mulPose(Axis.ZP.rotation(f * 0.1f));
-		float w = slim ? 3 : 4;
-		float x1 = right ? -(w - 1) : -1;
-		float x2 = x1 + w;
-		float g = 0.35f;
-		float[] box = {(x1 - g) / 16f, (-2 - g) / 16f, (-2 - g) / 16f, (x2 + g) / 16f, (10 + g) / 16f, (2 + g) / 16f};
-		int color = glowColor(0.75f);
-		collector.submitCustomGeometry(pose, Compat.knifeOutline(), (last, out) -> glowBox(last, out, box, color));
-		pose.popPose();
-	}
-
-	private static void glowBox(PoseStack.Pose pose, VertexConsumer out, float[] b, int color) {
-		float x1 = b[0];
-		float y1 = b[1];
-		float z1 = b[2];
-		float x2 = b[3];
-		float y2 = b[4];
-		float z2 = b[5];
-		face(pose, out, color, -1, 0, 0, x1, y1, z1, x1, y2, z1, x1, y2, z2, x1, y1, z2);
-		face(pose, out, color, 1, 0, 0, x2, y1, z1, x2, y1, z2, x2, y2, z2, x2, y2, z1);
-		face(pose, out, color, 0, 0, -1, x1, y1, z1, x2, y1, z1, x2, y2, z1, x1, y2, z1);
-		face(pose, out, color, 0, 0, 1, x1, y1, z2, x1, y2, z2, x2, y2, z2, x2, y1, z2);
-		face(pose, out, color, 0, -1, 0, x1, y1, z1, x1, y1, z2, x2, y1, z2, x2, y1, z1);
-		face(pose, out, color, 0, 1, 0, x1, y2, z1, x2, y2, z1, x2, y2, z2, x1, y2, z2);
-	}
-
-	/** One face of a glow box, wound anticlockwise seen from outside (so the outline shader can tell its back faces). */
-	private static void face(PoseStack.Pose pose, VertexConsumer out, int color, float nx, float ny, float nz, float ax, float ay, float az, float bx,
-			float by, float bz, float cx, float cy, float cz, float dx, float dy, float dz) {
-		float ux = bx - ax;
-		float uy = by - ay;
-		float uz = bz - az;
-		float vx = cx - ax;
-		float vy = cy - ay;
-		float vz = cz - az;
-		float outward = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz;
-		if (outward >= 0) {
-			out.addVertex(pose, ax, ay, az).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, bx, by, bz).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, cx, cy, cz).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, dx, dy, dz).setColor(color).setNormal(pose, nx, ny, nz);
-		} else {
-			out.addVertex(pose, ax, ay, az).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, dx, dy, dz).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, cx, cy, cz).setColor(color).setNormal(pose, nx, ny, nz);
-			out.addVertex(pose, bx, by, bz).setColor(color).setNormal(pose, nx, ny, nz);
-		}
 	}
 
 	/** The edge glow's colour with its strength (and the flash after a swing) in its alpha. */

@@ -23,17 +23,19 @@ public final class HudRenderer {
 	}
 
 	private static void drawAll(Draw d, Minecraft mc) {
+		Pills.draw(d, mc, placed(mc, d.width(), d.height(), false), false);
+	}
+
+	/** Every widget that's shown (and, out of Edit HUD, visible), where it goes on a screen this big. */
+	public static java.util.List<Pills.Placed> placed(Minecraft mc, int screenWidth, int screenHeight, boolean editing) {
+		java.util.List<Pills.Placed> out = new java.util.ArrayList<>();
 		for (HudWidget widget : HudWidgets.ALL) {
-			if (!widget.shown() || !widget.visible(mc)) continue;
+			if (!widget.shown() || !editing && !widget.visible(mc)) continue;
 			float scale = scaleFor(widget);
-			int w = Math.round(d.width() / scale);
-			int h = Math.round(d.height() / scale);
-			int[] pos = widget.position(mc, w, h);
-			d.push();
-			d.scale(scale);
-			widget.draw(d, pos[0], pos[1], mc, false);
-			d.pop();
+			int[] pos = widget.position(mc, Math.round(screenWidth / scale), Math.round(screenHeight / scale));
+			out.add(new Pills.Placed(widget, pos[0], pos[1], widget.width(mc), widget.height(mc), scale));
 		}
+		return out;
 	}
 
 	/** How big a widget is drawn: the HUD size setting (unless it opts out) times its own Size setting. */

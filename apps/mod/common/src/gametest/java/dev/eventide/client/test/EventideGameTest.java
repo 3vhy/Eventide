@@ -3,37 +3,39 @@ package dev.eventide.client.test;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.eventide.client.Config;
 import dev.eventide.client.Draw;
-import dev.eventide.client.Hooks;
 import dev.eventide.client.EventideClient;
+import dev.eventide.client.FreezeWatch;
+import dev.eventide.client.Hooks;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.compat.CompatScreen;
 import dev.eventide.client.gui.HudEditorScreen;
-import dev.eventide.client.gui.menu.MenuScreen;
+import dev.eventide.client.gui.PauseMenuButton;
+import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.gui.menu.FloatingMenu;
 import dev.eventide.client.gui.menu.FloatingMenuScreen;
-import dev.eventide.client.gui.UiFont;
-import dev.eventide.client.gui.PauseMenuButton;
-import dev.eventide.client.FreezeWatch;
+import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.hud.CpsTracker;
+import dev.eventide.client.hud.HudRenderer;
 import dev.eventide.client.hud.HudWidget;
 import dev.eventide.client.hud.HudWidgets;
+import dev.eventide.client.hud.Pills;
+import dev.eventide.client.knife.KnifeModel;
+import dev.eventide.client.knife.KnifeRenderer;
 import dev.eventide.client.module.ChatTweaks;
 import dev.eventide.client.module.ConfirmDisconnect;
 import dev.eventide.client.module.CustomSkins;
-import dev.eventide.client.module.TextHotkeys;
-import dev.eventide.client.module.TextRules;
 import dev.eventide.client.module.Freelook;
 import dev.eventide.client.module.Knives;
-import dev.eventide.client.knife.KnifeModel;
-import dev.eventide.client.knife.KnifeRenderer;
-import dev.eventide.client.module.Module;
 import dev.eventide.client.module.Module.Category;
+import dev.eventide.client.module.Module;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.module.NameProtect;
 import dev.eventide.client.module.PlayerList;
-import dev.eventide.client.module.StaffList;
 import dev.eventide.client.module.PopTracker;
+import dev.eventide.client.module.StaffList;
 import dev.eventide.client.module.Target;
+import dev.eventide.client.module.TextHotkeys;
+import dev.eventide.client.module.TextRules;
 import dev.eventide.client.music.Lyrics;
 import dev.eventide.client.music.MusicBridge;
 import dev.eventide.client.ui.Sky;
@@ -52,8 +54,8 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -1233,6 +1235,43 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		shot(context, "eventide-watermark-closeup");
 		context.setScreen(() -> null);
+		context.runOnClient(client -> {
+			Modules.MUSIC.set(false);
+			Modules.MODULE_LIST.set(false);
+			for (Module module : List.of(Modules.FPS, Modules.CLOCK, Modules.MEMORY, Modules.SERVER, Modules.COORDS)) module.set(true);
+			float scale = HudRenderer.scaleFor(HudWidgets.CLOCK);
+			int sw = Math.round(client.getWindow().getGuiScaledWidth() / scale);
+			int sh = Math.round(client.getWindow().getGuiScaledHeight() / scale);
+			int y = 60;
+			int x = 40;
+			for (HudWidget widget : List.of(HudWidgets.CLOCK, HudWidgets.MEMORY, HudWidgets.SERVER)) {
+				int w = widget.width(client);
+				int h = widget.height(client);
+				widget.setPosition(x / (double) Math.max(1, sw - w), y / (double) Math.max(1, sh - h));
+				x += w;
+			}
+			int fw = HudWidgets.FPS.width(client);
+			HudWidgets.FPS.setPosition(40 / (double) Math.max(1, sw - fw), 90 / (double) Math.max(1, sh - HudWidgets.FPS.height(client)));
+			int cw = HudWidgets.COORDS.width(client);
+			HudWidgets.COORDS.setPosition(40 / (double) Math.max(1, sw - cw), 116 / (double) Math.max(1, sh - HudWidgets.COORDS.height(client)));
+		});
+		check(failed, "a pill dropped beside another sticks flush to it", context.computeOnClient(client -> {
+			int w = HudWidgets.FPS.width(client);
+			int h = HudWidgets.FPS.height(client);
+			List<Pills.Placed> others = List.of(new Pills.Placed(HudWidgets.CLOCK, 100, 50, 40, h, 1f));
+			int[] stuck = Pills.stick(HudWidgets.FPS, 146, 53, w, h, 1f, others);
+			return stuck != null && stuck[0] == 140 && stuck[1] == 50;
+		}));
+		context.waitTicks(10);
+		shot(context, "eventide-hud-pills");
+		check(failed, "pills that touch are drawn as one bar", Hooks.pillsStuck);
+		context.runOnClient(client -> {
+			for (HudWidget widget : List.of(HudWidgets.CLOCK, HudWidgets.MEMORY, HudWidgets.SERVER, HudWidgets.FPS, HudWidgets.COORDS)) {
+				widget.resetPosition();
+			}
+			for (Module module : List.of(Modules.FPS, Modules.CLOCK, Modules.MEMORY, Modules.SERVER, Modules.COORDS)) module.set(false);
+			Modules.MODULE_LIST.set(true);
+		});
 		server.runCommand("bossbar remove eventide:banner");
 		context.runOnClient(client -> {
 			Modules.KEYSTROKES.set(true);

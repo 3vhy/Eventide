@@ -55,11 +55,14 @@ public final class HudWidgets {
 	}
 
 	/**
-	 * A glass pill like the website's FPS piece: an icon (the Eventide mark for FPS), the value in bold, a
-	 * small grey label after it, and for FPS a little graph of the last few seconds.
+	 * A glass pill: an icon in the accent colour, the value in bold and a dim unit after it (and for some a tiny
+	 * graph or bar). It stands alone or sticks to other pills into one bar (see {@link Pills}).
 	 */
 	private abstract static class StatWidget extends HudWidget {
-		private static final float ICON = 9;
+		private static final float ICON = 8;
+		private static final float VALUE = 5.6f;
+		private static final float UNIT = 4.6f;
+		private static final float PAD = 7.5f;
 
 		StatWidget(String id, Module module, Anchor anchor) {
 			super(id, module, anchor);
@@ -75,7 +78,7 @@ public final class HudWidgets {
 			return valueColor();
 		}
 
-		/** The fewest digits the value makes room for, so the pill doesn't twitch as it changes. */
+		/** The widest the value gets, so the pill doesn't twitch as it changes. */
 		String template() {
 			return "00";
 		}
@@ -87,20 +90,25 @@ public final class HudWidgets {
 		void drawExtra(Draw d, float x, float cy) {
 		}
 
-		private String labelText() {
+		@Override
+		public boolean pill() {
+			return true;
+		}
+
+		private String unit() {
 			return showLabel() ? label() : "";
 		}
 
 		private static float valueWidth(String value, String template) {
-			return Math.max(Hud.width(value, Hud.CAP, Weight.BOLD), Hud.width(template, Hud.CAP, Weight.BOLD));
+			return Math.max(Hud.width(value, VALUE, Weight.BOLD), Hud.width(template, VALUE, Weight.BOLD));
 		}
 
 		private float layout(String value) {
-			String label = labelText();
-			float w = Hud.PAD_X + ICON + Hud.GAP + valueWidth(value, template());
-			if (!label.isEmpty()) w += 2.6f + Type.spacedWidth(label, Hud.SMALL, 0.05f, Weight.SEMIBOLD);
-			if (extraWidth() > 0) w += Hud.GAP + 1 + extraWidth();
-			return w + Hud.PAD_X;
+			String unit = unit();
+			float w = PAD + ICON + 4 + valueWidth(value, template());
+			if (!unit.isEmpty()) w += 2.6f + Hud.width(unit, UNIT, Weight.MEDIUM);
+			if (extraWidth() > 0) w += 5 + extraWidth();
+			return w + PAD;
 		}
 
 		@Override
@@ -115,30 +123,29 @@ public final class HudWidgets {
 
 		@Override
 		public void draw(Draw d, int x, int y, Minecraft mc, boolean preview) {
+			Pills.glass(d, x, y, x + width(mc), y + Hud.PILL_H, glassStrength());
+			drawContent(d, x, y, mc, preview);
+		}
+
+		@Override
+		public void drawContent(Draw d, int x, int y, Minecraft mc, boolean preview) {
 			String value = value(mc, preview);
-			float w = width(mc);
-			float h = Hud.PILL_H;
 			boolean shadow = textShadow();
-			glass(d, x, y, w, h, Hud.RADIUS);
-			float cx = x + Hud.PAD_X;
-			float cy = y + h / 2f;
-			String icon = icon();
-			if (icon == null) {
-				Logo.mark(d, cx - 1, cy - 5.5f, 11, 1, System.currentTimeMillis());
-			} else {
-				Paint.icon(d, icon, cx, cy - ICON / 2f, ICON, Accent.text());
-			}
-			cx += ICON + Hud.GAP;
+			float cx = x + PAD;
+			float cy = y + Hud.PILL_H / 2f;
+			Paint.icon(d, icon(), cx, cy - ICON / 2f, ICON, Accent.text());
+			cx += ICON + 4;
 			float vw = valueWidth(value, template());
-			Hud.text(d, value, cx + vw - Hud.width(value, Hud.CAP, Weight.BOLD), cy - Hud.CAP / 2f, Hud.CAP, Weight.BOLD, color(mc), shadow);
-			cx += vw;
-			String label = labelText();
-			if (!label.isEmpty()) {
+			Hud.text(d, value, cx, cy - VALUE / 2f, VALUE, Weight.BOLD, color(mc), shadow);
+			cx += Hud.width(value, VALUE, Weight.BOLD);
+			String unit = unit();
+			if (!unit.isEmpty()) {
 				cx += 2.6f;
-				Type.spaced(d, label, cx, cy - Hud.SMALL / 2f + 0.15f, Hud.SMALL, 0.05f, Weight.SEMIBOLD, shadow ? Tokens.TEXT_2 : Tokens.TEXT_3);
-				cx += Type.spacedWidth(label, Hud.SMALL, 0.05f, Weight.SEMIBOLD);
+				Hud.text(d, unit, cx, cy - VALUE / 2f + (VALUE - UNIT), UNIT, Weight.MEDIUM, shadow ? Tokens.TEXT_2 : Tokens.TEXT_3, shadow);
+				cx += Hud.width(unit, UNIT, Weight.MEDIUM);
 			}
-			if (extraWidth() > 0) drawExtra(d, cx + Hud.GAP + 1, cy);
+			cx += vw - Hud.width(value, VALUE, Weight.BOLD);
+			if (extraWidth() > 0) drawExtra(d, cx + 5, cy);
 		}
 	}
 
@@ -152,7 +159,7 @@ public final class HudWidgets {
 
 		@Override
 		String icon() {
-			return null;
+			return "activity";
 		}
 
 		@Override
@@ -172,9 +179,10 @@ public final class HudWidgets {
 
 		@Override
 		float extraWidth() {
-			return Modules.FPS_GRAPH.get() ? 24 : 0;
+			return Modules.FPS_GRAPH.get() ? 21 : 0;
 		}
 
+		/** The last few seconds as a row of thin bars, newest on the right, in the accent colour. */
 		@Override
 		void drawExtra(Draw d, float x, float cy) {
 			long now = System.currentTimeMillis();
@@ -184,22 +192,17 @@ public final class HudWidgets {
 				history[SAMPLES - 1] = Minecraft.getInstance().getFps();
 				filled = Math.min(SAMPLES, filled + 1);
 			}
-			if (filled < 2) return;
-			float min = Float.MAX_VALUE;
-			float max = 0;
-			for (int i = SAMPLES - filled; i < SAMPLES; i++) {
-				min = Math.min(min, history[i]);
-				max = Math.max(max, history[i]);
+			int bars = 10;
+			float max = 1;
+			for (int i = SAMPLES - bars; i < SAMPLES; i++) max = Math.max(max, history[i]);
+			float h = 6;
+			int accent = Accent.get();
+			for (int i = 0; i < bars; i++) {
+				float v = history[SAMPLES - bars + i] / max;
+				float bh = Math.max(0.8f, h * v);
+				float bx = x + i * 2.1f;
+				Paint.rect(d, bx, cy + h / 2f - bh, bx + 1.3f, cy + h / 2f, 0.4f, Paint.fade(accent, 0.45f + 0.55f * (i + 1) / bars));
 			}
-			float range = Math.max(10, max - min);
-			float h = 7;
-			int count = 0;
-			for (int i = SAMPLES - filled; i < SAMPLES; i++) {
-				points[count * 2] = x + 24f * i / (SAMPLES - 1);
-				points[count * 2 + 1] = cy + h / 2f - (history[i] - min) / range * h;
-				count++;
-			}
-			Paint.line(d, points, count, false, 0.75f, Tokens.LILAC_2);
 		}
 	};
 
@@ -233,7 +236,7 @@ public final class HudWidgets {
 
 		@Override
 		String label() {
-			return "MS";
+			return "ms";
 		}
 
 		private int latency(Minecraft mc) {
@@ -267,7 +270,7 @@ public final class HudWidgets {
 	public static final HudWidget TPS = new StatWidget("tps", Modules.TPS, Anchor.TOP_LEFT) {
 		@Override
 		String icon() {
-			return "activity";
+			return "timer";
 		}
 
 		@Override
@@ -337,48 +340,132 @@ public final class HudWidgets {
 		}
 	};
 
+	/** Coordinates as a pill: X, Y and Z with their letters in the accent colour, and which way you face. */
 	public static final HudWidget COORDS = new HudWidget("coords", Modules.COORDS, Anchor.TOP_LEFT) {
-		private static final float ROW = 11;
+		private static final float VALUE = 5.6f;
+		private static final float LETTER = 4.6f;
+		private static final float PAD = 7.5f;
+		private static final String[] AXES = {"X", "Y", "Z"};
 
-		private String[] lines(Minecraft mc) {
+		private String[] values(Minecraft mc) {
 			LocalPlayer player = mc.player;
-			if (player == null) return new String[] {"120, 64, -32", "North"};
+			if (player == null) return new String[] {"-420", "120", "446", "N"};
 			BlockPos pos = player.blockPosition();
 			String facing = player.getDirection().getName();
-			return new String[] {pos.getX() + ", " + pos.getY() + ", " + pos.getZ(),
-					Character.toUpperCase(facing.charAt(0)) + facing.substring(1)};
+			return new String[] {Integer.toString(pos.getX()), Integer.toString(pos.getY()), Integer.toString(pos.getZ()),
+					facing.substring(0, 1).toUpperCase(Locale.ROOT)};
+		}
+
+		private static float cell(String value, String template) {
+			return Math.max(Hud.width(value, VALUE, Weight.SEMIBOLD), Hud.width(template, VALUE, Weight.SEMIBOLD));
+		}
+
+		@Override
+		public boolean pill() {
+			return true;
 		}
 
 		@Override
 		public int width(Minecraft mc) {
-			String[] lines = lines(mc);
-			float text = Math.max(Hud.width(lines[0], Hud.CAP, Weight.SEMIBOLD), Hud.width("-0000, 00, -0000", Hud.CAP, Weight.SEMIBOLD));
-			if (Modules.COORDS_FACING.get()) text = Math.max(text, Hud.width(lines[1], Hud.CAP, Weight.SEMIBOLD));
-			float label = showLabel() ? Type.spacedWidth("Facing", Hud.SMALL, 0.05f, Weight.SEMIBOLD) + 4 : 0;
-			return (int) Math.ceil((Hud.PAD_X + 8 + Hud.GAP + label + text + Hud.PAD_X) / 4) * 4;
+			String[] v = values(mc);
+			float w = PAD + 8 + 4;
+			for (int i = 0; i < 3; i++) w += Hud.width(AXES[i], LETTER, Weight.BOLD) + 2.4f + cell(v[i], i == 1 ? "000" : "-0000") + (i < 2 ? 5 : 0);
+			if (Modules.COORDS_FACING.get()) w += 9 + Hud.width("W", VALUE, Weight.SEMIBOLD);
+			return (int) Math.ceil(w + PAD);
 		}
 
 		@Override
 		public int height(Minecraft mc) {
-			return Math.round(Modules.COORDS_FACING.get() ? Hud.PILL_H + ROW : Hud.PILL_H);
+			return Math.round(Hud.PILL_H);
 		}
 
 		@Override
 		public void draw(Draw d, int x, int y, Minecraft mc, boolean preview) {
-			String[] lines = lines(mc);
-			boolean shadow = textShadow();
-			glass(d, x, y, width(mc), height(mc), Hud.RADIUS);
-			float labelW = showLabel() ? Type.spacedWidth("Facing", Hud.SMALL, 0.05f, Weight.SEMIBOLD) + 4 : 0;
-			row(d, x, y + Hud.PILL_H / 2f, "map-pin", "XYZ", lines[0], labelW, shadow);
-			if (Modules.COORDS_FACING.get()) row(d, x, y + Hud.PILL_H / 2f + ROW, "compass", "Facing", lines[1], labelW, shadow);
+			Pills.glass(d, x, y, x + width(mc), y + Hud.PILL_H, glassStrength());
+			drawContent(d, x, y, mc, preview);
 		}
 
-		private void row(Draw d, float x, float cy, String icon, String label, String value, float labelW, boolean shadow) {
-			float cx = x + Hud.PAD_X;
-			Paint.icon(d, icon, cx, cy - 4, 8, Accent.text());
-			cx += 8 + Hud.GAP;
-			if (labelW > 0) Type.spaced(d, label, cx, cy - Hud.SMALL / 2f, Hud.SMALL, 0.05f, Weight.SEMIBOLD, shadow ? Tokens.TEXT_2 : Tokens.TEXT_3);
-			Hud.text(d, value, cx + labelW, cy - Hud.CAP / 2f, Hud.CAP, Weight.SEMIBOLD, valueColor(), shadow);
+		@Override
+		public void drawContent(Draw d, int x, int y, Minecraft mc, boolean preview) {
+			String[] v = values(mc);
+			boolean shadow = textShadow();
+			float cy = y + Hud.PILL_H / 2f;
+			float cx = x + PAD;
+			Paint.icon(d, "navigation", cx, cy - 4, 8, Accent.text());
+			cx += 8 + 4;
+			for (int i = 0; i < 3; i++) {
+				cx += Hud.text(d, AXES[i], cx, cy - VALUE / 2f + (VALUE - LETTER), LETTER, Weight.BOLD, Accent.text(), shadow) + 2.4f;
+				cx += Hud.text(d, v[i], cx, cy - VALUE / 2f, VALUE, Weight.SEMIBOLD, valueColor(), shadow) + (i < 2 ? 5 : 0);
+			}
+			if (Modules.COORDS_FACING.get()) {
+				float fx = x + width(mc) - PAD - Hud.width("W", VALUE, Weight.SEMIBOLD);
+				Pills.divider(d, fx - 4.5f, y, y + Hud.PILL_H);
+				Hud.text(d, v[3], fx, cy - VALUE / 2f, VALUE, Weight.SEMIBOLD, Tokens.TEXT_2, shadow);
+			}
+		}
+	};
+
+	/** How much of the game's memory is in use, with a small bar. */
+	public static final HudWidget MEMORY = new StatWidget("memory", Modules.MEMORY, Anchor.TOP_LEFT) {
+		@Override
+		String icon() {
+			return "memory-stick";
+		}
+
+		@Override
+		String label() {
+			return "";
+		}
+
+		@Override
+		String template() {
+			return "00%";
+		}
+
+		private static float used() {
+			Runtime runtime = Runtime.getRuntime();
+			return (runtime.totalMemory() - runtime.freeMemory()) / (float) runtime.maxMemory();
+		}
+
+		@Override
+		String value(Minecraft mc, boolean preview) {
+			return Math.round(used() * 100) + "%";
+		}
+
+		@Override
+		float extraWidth() {
+			return 16;
+		}
+
+		@Override
+		void drawExtra(Draw d, float x, float cy) {
+			Hud.bar(d, x, cy - 1.1f, x + 16, 2.2f, used(), null);
+		}
+	};
+
+	/** The server you're on (its address), or Singleplayer, or Local for a LAN world. */
+	public static final HudWidget SERVER = new StatWidget("server", Modules.SERVER, Anchor.TOP_LEFT) {
+		@Override
+		String icon() {
+			return "server";
+		}
+
+		@Override
+		String label() {
+			return "";
+		}
+
+		@Override
+		String template() {
+			return "";
+		}
+
+		@Override
+		String value(Minecraft mc, boolean preview) {
+			if (mc.getSingleplayerServer() != null) return "Singleplayer";
+			var server = mc.getCurrentServer();
+			if (server == null) return preview ? "play.server.net" : "Offline";
+			return server.isLan() ? "Local" : Type.fit(server.ip, 110, 5.6f, Weight.BOLD);
 		}
 	};
 
@@ -1124,6 +1211,6 @@ public final class HudWidgets {
 	}
 
 	/** Drawing order; widgets that share an anchor stack in this order (upwards at the bottom). */
-	public static final List<HudWidget> ALL = List.of(WATERMARK, FPS, CPS, PING, TPS, CLOCK, COMBO, COORDS, KEYSTROKES, ITEMS, ARMOR, MUSIC, MODULE_LIST, POPS,
+	public static final List<HudWidget> ALL = List.of(WATERMARK, FPS, CPS, PING, TPS, CLOCK, MEMORY, SERVER, COMBO, COORDS, KEYSTROKES, ITEMS, ARMOR, MUSIC, MODULE_LIST, POPS,
 			PLAYER_LIST, STAFF_LIST, POTIONS, TARGET, JUMP_RESET, TOTEM_WARNING, MENU_LOGO, LYRICS, SCOREBOARD);
 }

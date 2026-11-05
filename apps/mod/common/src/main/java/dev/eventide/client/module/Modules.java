@@ -312,6 +312,9 @@ public final class Modules {
 	public static final Module CLOCK = hud("clock", "Clock", "The real-world time on your screen", false).icon("clock").markNew();
 	public static final Toggle CLOCK_24H = CLOCK.add(new Toggle("24h", "24-hour time", "14:05 instead of 2:05 PM", true));
 	public static final Toggle CLOCK_SECONDS = CLOCK.add(new Toggle("seconds", "Seconds", "Show seconds too", false));
+	public static final Module MEMORY = hud("memory", "Memory", "How much of the game's memory is in use, with a small bar", false)
+			.icon("memory-stick").markNew();
+	public static final Module SERVER = hud("server", "Server", "The server you're on, or Singleplayer", false).icon("server").markNew();
 	public static final Module COORDS = hud("coords", "Coordinates", "Where you are and which way you face", false).icon("compass");
 	public static final Toggle COORDS_FACING = COORDS.add(new Toggle("facing", "Facing", "Which way you're looking", true));
 	public static final Module KEYSTROKES = background(new Module("keystrokes", "Keystrokes",
@@ -538,8 +541,8 @@ public final class Modules {
 			TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM, JUMP_RESET, SKIES, COLOUR_GRADING, NO_FIRE, LOW_FIRE, CROSSHAIR, ZOOM, FREELOOK, NAMETAGS,
 			FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT,
 			NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT,
-			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC,
-			MODULE_LIST, KNIVES, HAND_AURA, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
+			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, MEMORY, SERVER, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS,
+			HOTBAR, MUSIC, MODULE_LIST, KNIVES, HAND_AURA, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {

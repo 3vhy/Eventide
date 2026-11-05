@@ -51,6 +51,16 @@ public abstract class HudWidget {
 		return true;
 	}
 
+	/** Whether this widget is a glass pill, which can stick to other pills into one bar (see {@link Pills}). */
+	public boolean pill() {
+		return false;
+	}
+
+	/** Draws only what's inside the widget, without its glass, for a bar of pills stuck together. */
+	public void drawContent(Draw d, int x, int y, Minecraft mc, boolean preview) {
+		draw(d, x, y, mc, preview);
+	}
+
 	/** Whether the widget is switched on: its mod is on (and, for some, one of the mod's settings). */
 	public boolean shown() {
 		return module.enabled();
@@ -158,7 +168,7 @@ public abstract class HudWidget {
 	}
 
 	/** How strong the glass is, 0..1, from the Background setting. */
-	protected float glassStrength() {
+	public float glassStrength() {
 		return backgroundAlpha() / 255f;
 	}
 

@@ -8,14 +8,15 @@ import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.hud.HudRenderer;
 import dev.eventide.client.hud.HudWidget;
 import dev.eventide.client.hud.HudWidgets;
+import dev.eventide.client.hud.Pills;
 import dev.eventide.client.module.Setting;
 import dev.eventide.client.ui.Anim;
 import dev.eventide.client.ui.Ease;
 import dev.eventide.client.ui.Hits;
 import dev.eventide.client.ui.Paint;
 import dev.eventide.client.ui.Tokens;
-import dev.eventide.client.ui.Type;
 import dev.eventide.client.ui.Type.Weight;
+import dev.eventide.client.ui.Type;
 import dev.eventide.client.ui.Widgets;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,10 +81,10 @@ public final class HudEditorScreen extends CompatScreen {
 
 		HudWidget hovered = null;
 		boolean overBar = mouseY < BAR_H + 10;
+		Pills.draw(d, mc, HudRenderer.placed(mc, this.width, this.height, true), true);
 		for (HudWidget widget : HudWidgets.ALL) {
 			if (!widget.shown()) continue;
 			int[] box = box(mc, widget);
-			drawWidget(d, mc, widget);
 			if (dragging == null && !overBar && mouseX >= box[0] && mouseX < box[2] && mouseY >= box[1] && mouseY < box[3]) hovered = widget;
 			hits.add(box[0], box[1], box[2], box[3], () -> startDrag(widget, mouseX, mouseY));
 		}
@@ -101,15 +102,6 @@ public final class HudEditorScreen extends CompatScreen {
 		if (hovered != null) toolbar(d, mc, hovered, mouseX, mouseY);
 		drawBar(d, mouseX, mouseY, hovered);
 		Paint.opacity(old);
-	}
-
-	private void drawWidget(Draw d, Minecraft mc, HudWidget widget) {
-		float scale = HudRenderer.scaleFor(widget);
-		d.push();
-		d.scale(scale);
-		int[] pos = widget.position(mc, Math.round(this.width / scale), Math.round(this.height / scale));
-		widget.draw(d, pos[0], pos[1], mc, true);
-		d.pop();
 	}
 
 	/** A widget's frame: a faint violet edge, lit up with a glow while it's hovered or dragged. */
@@ -154,7 +146,7 @@ public final class HudEditorScreen extends CompatScreen {
 	private void drawBar(Draw d, int mouseX, int mouseY, HudWidget hovered) {
 		String hint = hovered != null && hovered.resizable()
 				? "Scroll to resize  ·  " + Math.round(hovered.sizeScale() * 100) + "%"
-				: "Drag widgets to move them  ·  they snap to the middle and the edges";
+				: "Drag widgets to move them  ·  drop a pill against another to stick them together";
 		float cap = 5.2f;
 		float hintW = Type.width(hint, cap, Weight.MEDIUM);
 		float titleW = Type.width("Edit HUD layout", cap, Weight.SEMIBOLD);
@@ -248,6 +240,11 @@ public final class HudEditorScreen extends CompatScreen {
 			top = MARGIN;
 		} else if (Math.abs(top + h - (sh - MARGIN)) < SNAP) {
 			top = sh - MARGIN - h;
+		}
+		int[] stuck = Pills.stick(dragging, left, top, w, h, scale, HudRenderer.placed(mc, this.width, this.height, true));
+		if (stuck != null) {
+			left = stuck[0];
+			top = stuck[1];
 		}
 		dragging.setPosition(left / Math.max(1, sw - w), top / Math.max(1, sh - h));
 		return true;

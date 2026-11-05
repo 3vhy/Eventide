@@ -2309,11 +2309,13 @@ function handleContextMenu(event) {
 	grid-template-rows: auto minmax(0, 1fr);
 	position: relative;
 	//z-index: 0;
-	// Eventide: the shell sits on the night sky from the banner; isolation keeps the snow
-	// canvas above this background but behind everything in the shell
+	// Eventide: the shell sits on a quiet violet nebula; isolation keeps the snow canvas above
+	// this background but behind everything in the shell
 	isolation: isolate;
 	background:
-		radial-gradient(120% 60% at 0% 0%, rgba(26, 79, 186, 0.35), transparent 60%),
+		radial-gradient(110% 60% at 0% 0%, rgba(148, 97, 255, 0.28), transparent 60%),
+		radial-gradient(70% 50% at 100% 0%, rgba(255, 106, 213, 0.1), transparent 60%),
+		radial-gradient(80% 60% at 70% 100%, rgba(79, 216, 255, 0.07), transparent 60%),
 		var(--eventide-stars), var(--eventide-night);
 	height: 100vh;
 }

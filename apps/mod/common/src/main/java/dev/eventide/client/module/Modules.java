@@ -450,6 +450,12 @@ public final class Modules {
 	public static final Slider KNIVES_ROLL = KNIVES.add(new Slider("roll", "Wrist", "Twists the wrist, turning the blade", -90, 90, 1, 0, "°"));
 	public static final Slider KNIVES_LIGHT = KNIVES.add(new Slider("light", "Viewmodel light", "Keeps the knife lit in dark places; 0% follows the world's light exactly",
 			0, 100, 5, 60, "%"));
+	public static final Module MODEL_SKIN = new Module("model_skin", "3D Skins",
+			"Be a whole 3D character in third person and your inventory: the Grim Reaper, Timber the log, the Void Walker or an Astronaut",
+			Category.COSMETICS, false).icon("person-standing").markNew();
+	public static final Choice MODEL_SKIN_TYPE = MODEL_SKIN.add(new Choice("type", "Character", "Who you are", 0, dev.eventide.client.knife.ModelSkins.SKINS));
+	public static final Toggle MODEL_SKIN_PROP = MODEL_SKIN.add(new Toggle("prop", "Hold their weapon",
+			"The Reaper's scythe, Timber's bat or the Void Walker's dagger in your hand instead of your item", true));
 	public static final Module HATS = new Module("hats", "Hats",
 			"A hat on your head in third person and your inventory: a halo, a crown, a top hat, a witch hat, horns or cat ears; only you see it",
 			Category.COSMETICS, false).icon("crown").markNew();
@@ -542,7 +548,8 @@ public final class Modules {
 			FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT,
 			NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT,
 			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, MEMORY, SERVER, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS,
-			HOTBAR, MUSIC, MODULE_LIST, KNIVES, HAND_AURA, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
+			HOTBAR, MUSIC, MODULE_LIST, KNIVES, HAND_AURA, MODEL_SKIN, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD,
+			PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {

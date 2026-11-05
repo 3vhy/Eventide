@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.eventide.client.Hooks;
 import dev.eventide.client.knife.Cosmetics;
 import dev.eventide.client.knife.KnifeModel;
+import dev.eventide.client.knife.ModelSkins;
 import dev.eventide.client.module.Knives;
 import dev.eventide.client.module.Modules;
 import net.minecraft.client.Minecraft;
@@ -15,8 +16,9 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import com.mojang.math.Axis;
 
 /**
- * Your cosmetics on your own player, wherever it's drawn (third person, the inventory, F5): your hat on your
- * head, your wings on your back, and your knife in your hand in place of the item. Only you see them.
+ * Your cosmetics on your own player, wherever it's drawn (third person, the inventory, F5): your 3D skin in place
+ * of the flat one, your hat on your head, your wings on your back, and your knife (or your 3D skin's weapon) in
+ * your hand in place of the item. Only you see them.
  */
 public final class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	public CosmeticsLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
@@ -39,6 +41,7 @@ public final class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerM
 	public void submit(PoseStack pose, SubmitNodeCollector collector, int light, AvatarRenderState state, float yRot, float xRot) {
 		if (!yours(state) || state.isInvisible) return;
 		PlayerModel model = getParentModel();
+		if (ModelSkins.worn()) ModelSkins.draw(model, state.mainArm, pose, collector, light);
 		if (Modules.HATS.enabled()) {
 			pose.pushPose();
 			model.head.translateAndRotate(pose);
@@ -54,7 +57,16 @@ public final class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerM
 			Hooks.cosmeticsDrawn = true;
 		}
 		KnifeModel knife = thirdPersonKnife(state);
-		if (knife != null) {
+		if (ModelSkins.holdsProp()) {
+			pose.pushPose();
+			model.translateToHand(state, state.mainArm, pose);
+			pose.mulPose(Axis.XP.rotationDegrees(-90));
+			pose.mulPose(Axis.YP.rotationDegrees(180));
+			boolean left = state.mainArm == net.minecraft.world.entity.HumanoidArm.LEFT;
+			pose.translate((left ? -1 : 1) / 16f, 0.125f, -0.625f);
+			ModelSkins.drawProp(state.mainArm, pose, collector, light);
+			pose.popPose();
+		} else if (knife != null) {
 			pose.pushPose();
 			model.translateToHand(state, state.mainArm, pose);
 			pose.mulPose(Axis.XP.rotationDegrees(-90));

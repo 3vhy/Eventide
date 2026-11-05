@@ -1,18 +1,16 @@
 // Eventide design system
 //
-// Everything comes from the Eventide banner: a cyan rim fading into royal blue, a
-// deep night band, pale sky at the bottom, and blocky ice-white pixel letters.
+// The same look as the mod's menus (ui/Tokens.java): a midnight ground with surfaces a step of
+// lightness apart, electric violet for what's on or chosen, cyan and pink as rare highlights, Inter
+// for the interface and Unbounded (the wordmark's face) for titles. Corners are soft and round,
+// edges a single light hairline, and the shell sits on a quiet violet nebula.
 //
-//   night  #060e2b  the ground everything sits on
-//   deep   #0e2159  raised surfaces
-//   royal  #1a4fba  depth edges, secondary accent
-//   cyan   #5bc8e6  actions and focus (the banner's rim light)
-//   ice    #e3f3fc  primary text
-//   sky    #8cc4ea  secondary text
-//
-// The signature: primary actions are "blocks" — stepped pixel corners and a hard
-// depth edge you press into, like the letters in the wordmark. Everything else
-// stays quiet.
+//   night   #05030b  the ground everything sits on
+//   raised  #141024  cards and panels
+//   violet  #9461ff  actions, focus, what's on
+//   cyan    #4fd8ff  rare highlights
+//   pink    #ff6ad5  rare highlights
+//   text    #f4f0ff  primary text
 
 @import './eventide-fonts.scss';
 
@@ -23,180 +21,85 @@
 	--brand-swirl: #a855f7;
 	--brand-wordmark: #f5efff;
 
-	--eventide-cyan: #5bc8e6;
-	--eventide-royal: #1a4fba;
-	--eventide-navy: #061d8c;
-	--eventide-mid: #2a6fc4;
-	--eventide-sky: #8cc4ea;
-	--eventide-pale: #cfe8f7;
-	--eventide-ice: #e3f3fc;
-	--eventide-night: #060e2b;
+	--eventide-cyan: #9461ff;
+	--eventide-royal: #6a3df0;
+	--eventide-navy: #1b1530;
+	--eventide-mid: #7c4dff;
+	--eventide-sky: #c4bbdc;
+	--eventide-pale: #e4dcff;
+	--eventide-ice: #f4f0ff;
+	--eventide-night: #05030b;
+	--eventide-highlight-cyan: #4fd8ff;
+	--eventide-highlight-pink: #ff6ad5;
 
-	--eventide-font-ui: 'Rubik Eventide', 'Segoe UI', system-ui, sans-serif;
-	--eventide-font-pixel: 'Pixelify Sans', 'Rubik Eventide', monospace;
+	--eventide-font-ui: 'Inter Eventide', 'Segoe UI', system-ui, sans-serif;
+	--eventide-font-pixel: 'Unbounded Eventide', 'Inter Eventide', 'Segoe UI', sans-serif;
 
-	// The banner itself, top to bottom
-	--eventide-banner: linear-gradient(
-		180deg,
-		#5bc8e6 0%,
-		#1a4fba 9%,
-		#061d8c 22%,
-		#0b2a9a 42%,
-		#2a6fc4 64%,
-		#8cc4ea 86%,
-		#cfe8f7 100%
-	);
-	// A darker cut of the banner for large surfaces, so text stays readable
-	--eventide-sky-panel: linear-gradient(180deg, #0b2a9a 0%, #061d8c 35%, #123c9f 70%, #2a6fc4 100%);
-	--eventide-chip-bg: rgba(140, 196, 234, 0.14);
-	--eventide-card-bg: rgba(10, 26, 84, 0.62);
-	--eventide-card-border: rgba(140, 196, 234, 0.16);
-	--eventide-play-bg: linear-gradient(180deg, #8ae0f5 0%, #4fbdea 48%, #2b8fdb 100%);
+	// The nebula: violet light with a little pink and cyan, on the night
+	--eventide-banner: radial-gradient(120% 90% at 15% 0%, rgba(148, 97, 255, 0.45), transparent 60%),
+		radial-gradient(80% 70% at 90% 20%, rgba(255, 106, 213, 0.18), transparent 60%),
+		radial-gradient(90% 80% at 60% 100%, rgba(79, 216, 255, 0.12), transparent 60%), #05030b;
+	--eventide-sky-panel: radial-gradient(110% 90% at 20% 0%, rgba(148, 97, 255, 0.32), transparent 62%),
+		radial-gradient(90% 80% at 100% 100%, rgba(255, 106, 213, 0.12), transparent 60%), #0f0b1c;
+	--eventide-chip-bg: rgba(148, 97, 255, 0.14);
+	--eventide-card-bg: rgba(20, 16, 36, 0.72);
+	--eventide-card-border: rgba(196, 176, 255, 0.12);
+	--eventide-play-bg: #9461ff;
 
-	// Stepped pixel corners (3px steps). Use as `clip-path: var(--eventide-pixel-corners)`.
-	--eventide-pixel-corners: polygon(
-		0 6px,
-		3px 6px,
-		3px 3px,
-		6px 3px,
-		6px 0,
-		calc(100% - 6px) 0,
-		calc(100% - 6px) 3px,
-		calc(100% - 3px) 3px,
-		calc(100% - 3px) 6px,
-		100% 6px,
-		100% calc(100% - 6px),
-		calc(100% - 3px) calc(100% - 6px),
-		calc(100% - 3px) calc(100% - 3px),
-		calc(100% - 6px) calc(100% - 3px),
-		calc(100% - 6px) 100%,
-		6px 100%,
-		6px calc(100% - 3px),
-		3px calc(100% - 3px),
-		3px calc(100% - 6px),
-		0 calc(100% - 6px)
-	);
-	// Bigger steps for large panels
-	--eventide-pixel-corners-lg: polygon(
-		0 12px,
-		6px 12px,
-		6px 6px,
-		12px 6px,
-		12px 0,
-		calc(100% - 12px) 0,
-		calc(100% - 12px) 6px,
-		calc(100% - 6px) 6px,
-		calc(100% - 6px) 12px,
-		100% 12px,
-		100% calc(100% - 12px),
-		calc(100% - 6px) calc(100% - 12px),
-		calc(100% - 6px) calc(100% - 6px),
-		calc(100% - 12px) calc(100% - 6px),
-		calc(100% - 12px) 100%,
-		12px 100%,
-		12px calc(100% - 6px),
-		6px calc(100% - 6px),
-		6px calc(100% - 12px),
-		0 calc(100% - 12px)
-	);
-	// A hard edge underneath a raised block, and the same edge when pressed in
-	--eventide-block-edge:
-		inset 0 -4px 0 rgba(4, 18, 63, 0.38), inset 0 2px 0 rgba(255, 255, 255, 0.32);
-	--eventide-block-edge-pressed:
-		inset 0 -1px 0 rgba(4, 18, 63, 0.38), inset 0 2px 0 rgba(4, 18, 63, 0.18);
+	// Soft round corners (the names are kept from the old pixel corners, so every component picks them up)
+	--eventide-pixel-corners: inset(0 round 10px);
+	--eventide-pixel-corners-lg: inset(0 round 16px);
+	// A lit top edge on raised controls, and none when pressed
+	--eventide-block-edge: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	--eventide-block-edge-pressed: inset 0 1px 0 rgba(0, 0, 0, 0.2);
 
-	// A few pixel stars for the night backdrop
-	--eventide-stars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' shape-rendering='crispEdges'%3E%3Cg fill='%23e3f3fc'%3E%3Crect x='12' y='18' width='2' height='2' opacity='.35'/%3E%3Crect x='71' y='9' width='2' height='2' opacity='.18'/%3E%3Crect x='118' y='42' width='2' height='2' opacity='.3'/%3E%3Crect x='38' y='77' width='2' height='2' opacity='.14'/%3E%3Crect x='96' y='101' width='2' height='2' opacity='.25'/%3E%3Crect x='143' y='131' width='2' height='2' opacity='.16'/%3E%3Crect x='22' y='139' width='2' height='2' opacity='.22'/%3E%3Crect x='63' y='121' width='1' height='1' opacity='.4'/%3E%3Crect x='131' y='73' width='1' height='1' opacity='.4'/%3E%3C/g%3E%3C/svg%3E");
+	// A few faint stars for the night
+	--eventide-stars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%23f4f0ff'%3E%3Ccircle cx='12' cy='18' r='0.9' opacity='.45'/%3E%3Ccircle cx='71' cy='9' r='0.7' opacity='.25'/%3E%3Ccircle cx='128' cy='42' r='1' opacity='.35'/%3E%3Ccircle cx='38' cy='87' r='0.6' opacity='.22'/%3E%3Ccircle cx='106' cy='111' r='0.9' opacity='.3'/%3E%3Ccircle cx='163' cy='141' r='0.7' opacity='.2'/%3E%3Ccircle cx='22' cy='159' r='0.8' opacity='.28'/%3E%3C/g%3E%3Cg fill='%23c4b0ff'%3E%3Ccircle cx='63' cy='131' r='0.8' opacity='.4'/%3E%3Ccircle cx='151' cy='73' r='0.7' opacity='.4'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 html.dark-mode,
 html.oled-mode {
-	--surface-1: #060e2b;
-	--surface-1-5: #08133a;
-	--surface-2: #0a1846;
-	--surface-2-5: #0c1c50;
-	--surface-3: #0e2159;
-	--surface-4: #16307a;
-	--surface-5: #22428f;
-
-	--color-text-primary: #e3f3fc;
-	--color-text-default: #b8d0ee;
-	--color-text-tertiary: #86a6d4;
-
-	--color-bg: var(--surface-1);
-	--color-raised-bg: var(--surface-3);
-	--color-super-raised-bg: var(--surface-4);
-	--color-button-bg: var(--surface-4);
-	--color-button-border: rgba(140, 196, 234, 0.16);
-	--color-scrollbar: #22428f;
-	--color-divider: rgba(140, 196, 234, 0.12);
-	--color-divider-dark: #3b5a96;
-
-	--color-base: var(--color-text-default);
-	--color-secondary: var(--color-text-tertiary);
-	--color-contrast: var(--color-text-primary);
-	--color-accent-contrast: #04123f;
-
-	--color-brand: #5bc8e6;
-	--color-brand-highlight: rgba(91, 200, 230, 0.18);
-	--color-brand-shadow: rgba(91, 200, 230, 0.55);
-	--color-button-bg-selected: var(--color-brand-highlight);
-	--color-button-text-selected: #a9e6f7;
-
-	--brand-gradient-bg: transparent;
-	--brand-gradient-strong-bg: linear-gradient(270deg, #061d8c 10%, #0b2a7a 100%);
-	--brand-gradient-button: rgba(227, 243, 252, 0.08);
-	--brand-gradient-border: rgba(140, 196, 234, 0.12);
-	--brand-gradient-fade-out-color: linear-gradient(to bottom, rgba(6, 14, 43, 0), #060e2b 80%);
-
-	--color-gradient-button-bg: linear-gradient(180deg, #1c3a8c 0%, #16307a 100%);
-	--loading-bar-gradient: linear-gradient(to right, #1a4fba 0%, #5bc8e6 100%);
-
-	--shadow-card: rgba(2, 8, 40, 0.35) 0px 2px 0px 0px;
-	--shadow-floating: 0 18px 40px rgba(2, 8, 40, 0.55);
-}
-
-html.oled-mode {
-	--surface-1: #020617;
-	--surface-1-5: #030820;
-	--surface-2: #050b26;
-	--surface-3: #08112f;
-	--surface-4: #10204f;
-	--surface-5: #182d63;
-	--eventide-night: #020617;
+	--surface-1: #000000;
+	--surface-1-5: #030207;
+	--surface-2: #06040c;
+	--surface-3: #0d0a18;
+	--surface-4: #151024;
+	--surface-5: #1e1733;
+	--eventide-night: #000000;
 }
 
 html.light-mode {
 	--brand-wordmark: var(--brand-tile);
-	--eventide-ice: #061d8c;
-	--eventide-night: #e6f1fb;
-	--eventide-chip-bg: rgba(26, 79, 186, 0.1);
-	--eventide-card-bg: rgba(255, 255, 255, 0.72);
-	--eventide-card-border: rgba(26, 79, 186, 0.14);
+	--eventide-ice: #1b1530;
+	--eventide-night: #f4f1fb;
+	--eventide-chip-bg: rgba(124, 77, 255, 0.1);
+	--eventide-card-bg: rgba(255, 255, 255, 0.78);
+	--eventide-card-border: rgba(124, 77, 255, 0.14);
 	--eventide-stars: none;
+	--eventide-sky-panel: radial-gradient(110% 90% at 20% 0%, rgba(148, 97, 255, 0.18), transparent 62%), #ffffff;
 
-	--surface-1: #e6f1fb;
-	--surface-2: #eef6fd;
-	--surface-3: #f5faff;
+	--surface-1: #f4f1fb;
+	--surface-2: #f8f6fd;
+	--surface-3: #fcfbff;
 	--surface-4: #ffffff;
-	--surface-5: #cfe0f2;
+	--surface-5: #e6e0f5;
 
-	--color-text-primary: #061d4f;
-	--color-text-default: #1f3a6b;
-	--color-text-tertiary: #4a6390;
+	--color-text-primary: #151024;
+	--color-text-default: #3a3150;
+	--color-text-tertiary: #6b6284;
 
-	--color-brand: #1a4fba;
-	--color-brand-highlight: rgba(26, 79, 186, 0.14);
+	--color-brand: #7c4dff;
+	--color-brand-highlight: rgba(124, 77, 255, 0.14);
 	--color-accent-contrast: #ffffff;
 	--color-button-bg-selected: var(--color-brand);
 	--color-button-text-selected: #ffffff;
 
 	--brand-gradient-bg: transparent;
-	--brand-gradient-strong-bg: linear-gradient(270deg, #cfe8f7 10%, #e3f3fc 100%);
+	--brand-gradient-strong-bg: linear-gradient(270deg, #ece6fb 10%, #f8f6fd 100%);
 	--brand-gradient-button: rgba(255, 255, 255, 0.6);
-	--brand-gradient-border: rgba(26, 79, 186, 0.14);
-	--brand-gradient-fade-out-color: linear-gradient(to bottom, rgba(230, 241, 251, 0), #e6f1fb 70%);
-	--loading-bar-gradient: linear-gradient(to right, #1a4fba 0%, #5bc8e6 100%);
+	--brand-gradient-border: rgba(124, 77, 255, 0.14);
+	--brand-gradient-fade-out-color: linear-gradient(to bottom, rgba(244, 241, 251, 0), #f4f1fb 70%);
+	--loading-bar-gradient: linear-gradient(to right, #7c4dff 0%, #b48cff 100%);
 }
 
 // ---------- Type ----------
@@ -206,72 +109,60 @@ html body {
 	font-family: var(--eventide-font-ui);
 }
 
-// Page and section titles use the pixel face, like the wordmark
+// Page and section titles use the wordmark's face
 html body :is(h1, h2) {
 	font-family: var(--eventide-font-pixel);
-	font-weight: 600;
-	letter-spacing: 0.01em;
+	font-weight: 700;
+	letter-spacing: -0.01em;
 }
 
 .eventide-pixel {
 	font-family: var(--eventide-font-pixel);
-	font-weight: 600;
+	font-weight: 700;
 }
 
 ::selection {
-	background: rgba(91, 200, 230, 0.35);
+	background: rgba(148, 97, 255, 0.35);
 	color: inherit;
 }
 
-// ---------- Blocks: buttons ----------
+// ---------- Buttons ----------
 
-// Primary actions (filled buttons) become pixel blocks you press into
+// Primary actions: flat violet with a lit top edge, a soft press
 html body .button-frame--colored.button-frame--colored {
-	border-radius: 0 !important;
-	clip-path: var(--eventide-pixel-corners);
-	background-image: linear-gradient(
-		180deg,
-		rgba(255, 255, 255, 0.26) 0%,
-		rgba(255, 255, 255, 0) 60%
-	);
+	border-radius: 10px !important;
 	box-shadow: var(--eventide-block-edge);
-	padding-bottom: 3px;
 
 	&::before {
 		display: none;
 	}
 
 	&:not(:disabled):not([aria-disabled='true']):active {
-		transform: translateY(2px);
+		transform: scale(0.98);
 		box-shadow: var(--eventide-block-edge-pressed);
 	}
 
 	&:not(:disabled):not([aria-disabled='true']):focus-visible {
 		box-shadow:
-			inset 0 0 0 2px #fff,
+			0 0 0 2px rgba(148, 97, 255, 0.6),
 			var(--eventide-block-edge);
 	}
 }
 
-// Regular buttons get the same hard edge, without the pixel corners
+// Regular buttons: a hairline edge and the same lit top
 html body .button-frame--base.button-frame--base,
 html body .button-frame--colored-text.button-frame--colored-text {
 	box-shadow:
-		inset 0 0 0 1px rgba(140, 196, 234, 0.14),
-		inset 0 -3px 0 rgba(2, 8, 40, 0.32);
+		inset 0 0 0 1px rgba(196, 176, 255, 0.12),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
 	&:not(:disabled):not([aria-disabled='true']):active {
-		transform: translateY(1px);
-		box-shadow:
-			inset 0 0 0 1px rgba(140, 196, 234, 0.14),
-			inset 0 -1px 0 rgba(2, 8, 40, 0.32);
+		transform: scale(0.98);
 	}
 }
 
 html.light-mode body .button-frame--base.button-frame--base {
-	box-shadow:
-		inset 0 0 0 1px rgba(26, 79, 186, 0.16),
-		inset 0 -3px 0 rgba(26, 79, 186, 0.12);
+	box-shadow: inset 0 0 0 1px rgba(124, 77, 255, 0.16);
 }
 
 // ---------- Inputs ----------
@@ -283,7 +174,7 @@ html body :is(input, textarea) {
 // ---------- Scrollbars ----------
 
 html body {
-	scrollbar-color: #22428f transparent;
+	scrollbar-color: #2a2245 transparent;
 }
 
 html body ::-webkit-scrollbar {
@@ -292,13 +183,13 @@ html body ::-webkit-scrollbar {
 }
 
 html body ::-webkit-scrollbar-thumb {
-	background: #22428f;
+	background: #2a2245;
 	border: 3px solid transparent;
 	background-clip: content-box;
 }
 
 html body ::-webkit-scrollbar-thumb:hover {
-	background-color: #2f5bb5;
+	background-color: #3a2f5c;
 }
 
 html body ::-webkit-scrollbar-track {
@@ -317,18 +208,18 @@ html body :focus-visible {
 	}
 }
 
-// Blockier corners for components that use the radius tokens
+// Soft corners for components that use the radius tokens
 html {
-	--radius-sm: 0.25rem;
-	--radius-md: 0.375rem;
-	--radius-lg: 0.5rem;
-	--radius-xl: 0.625rem;
+	--radius-sm: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.75rem;
+	--radius-xl: 1rem;
 }
 
 // Shell surfaces
 :root {
-	--eventide-slab: rgba(7, 18, 56, 0.78);
-	--eventide-sidebar: rgba(4, 12, 40, 0.35);
+	--eventide-slab: rgba(10, 7, 20, 0.78);
+	--eventide-sidebar: rgba(5, 3, 11, 0.45);
 }
 
 html.light-mode {
@@ -336,16 +227,7 @@ html.light-mode {
 	--eventide-sidebar: rgba(255, 255, 255, 0.35);
 }
 
-// Shared components use a few fixed, very round corner sizes; square them up
-html body :is(.rounded-\[24px\], .rounded-\[20px\], .rounded-\[16px\], .rounded-\[15px\]) {
-	border-radius: 0.625rem !important;
-}
-
-html body .rounded-\[14px\] {
-	border-radius: 0.5rem !important;
-}
-
-// Cards you can click get the cyan rim when hovered, instead of just brightening
+// Cards you can click get a violet rim when hovered, instead of just brightening
 html body .clickable-card {
 	transition:
 		border-color 0.12s ease,
@@ -354,7 +236,7 @@ html body .clickable-card {
 
 html.dark-mode body .clickable-card:hover,
 html.oled-mode body .clickable-card:hover {
-	border-color: rgba(91, 200, 230, 0.45) !important;
+	border-color: rgba(148, 97, 255, 0.5) !important;
 }
 
 @import './eventide-october.scss';

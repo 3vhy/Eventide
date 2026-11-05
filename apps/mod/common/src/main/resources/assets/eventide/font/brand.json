@@ -4,8 +4,11 @@
 			"type": "ttf",
 			"file": "eventide:unbounded_700_latin.ttf",
 			"size": 9.0667,
-			"oversample": 8.0,
-			"shift": [0.0, 0.0]
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
 		},
 		{
 			"type": "reference",

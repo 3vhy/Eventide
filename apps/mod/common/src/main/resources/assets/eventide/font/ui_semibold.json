@@ -4,22 +4,31 @@
 			"type": "ttf",
 			"file": "eventide:inter_600_latin.ttf",
 			"size": 9.35,
-			"oversample": 8.0,
-			"shift": [0.0, 0.0]
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
 		},
 		{
 			"type": "ttf",
 			"file": "eventide:inter_600_latin_ext.ttf",
 			"size": 9.35,
-			"oversample": 8.0,
-			"shift": [0.0, 0.0]
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
 		},
 		{
 			"type": "ttf",
 			"file": "eventide:inter_600_cyrillic.ttf",
 			"size": 9.35,
-			"oversample": 8.0,
-			"shift": [0.0, 0.0]
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
 		},
 		{
 			"type": "reference",

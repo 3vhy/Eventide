@@ -27,7 +27,7 @@ public abstract class AvatarBadgeMixin {
 	@Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V",
 			at = @At("TAIL"))
 	private void eventide$badge(Avatar avatar, AvatarRenderState state, float partialTick, CallbackInfo ci) {
-		if (CosmeticsLayer.thirdPersonKnife(state) != null) {
+		if (CosmeticsLayer.thirdPersonKnife(state) != null || CosmeticsLayer.yours(state) && dev.eventide.client.knife.ModelSkins.holdsProp()) {
 			if (state.mainArm == HumanoidArm.LEFT) state.leftHandItemState.clear();
 			else state.rightHandItemState.clear();
 		}

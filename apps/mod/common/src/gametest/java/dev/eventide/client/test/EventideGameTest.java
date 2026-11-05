@@ -538,6 +538,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			knives(context, singleplayer, failed, false);
 			killEffects(context, singleplayer, failed);
 			worldFx(context, singleplayer, failed);
+			cosmetics(context, singleplayer, failed);
 			hudLook(context, singleplayer, failed);
 			skies(context, singleplayer, failed, false);
 			performance(context, failed);
@@ -1206,6 +1207,69 @@ public final class EventideGameTest implements FabricClientGameTest {
 	}
 
 	/**
+	 * Your player seen from the front in third person: each 3D skin with its weapon, then the hats and the wings
+	 * on your own skin, and your knife in your hand.
+	 */
+	private static void cosmetics(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
+		var server = singleplayer.getServer();
+		server.runCommand("time set noon");
+		server.runCommand("weather clear");
+		List<Module> hudOn = context.computeOnClient(client -> {
+			List<Module> on = new ArrayList<>();
+			for (Module module : Modules.ALL) {
+				if (module.category == Category.HUD && module.enabled()) on.add(module);
+			}
+			return on;
+		});
+		context.runOnClient(client -> {
+			client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+			for (Module module : hudOn) module.set(false);
+			client.getToastManager().clear();
+		});
+		face(context, 0, 15);
+		context.getInput().pressKey(GLFW.GLFW_KEY_1);
+		context.runOnClient(client -> Modules.MODEL_SKIN.set(true));
+		for (String skin : dev.eventide.client.knife.ModelSkins.SKINS) {
+			context.runOnClient(client -> Modules.MODEL_SKIN_TYPE.set(skin));
+			context.waitTicks(10);
+			shot(context, "eventide-skin-" + skin.toLowerCase(java.util.Locale.ROOT).replace(' ', '-'));
+		}
+		check(failed, "a 3D skin is drawn on your player (PlayerModel.setupAnim, the cosmetics layer)", Hooks.modelSkinDrawn);
+		context.runOnClient(client -> {
+			Modules.MODEL_SKIN.set(false);
+			Modules.HATS.set(true);
+			Modules.WINGS.set(true);
+		});
+		String[] wings = dev.eventide.client.knife.Cosmetics.WINGS;
+		String[] hats = dev.eventide.client.knife.Cosmetics.HATS;
+		for (int i = 0; i < hats.length; i++) {
+			String hat = hats[i];
+			String wing = wings[i % wings.length];
+			context.runOnClient(client -> {
+				Modules.HATS_TYPE.set(hat);
+				Modules.WINGS_TYPE.set(wing);
+			});
+			context.waitTicks(8);
+			shot(context, "eventide-cosmetics-" + hat.toLowerCase(java.util.Locale.ROOT).replace(' ', '-'));
+		}
+		check(failed, "hats and wings are drawn on your player", Hooks.cosmeticsDrawn);
+		context.runOnClient(client -> {
+			Modules.HATS.set(false);
+			Modules.WINGS.set(false);
+			Modules.KNIVES.set(true);
+			client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+		});
+		face(context, 30, 20);
+		context.waitTicks(10);
+		shot(context, "eventide-knife-third-person");
+		check(failed, "your knife shows in your hand in third person", Hooks.knifeThirdPerson);
+		context.runOnClient(client -> {
+			client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+			for (Module module : hudOn) module.set(true);
+		});
+	}
+
+	/**
 	 * The HUD as the reference composes it: the Watermark top left, the Music Player top right with the module
 	 * list under it, a server boss bar as a thin line, at night under the Galaxy sky; then close-ups.
 	 */
@@ -1304,6 +1368,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			if (focus.contains("menu")) menu(context, failed);
 			if (focus.contains("kills")) killEffects(context, singleplayer, failed);
 			if (focus.contains("fx")) worldFx(context, singleplayer, failed);
+			if (focus.contains("cosmetics")) cosmetics(context, singleplayer, failed);
 			if (focus.contains("hud")) hudLook(context, singleplayer, failed);
 			if (focus.contains("calibrate")) calibrateKnife(context, singleplayer);
 			if (focus.contains("bench")) benchmark(context, singleplayer, 900);

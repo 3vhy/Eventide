@@ -1,17 +1,17 @@
-/* Eventide Setup — colors from the Eventide banner */
+/* Eventide Setup: the midnight and violet of the mod's menus and the launcher */
 :root {
-	--cyan: #5bc8e6;
-	--royal: #1a4fba;
-	--navy: #061d8c;
-	--mid: #2a6fc4;
-	--sky: #8cc4ea;
-	--pale: #cfe8f7;
-	--ice: #e3f3fc;
-	--ink: #04123f;
-	--glass: rgba(6, 22, 84, 0.55);
-	--glass-border: rgba(140, 196, 234, 0.2);
-	--text: #e3f3fc;
-	--muted: #a9c3e6;
+	--cyan: #9461ff;
+	--royal: #6a3df0;
+	--navy: #0a0714;
+	--mid: #3a2f5c;
+	--sky: #c4bbdc;
+	--pale: #e4dcff;
+	--ice: #f4f0ff;
+	--ink: #05030b;
+	--glass: rgba(20, 16, 36, 0.55);
+	--glass-border: rgba(196, 176, 255, 0.2);
+	--text: #f4f0ff;
+	--muted: #a99fc4;
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 	--ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -30,9 +30,9 @@ body {
 }
 
 body {
-	font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+	font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 	color: var(--text);
-	background: var(--navy);
+	background: #05030b;
 	cursor: default;
 }
 
@@ -50,23 +50,16 @@ svg {
 .sky {
 	position: fixed;
 	inset: 0;
-	background: linear-gradient(
-		180deg,
-		#5bc8e6 0%,
-		#1a4fba 7%,
-		#061d8c 22%,
-		#0b2a9a 48%,
-		#2a6fc4 74%,
-		#8cc4ea 100%
-	);
+	background:
+		radial-gradient(110% 70% at 10% 0%, rgba(148, 97, 255, 0.42), transparent 60%),
+		radial-gradient(70% 60% at 100% 10%, rgba(255, 106, 213, 0.16), transparent 60%),
+		radial-gradient(90% 70% at 60% 100%, rgba(79, 216, 255, 0.1), transparent 60%),
+		#05030b;
 	overflow: hidden;
 }
 
 .cloud {
-	position: absolute;
-	height: 14px;
-	background: rgba(227, 243, 252, 0.16);
-	animation: drift linear infinite;
+	display: none;
 }
 
 .cloud::before {
@@ -91,7 +84,7 @@ svg {
 	width: 210px;
 	animation-duration: 95s;
 	animation-delay: -60s;
-	background: rgba(227, 243, 252, 0.1);
+	background: rgba(244, 240, 255, 0.1);
 }
 
 .c3 {
@@ -99,7 +92,7 @@ svg {
 	width: 120px;
 	animation-duration: 80s;
 	animation-delay: -5s;
-	background: rgba(227, 243, 252, 0.12);
+	background: rgba(244, 240, 255, 0.12);
 }
 
 .c4 {
@@ -107,7 +100,7 @@ svg {
 	width: 170px;
 	animation-duration: 110s;
 	animation-delay: -85s;
-	background: rgba(227, 243, 252, 0.08);
+	background: rgba(244, 240, 255, 0.08);
 }
 
 @keyframes drift {
@@ -119,21 +112,13 @@ svg {
 	}
 }
 
-.hills {
-	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	width: 100%;
-	height: 26%;
-}
 
 .hill-back {
-	fill: rgba(140, 196, 234, 0.2);
+	fill: rgba(196, 176, 255, 0.2);
 }
 
 .hill-front {
-	fill: rgba(207, 232, 247, 0.28);
+	fill: rgba(228, 220, 255, 0.28);
 }
 
 /* ---------- Title bar ---------- */
@@ -168,7 +153,7 @@ svg {
 
 .icon-bg {
 	fill: var(--royal);
-	stroke: rgba(227, 243, 252, 0.3);
+	stroke: rgba(244, 240, 255, 0.3);
 	stroke-width: 0.6;
 }
 
@@ -199,7 +184,7 @@ svg {
 }
 
 .winbtn:hover {
-	background: rgba(227, 243, 252, 0.12);
+	background: rgba(244, 240, 255, 0.12);
 }
 
 .winbtn--close:hover {
@@ -265,21 +250,28 @@ svg {
 /* ---------- Wordmark ---------- */
 
 .wordmark {
-	fill: var(--ice);
 	overflow: visible;
-	filter: drop-shadow(0 4px 0 rgba(3, 14, 70, 0.55));
+}
+
+.hero-mark {
+	width: 76px;
+	height: 76px;
+	margin-bottom: 18px;
+	border-radius: 18px;
+	box-shadow: 0 18px 40px -12px rgba(148, 97, 255, 0.55);
+	animation: fade-up 0.6s 0.1s var(--ease-out) both;
 }
 
 .wordmark--hero {
-	width: 330px;
+	width: 300px;
 	height: auto;
+	animation: fade-up 0.6s 0.2s var(--ease-out) both;
 }
 
 .wordmark--small {
-	width: 110px;
+	width: 120px;
 	height: auto;
 	margin-bottom: 18px;
-	filter: drop-shadow(0 2px 0 rgba(3, 14, 70, 0.55));
 }
 
 .letter {
@@ -389,10 +381,10 @@ svg {
 	font-weight: 800;
 	font-size: 15px;
 	color: var(--ink);
-	background: linear-gradient(180deg, #8ae0f5 0%, #4fbdea 50%, #2b8fdb 100%);
+	background: #9461ff;
 	box-shadow:
-		0 5px 0 #0d3f99,
-		0 12px 26px rgba(4, 18, 80, 0.45),
+		0 5px 0 #2a2245,
+		0 12px 26px rgba(5, 3, 11, 0.45),
 		inset 0 1px 0 rgba(255, 255, 255, 0.55);
 	cursor: pointer;
 	transition:
@@ -409,8 +401,8 @@ svg {
 .btn-primary:active {
 	transform: translateY(4px);
 	box-shadow:
-		0 1px 0 #0d3f99,
-		0 6px 14px rgba(4, 18, 80, 0.45),
+		0 1px 0 #2a2245,
+		0 6px 14px rgba(5, 3, 11, 0.45),
 		inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
@@ -487,11 +479,11 @@ svg {
 
 .btn-secondary {
 	border: 1px solid var(--glass-border);
-	background: rgba(227, 243, 252, 0.1);
+	background: rgba(244, 240, 255, 0.1);
 }
 
 .btn-secondary:hover {
-	background: rgba(227, 243, 252, 0.18);
+	background: rgba(244, 240, 255, 0.18);
 	border-color: var(--cyan);
 }
 
@@ -502,7 +494,7 @@ svg {
 }
 
 .btn-ghost:hover {
-	background: rgba(227, 243, 252, 0.1);
+	background: rgba(244, 240, 255, 0.1);
 }
 
 .btn-link {
@@ -532,7 +524,7 @@ svg {
 
 .btn-link:hover {
 	color: var(--ice);
-	background: rgba(227, 243, 252, 0.08);
+	background: rgba(244, 240, 255, 0.08);
 }
 
 .inline-link {
@@ -555,12 +547,11 @@ button:focus-visible {
 	position: absolute;
 	bottom: 16px;
 	font-size: 11.5px;
-	color: var(--ink);
-	opacity: 0.75;
+	color: var(--muted);
 }
 
 .footnote .inline-link {
-	color: var(--ink);
+	color: var(--text);
 	font-weight: 700;
 }
 
@@ -582,9 +573,9 @@ button:focus-visible {
 	padding: 22px 26px 22px;
 	border-radius: 22px;
 	text-align: left;
-	background: rgba(5, 18, 70, 0.72);
+	background: rgba(10, 7, 20, 0.72);
 	border: 1px solid var(--glass-border);
-	box-shadow: 0 24px 60px rgba(2, 8, 40, 0.5);
+	box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
 	backdrop-filter: blur(14px);
 }
 
@@ -608,12 +599,12 @@ button:focus-visible {
 	border-radius: 10px;
 	display: grid;
 	place-items: center;
-	background: rgba(227, 243, 252, 0.08);
+	background: rgba(244, 240, 255, 0.08);
 	cursor: pointer;
 }
 
 .icon-btn:hover {
-	background: rgba(227, 243, 252, 0.16);
+	background: rgba(244, 240, 255, 0.16);
 }
 
 .icon-btn svg {
@@ -650,7 +641,7 @@ button:focus-visible {
 	height: 40px;
 	padding: 0 12px;
 	border-radius: 12px;
-	background: rgba(2, 10, 45, 0.55);
+	background: rgba(4, 2, 10, 0.55);
 	border: 1px solid var(--glass-border);
 	font-size: 13.5px;
 }
@@ -680,7 +671,7 @@ button:focus-visible {
 @keyframes flash {
 	30% {
 		border-color: var(--cyan);
-		box-shadow: 0 0 0 4px rgba(91, 200, 230, 0.25);
+		box-shadow: 0 0 0 4px rgba(148, 97, 255, 0.25);
 	}
 }
 
@@ -703,8 +694,8 @@ button:focus-visible {
 	gap: 14px;
 	padding: 11px 14px;
 	border-radius: 14px;
-	background: rgba(227, 243, 252, 0.05);
-	border: 1px solid rgba(140, 196, 234, 0.12);
+	background: rgba(244, 240, 255, 0.05);
+	border: 1px solid rgba(196, 176, 255, 0.12);
 	cursor: pointer;
 	transition:
 		background 0.15s,
@@ -712,8 +703,8 @@ button:focus-visible {
 }
 
 .toggle-row:hover {
-	background: rgba(227, 243, 252, 0.09);
-	border-color: rgba(140, 196, 234, 0.28);
+	background: rgba(244, 240, 255, 0.09);
+	border-color: rgba(196, 176, 255, 0.28);
 }
 
 .toggle-row__text {
@@ -744,7 +735,7 @@ button:focus-visible {
 	width: 44px;
 	height: 24px;
 	border-radius: 999px;
-	background: rgba(227, 243, 252, 0.15);
+	background: rgba(244, 240, 255, 0.15);
 	transition: background 0.25s;
 }
 
@@ -763,7 +754,7 @@ button:focus-visible {
 }
 
 .toggle-row input:checked + .switch {
-	background: linear-gradient(90deg, #2b8fdb, #5bc8e6);
+	background: linear-gradient(90deg, #7c4dff, #9461ff);
 }
 
 .toggle-row input:checked + .switch::after {
@@ -804,7 +795,7 @@ button:focus-visible {
 	margin-top: 30px;
 	padding: 6px;
 	border-radius: 12px;
-	background: rgba(2, 10, 45, 0.6);
+	background: rgba(4, 2, 10, 0.6);
 	border: 1px solid var(--glass-border);
 	box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
 }
@@ -818,7 +809,7 @@ button:focus-visible {
 .block {
 	height: 18px;
 	border-radius: 3px;
-	background: rgba(227, 243, 252, 0.08);
+	background: rgba(244, 240, 255, 0.08);
 	transition:
 		background 0.3s,
 		box-shadow 0.3s,
@@ -826,8 +817,8 @@ button:focus-visible {
 }
 
 .block.on {
-	background: linear-gradient(180deg, #a6ebfa, #5bc8e6 55%, #2b8fdb);
-	box-shadow: 0 0 10px rgba(91, 200, 230, 0.55);
+	background: linear-gradient(180deg, #d9c8ff, #9461ff 55%, #7c4dff);
+	box-shadow: 0 0 10px rgba(148, 97, 255, 0.55);
 	transform: scaleY(1.08);
 }
 
@@ -837,7 +828,7 @@ button:focus-visible {
 
 @keyframes blink {
 	50% {
-		background: rgba(91, 200, 230, 0.4);
+		background: rgba(148, 97, 255, 0.4);
 	}
 }
 
@@ -890,10 +881,10 @@ button:focus-visible {
 	height: 92px;
 	margin-bottom: 22px;
 	border-radius: 26px;
-	background: linear-gradient(160deg, #8ae0f5 0%, #2b8fdb 100%);
+	background: linear-gradient(160deg, #b48cff 0%, #7c4dff 100%);
 	box-shadow:
-		0 6px 0 #0d3f99,
-		0 18px 40px rgba(4, 18, 80, 0.5);
+		0 6px 0 #2a2245,
+		0 18px 40px rgba(5, 3, 11, 0.5);
 }
 
 .screen.active .check {
@@ -998,7 +989,7 @@ button:focus-visible {
 	z-index: 20;
 	display: grid;
 	place-items: center;
-	background: rgba(2, 8, 40, 0.55);
+	background: rgba(0, 0, 0, 0.55);
 	backdrop-filter: blur(4px);
 	animation: fade 0.2s;
 }

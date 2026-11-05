@@ -118,13 +118,27 @@ public abstract class HudWidget {
 				int y = MARGIN + stackedBefore(mc);
 				yield new int[] {anchor == Anchor.TOP_LEFT ? MARGIN : screenWidth - w - MARGIN, y};
 			}
-			case TOP_CENTER -> new int[] {(screenWidth - w) / 2, bossBarsBottom(mc) + MARGIN + stackedBefore(mc)};
+			case TOP_CENTER -> {
+				int y = bossBarsBottom(mc) + MARGIN + stackedBefore(mc);
+				yield new int[] {clearOfTopRight(mc, (screenWidth - w) / 2, y, w, h, screenWidth, screenHeight), y};
+			}
 			case BOTTOM_RIGHT -> new int[] {screenWidth - w - MARGIN, screenHeight - h - MARGIN - stackedBefore(mc)};
 			case ABOVE_HOTBAR -> new int[] {(screenWidth - w) / 2, screenHeight - 58 - h - stackedBefore(mc)};
 			case MIDDLE_RIGHT -> new int[] {screenWidth - w - MARGIN, (screenHeight - h) / 2};
 			case BELOW_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 + 20};
 			case ABOVE_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 - 22 - h};
 		};
+	}
+
+	/** {@code x}, moved left if a widget in the top right (the Music Player) would cover a widget at (x, y), w x h. */
+	private static int clearOfTopRight(Minecraft mc, int x, int y, int w, int h, int screenWidth, int screenHeight) {
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor != Anchor.TOP_RIGHT || !other.shown() || !other.visible(mc)) continue;
+			int[] at = other.position(mc, screenWidth, screenHeight);
+			boolean beside = y < at[1] + other.height(mc) && at[1] < y + h;
+			if (beside && x + w > at[0] - MARGIN) x = Math.max(MARGIN, at[0] - MARGIN - w);
+		}
+		return x;
 	}
 
 	/** Where the server's boss bars end at the top of the screen (0 when there are none). */

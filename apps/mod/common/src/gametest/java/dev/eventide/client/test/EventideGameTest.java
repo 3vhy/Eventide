@@ -1934,6 +1934,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		boolean every = options.containsKey("every");
 		context.runOnClient(client -> {
 			if (options.containsKey("finish")) Modules.KNIVES_FINISH.set(options.get("finish"));
+			if (options.containsKey("aura")) Modules.HAND_AURA.set(!options.get("aura").equals("off"));
 			if (options.containsKey("glow")) Modules.KNIVES_GLOW_COLOR.set((int) Long.parseLong(options.get("glow"), 16));
 			if (options.containsKey("time")) client.getSingleplayerServer().getCommands().performPrefixedCommand(
 					client.getSingleplayerServer().createCommandSourceStack(), "time set " + options.get("time"));

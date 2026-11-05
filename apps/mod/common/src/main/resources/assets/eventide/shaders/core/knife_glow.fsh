@@ -14,8 +14,9 @@ void main() {
     vec3 n = normalize(viewNormal);
     vec3 v = normalize(-viewPos);
 #ifdef OUTLINE
-    // An outline: only the far faces of the bigger shell, so all that shows is the rim past the edges.
-    if (gl_FrontFacing) {
+    // An outline: only the far side of the bigger shell (where its outward normal points away from you), so all
+    // that shows is the rim past the edges. The normal decides it, not the winding, which knife meshes don't keep.
+    if (dot(n, v) > 0.0) {
         discard;
     }
     float rim = 1.0;

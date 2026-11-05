@@ -1140,6 +1140,66 @@ public final class EventideGameTest implements FabricClientGameTest {
 		shot(context, "eventide-hand-aura");
 		check(failed, "Hand Aura glows round an empty hand (ItemInHandRenderer.renderPlayerArm)", Hooks.handAuraDrawn);
 		context.getInput().pressKey(GLFW.GLFW_KEY_1);
+
+		context.runOnClient(client -> Modules.NO_PARTICLES.set(true));
+		check(failed, "No Particles keeps particles off the screen, but lets Eventide's own through (ParticleEngine.createParticle)",
+				context.computeOnClient(client -> {
+					boolean blocked = client.particleEngine.createParticle(net.minecraft.core.particles.ParticleTypes.FLAME, client.player.getX(),
+							client.player.getY() + 1, client.player.getZ(), 0, 0, 0) == null;
+					boolean[] ours = {false};
+					dev.eventide.client.module.ParticleFilter.ours(() -> ours[0] = client.particleEngine.createParticle(
+							net.minecraft.core.particles.ParticleTypes.FLAME, client.player.getX(), client.player.getY() + 1, client.player.getZ(), 0, 0, 0) != null);
+					return blocked && ours[0];
+				}));
+		context.runOnClient(client -> {
+			Modules.NO_PARTICLES.set(false);
+			Modules.NO_EXPLOSION_PARTICLES.set(true);
+		});
+		check(failed, "No Explosion Particles hides explosions only", context.computeOnClient(client ->
+				client.particleEngine.createParticle(net.minecraft.core.particles.ParticleTypes.EXPLOSION, client.player.getX(), client.player.getY() + 1,
+						client.player.getZ(), 0, 0, 0) == null && client.particleEngine.createParticle(net.minecraft.core.particles.ParticleTypes.FLAME,
+						client.player.getX(), client.player.getY() + 1, client.player.getZ(), 0, 0, 0) != null));
+		context.runOnClient(client -> {
+			Modules.NO_EXPLOSION_PARTICLES.set(false);
+			Modules.FPS_CAP.set(true);
+			Modules.FPS_CAP_LIMIT.set(60);
+		});
+		check(failed, "FPS Cap caps the frame rate (FramerateLimitTracker)", context.computeOnClient(client ->
+				client.getFramerateLimitTracker().getFramerateLimit() <= 60));
+		context.runOnClient(client -> {
+			Modules.FPS_CAP.set(false);
+			Modules.FPS_CAP_LIMIT.reset();
+			Modules.COLOUR_GRADING.set(true);
+			Modules.BLOCK_OUTLINE.set(true);
+		});
+		server.runCommand("execute as @p at @s run setblock ^ ^ ^2 minecraft:stone");
+		face(context, 0, 30);
+		context.waitTicks(10);
+		check(failed, "Colour Grading puts its look on the picture (GameRenderer.setPostEffect)", context.computeOnClient(client ->
+				client.gameRenderer.currentPostEffect() != null && client.gameRenderer.currentPostEffect().getNamespace().equals(EventideClient.MOD_ID)));
+		shot(context, "eventide-colour-grading");
+		context.runOnClient(client -> Modules.COLOUR_GRADING_PRESET.set("Noir"));
+		context.waitTicks(5);
+		shot(context, "eventide-colour-grading-noir");
+		context.runOnClient(client -> {
+			Modules.COLOUR_GRADING.set(false);
+			Modules.COLOUR_GRADING_PRESET.reset();
+		});
+		context.waitTicks(3);
+		check(failed, "turning Colour Grading off takes its look away", context.computeOnClient(client -> client.gameRenderer.currentPostEffect() == null));
+		server.runCommand("execute as @p at @s run setblock ^ ^ ^2 minecraft:air");
+		context.runOnClient(client -> {
+			Modules.BLOCK_OUTLINE.set(false);
+			Modules.DEATH_DISINTEGRATE.set(true);
+		});
+		face(context, 0, 5);
+		server.runCommand("execute as @p at @s run summon zombie ^ ^ ^4 {NoAI:1b,Silent:1b,Tags:[\"eventide_dust\"]}");
+		context.waitTicks(10);
+		server.runCommand("kill @e[tag=eventide_dust]");
+		context.waitTicks(8);
+		shot(context, "eventide-death-disintegrate");
+		check(failed, "Death Disintegrate crumbles the body away", Hooks.disintegrated);
+		context.runOnClient(client -> Modules.DEATH_DISINTEGRATE.set(false));
 		server.runCommand("time set noon");
 	}
 

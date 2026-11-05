@@ -83,6 +83,7 @@ public final class KillEffects {
 	public static void onEntityEvent(Entity entity, byte event) {
 		if (event != DEATH || !(entity instanceof LivingEntity living)) return;
 		play(living);
+		DeathDisintegrate.onDeath(living);
 	}
 
 	private static boolean wanted(LivingEntity entity) {
@@ -186,7 +187,7 @@ public final class KillEffects {
 	}
 
 	private static void spawn(ClientLevel level, ParticleOptions options, double x, double y, double z, double dx, double dy, double dz) {
-		level.addParticle(options, true, true, x, y, z, dx, dy, dz);
+		ParticleFilter.ours(() -> level.addParticle(options, true, true, x, y, z, dx, dy, dz));
 	}
 
 	private static double spread() {

@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Hit Glow and Heaven: what you hit, and bodies being lifted, get Minecraft's glowing outline. */
+/** Hit Glow, Heaven and Player Outline: what you hit, bodies being lifted and other players get Minecraft's glowing outline. */
 @Mixin(Minecraft.class)
 public abstract class EntityGlowMixin {
 	@Inject(method = "shouldEntityAppearGlowing", at = @At("HEAD"), cancellable = true)

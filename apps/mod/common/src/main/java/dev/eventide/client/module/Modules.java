@@ -90,6 +90,16 @@ public final class Modules {
 			"Hurt mobs and players flash in your colour instead of red", true));
 	public static final Choice HIT_GLOW_WHO = HIT_GLOW.add(new Choice("who", "Who glows", "Only what you hit, or anything that gets hurt", 0,
 			"What you hit", "Anything hurt"));
+	public static final Module DEATH_DISINTEGRATE = new Module("death_disintegrate", "Death Disintegrate",
+			"Whatever dies crumbles away into drifting motes instead of falling over", Category.COMBAT, false).icon("wind").markNew();
+	public static final Color DEATH_DISINTEGRATE_COLOR = DEATH_DISINTEGRATE.add(new Color("color", "Colour", "The motes' colour", 0xFFB98BFF));
+	public static final Choice DEATH_DISINTEGRATE_WHO = DEATH_DISINTEGRATE.add(new Choice("who", "Whose deaths", "Players only, or mobs too", 1,
+			"Players", "Everything"));
+	public static final Module PLAYER_OUTLINE = new Module("player_outline", "Player Outline",
+			"A glowing outline round other players, through walls", Category.COMBAT, false).icon("scan").markNew();
+	public static final Color PLAYER_OUTLINE_COLOR = PLAYER_OUTLINE.add(new Color("color", "Colour", "The outline's colour", 0xFFB98BFF));
+	public static final Toggle PLAYER_OUTLINE_TEAM = PLAYER_OUTLINE.add(new Toggle("team", "Team colours",
+			"Use each player's team colour from the server instead", false));
 	public static final Module TOTEM_WARNING = new Module("totem_warning", "Totem Warning",
 			"A warning when your offhand has no totem but your inventory does", Category.COMBAT, true).icon("triangle-alert");
 	public static final Module ITEM_HIGHLIGHTER = new Module("item_highlighter", "Item Highlighter",
@@ -237,6 +247,32 @@ public final class Modules {
 	public static final Module RIPPLE = new Module("ripple", "Ripple",
 			"Rings spreading on the ground where raindrops land, like rain on a puddle", Category.WORLD, false).icon("droplets").markNew();
 	public static final Slider RIPPLE_AMOUNT = RIPPLE.add(new Slider("amount", "Amount", "How many drops ripple around you", 20, 200, 10, 100, "%"));
+
+	public static final Module NO_PARTICLES = new Module("no_particles", "No Particles",
+			"No particles at all, for the clearest view and more frames; Eventide's own effects still show", Category.WORLD, false)
+			.icon("eye-off").markNew();
+	public static final Module NO_EXPLOSION_PARTICLES = new Module("no_explosion_particles", "No Explosion Particles",
+			"No blinding flash and smoke from explosions, so crystal fights stay clear", Category.WORLD, false).icon("bomb").markNew();
+	public static final Module BLOCK_OUTLINE = new Module("block_outline", "Block Outline",
+			"The outline round the block you look at, in your colour and thickness", Category.WORLD, false).icon("box").markNew();
+	public static final Color BLOCK_OUTLINE_COLOR = BLOCK_OUTLINE.add(new Color("color", "Colour", "The outline's colour", 0xFFB98BFF));
+	public static final Slider BLOCK_OUTLINE_WIDTH = BLOCK_OUTLINE.add(new Slider("width", "Thickness", "How thick the outline is", 1, 8, 0.5, 3, " px"));
+	public static final Module COLOUR_GRADING = new Module("colour_grading", "Colour Grading",
+			"A look for the whole picture: Eventide's violet night, vivid, cinematic, warm, cold or black and white", Category.RENDER, false)
+			.icon("palette").markNew();
+	public static final Choice COLOUR_GRADING_PRESET = COLOUR_GRADING.add(new Choice("preset", "Look", "The colour grade over the game", 0,
+			"Eventide", "Vivid", "Cinematic", "Warm", "Cold", "Noir"));
+	public static final Module NO_FIRE = new Module("no_fire", "No Fire", "No flames over your view while you burn", Category.RENDER, false)
+			.icon("flame-kindling").markNew();
+	public static final Module LOW_FIRE = new Module("low_fire", "Low Fire", "The flames over your view while you burn, lowered out of the way",
+			Category.RENDER, false).icon("flame").markNew();
+	public static final Slider LOW_FIRE_HEIGHT = LOW_FIRE.add(new Slider("height", "Lower by", "How far the flames drop", 10, 100, 5, 50, "%"));
+	public static final Module FPS_CAP = new Module("fps_cap", "FPS Cap",
+			"Caps your frames per second, and lowers them while the game's in the background, for a cooler, quieter computer",
+			Category.UTILITY, false).icon("gauge").markNew();
+	public static final Slider FPS_CAP_LIMIT = FPS_CAP.add(new Slider("limit", "Limit", "The most frames per second", 30, 360, 10, 144, " fps"));
+	public static final Slider FPS_CAP_BACKGROUND = FPS_CAP.add(new Slider("background", "In the background",
+			"Frames per second while you're tabbed out", 5, 120, 5, 30, " fps"));
 
 	// Utility
 	public static final Module CHAT = new Module("chat", "Chat",
@@ -484,15 +520,12 @@ public final class Modules {
 
 	/** Every module, in menu order: by tab, then as listed here. */
 	public static final List<Module> ALL = List.of(
-			TARGET_HUD, COMBO, POPS, ITEMS, CRYSTAL_OPTIMIZER, POP_NOTIFIER, KILL_EFFECTS, HIT_GLOW, TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM,
-			JUMP_RESET,
-			SKIES, CROSSHAIR, ZOOM, FREELOOK, NAMETAGS, FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS,
-			NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT,
-			WAYPOINTS, FULLBRIGHT, NO_FOG, WEATHER, RIPPLE,
-			CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS,
-			WATERMARK, FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC, MODULE_LIST,
-			KNIVES, HAND_AURA, JUMP_CIRCLES, BADGE, MENU_NAME,
-			THEME, PERFORMANCE, DISCORD, PROFILES);
+			TARGET_HUD, COMBO, POPS, ITEMS, CRYSTAL_OPTIMIZER, POP_NOTIFIER, KILL_EFFECTS, HIT_GLOW, DEATH_DISINTEGRATE, PLAYER_OUTLINE,
+			TOTEM_WARNING, ITEM_HIGHLIGHTER, HURT_CAM, JUMP_RESET, SKIES, COLOUR_GRADING, NO_FIRE, LOW_FIRE, CROSSHAIR, ZOOM, FREELOOK, NAMETAGS,
+			FOV_CHANGER, SHINY_POTS, SWING_SPEED, LYRICS, NAME_PROTECT, SKIN_PROTECT, PLAYER_LIST, STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT,
+			NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT,
+			BORDERLESS, FPS_CAP, WATERMARK, FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC,
+			MODULE_LIST, KNIVES, HAND_AURA, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {
@@ -533,6 +566,8 @@ public final class Modules {
 		KillEffects.tick(mc);
 		HitGlow.tick(mc);
 		GroundFx.tick(mc);
+		DeathDisintegrate.tick(mc);
+		ColourGrading.tick(mc);
 		MusicBridge.tick();
 		if (LYRICS.enabled() || MUSIC.enabled() && MUSIC_LYRICS.get()) dev.eventide.client.music.Lyrics.want(MusicBridge.current());
 		if (SKIES.enabled()) dev.eventide.client.sky.SkyWeather.tick(mc);

@@ -26,5 +26,6 @@ public abstract class LivingEntityRendererMixin {
 			at = @At("TAIL"))
 	private void eventide$heaven(LivingEntity entity, LivingEntityRenderState state, float partialTick, CallbackInfo ci) {
 		KillEffects.ascend(entity, state);
+		dev.eventide.client.module.DeathDisintegrate.apply(entity, state);
 	}
 }

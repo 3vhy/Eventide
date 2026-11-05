@@ -44,7 +44,7 @@ public final class MenuNameTag {
 	/** The menus it shows on; other screens often have buttons in that corner. */
 	public static boolean shows(Screen screen) {
 		return screen instanceof PauseScreen || screen instanceof AbstractContainerScreen<?>
-				|| screen instanceof TitleScreen && !Modules.MAIN_MENU.enabled();
+				|| screen instanceof TitleScreen;
 	}
 
 	private static Layout layout(Minecraft mc) {

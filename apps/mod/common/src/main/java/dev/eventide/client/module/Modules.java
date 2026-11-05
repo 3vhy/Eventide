@@ -398,18 +398,10 @@ public final class Modules {
 	public static final Toggle MENU_NAME_HEAD = MENU_NAME.add(new Toggle("head", "Show your head", "Your skin's face next to your name", true));
 	public static final Toggle MENU_NAME_HUD = MENU_NAME.add(new Toggle("hud", "Show in game",
 			"Keep it on your HUD while you play too, above the Music Player; move it in Edit HUD", false));
-	public static final Module MAIN_MENU = new Module("main_menu", "Main Menu",
-			"Eventide's title screen: the live galaxy behind it, the Eventide logo and midnight buttons", Category.COSMETICS, true).icon("house");
-	public static final Choice MAIN_MENU_SCENE = MAIN_MENU.add(new Choice("scene", "Scene", "What's behind the main menu: Eventide's live galaxy, "
-			+ "Minecraft's panorama, a starry night or October", 0, "Galaxy", "Panorama", "Night sky", "October"));
-	public static final Choice MAIN_MENU_TIME = MAIN_MENU.add(new Choice("time", "Time of day", "The light over the scene; Live follows your clock",
-			1, "Dawn", "Day", "Dusk", "Night", "Live"));
-	public static final Choice MAIN_MENU_CAMERA = MAIN_MENU.add(new Choice("camera", "Camera", "How the panorama moves", 0,
-			"Orbit", "Drift", "Still"));
 
 	// Client
 	public static final Module THEME = new Module("theme", "Theme",
-			"Accent colour, how the menu opens, fonts, buttons and the HUD's size", Category.CLIENT, true).icon("palette").alwaysOn();
+			"Accent colour, how the menu opens, fonts and the HUD's size", Category.CLIENT, true).icon("palette").alwaysOn();
 	public static final Color THEME_PANEL_COLOR = THEME.add(new Color("panel_color", "Accent colour",
 			"Switches, the chosen tab, bars and glows; Violet is Eventide's own", dev.eventide.client.gui.Accent.DEFAULT).group("Colour"));
 	public static final Toggle THEME_RAINBOW = THEME.add(new Toggle("rainbow", "Rainbow",
@@ -425,8 +417,6 @@ public final class Modules {
 	public static final Toggle THEME_SNOW = THEME.add(new Toggle("snow", "Stars", "Twinkling stars behind Eventide's menus", true));
 	public static final Slider THEME_SNOW_AMOUNT = THEME.add(new Slider("snow_amount", "Star amount", "How many stars",
 			10, 100, 10, 50, "%"));
-	public static final Toggle THEME_BUTTONS = THEME.add(new Toggle("buttons", "Eventide buttons",
-			"Every screen's buttons, text boxes, sliders, lists and tooltips in Eventide's midnight style, other mods' too", true).group("Game screens"));
 	public static final Slider THEME_HUD_SCALE = THEME.add(new Slider("hud_scale", "HUD size", "Makes every HUD widget bigger or smaller",
 			50, 200, 5, 100, "%").group("HUD"));
 	public static final Toggle THEME_ROUNDED_HUD = THEME.add(new Toggle("rounded_hud", "Rounded HUD",
@@ -463,7 +453,7 @@ public final class Modules {
 			WAYPOINTS, FULLBRIGHT, NO_FOG,
 			CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS,
 			FPS, CPS, PING, TPS, CLOCK, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, HOTBAR, MUSIC, MODULE_LIST,
-			KNIVES, MENU_NAME, MAIN_MENU,
+			KNIVES, MENU_NAME,
 			THEME, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */

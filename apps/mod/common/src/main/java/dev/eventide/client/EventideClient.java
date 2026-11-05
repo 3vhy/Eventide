@@ -3,7 +3,6 @@ package dev.eventide.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.discord.DiscordPresence;
-import dev.eventide.client.gui.TitleScreenStyle;
 import dev.eventide.client.gui.MenuNameTag;
 import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.gui.menu.MenuHost;
@@ -118,7 +117,13 @@ public final class EventideClient implements ClientModInitializer {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((shown, event) ->
 						!(event.button() == 0 && HudWidgets.musicClick(event.x(), event.y())));
 			}
-			TitleScreenStyle.prepare(screen);
+			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+				net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.afterKeyPress(screen).register((shown, event) -> {
+					if (openSettingsKey != null && openSettingsKey.matches(event) && client.screen == shown) {
+						client.setScreen(dev.eventide.client.gui.menu.MenuHost.fromKey(shown));
+					}
+				});
+			}
 			if (MenuNameTag.shows(screen)) Compat.afterScreen(screen, d -> MenuNameTag.draw(d, screen));
 		});
 

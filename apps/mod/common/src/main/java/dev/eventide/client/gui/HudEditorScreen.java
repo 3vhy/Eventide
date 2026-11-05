@@ -61,15 +61,7 @@ public final class HudEditorScreen extends CompatScreen {
 	}
 
 	@Override
-	protected boolean panoramaBackground() {
-		return !TitleScreenStyle.drawsBackground();
-	}
-
-	@Override
 	protected void drawBackdrop(Draw d) {
-		if (Minecraft.getInstance().level == null && TitleScreenStyle.drawsBackground()) {
-			TitleScreenStyle.drawBackground(d, this.width, this.height);
-		}
 		Paint.rect(d, 0, 0, this.width, this.height, 0, 0x2E120A2A);
 	}
 

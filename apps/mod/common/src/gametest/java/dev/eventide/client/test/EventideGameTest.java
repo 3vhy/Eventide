@@ -8,7 +8,6 @@ import dev.eventide.client.EventideClient;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.compat.CompatScreen;
 import dev.eventide.client.gui.HudEditorScreen;
-import dev.eventide.client.gui.TitleScreenStyle;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.gui.menu.FloatingMenu;
 import dev.eventide.client.gui.menu.FloatingMenuScreen;
@@ -212,12 +211,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		EventideClient.LOG.info("eventide-check: \"PANELS AND MUSIC\" is {} wide in the clean font, {} in Minecraft's bold", fontWidths[0],
 				fontWidths[1]);
 		check(failed, "clean font (Inter) loads from the mod's resources", fontWidths[0] > 20 && fontWidths[0] != fontWidths[1]);
-		check(failed, "Eventide main menu styles the title screen",
-				context.computeOnClient(client -> client.screen instanceof TitleScreen) && Hooks.mainMenuShown);
-		check(failed, "Eventide logo in place of Minecraft's (LogoRenderer)", Hooks.logoDrawn);
-		check(failed, "Minecraft's buttons drawn as violet glass pills (AbstractWidget)", Hooks.buttonsStyled);
-		check(failed, "main menu's round buttons drawn by Eventide", Hooks.titleButtonsStyled);
-		int menuScale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+		check(failed, "the title screen is Minecraft's own again", context.computeOnClient(client -> client.screen instanceof TitleScreen));
 		check(failed, "main menu keeps Singleplayer, Multiplayer, Realms, Options and Quit", context.computeOnClient(client -> {
 			int found = 0;
 			for (AbstractWidget widget : Compat.widgets(client.screen)) {
@@ -228,35 +222,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 			}
 			return found == 5;
 		}));
-		click(context, menuScale, "Scene");
-		check(failed, "the Scene button opens the scene panel", context.computeOnClient(client -> find(client, "Time of day: Dusk") != null));
-		shot(context, "eventide-main-menu-scene-panel");
-		click(context, menuScale, "Time of day: Dusk");
-		check(failed, "the scene panel picks the time of day", context.computeOnClient(client -> Modules.MAIN_MENU_TIME.is("Dusk")));
-		context.waitTicks(10);
-		shot(context, "eventide-main-menu-dusk");
-		click(context, menuScale, "Scene: Night sky");
-		context.waitTicks(10);
-		check(failed, "the scene panel picks the scene", context.computeOnClient(client -> Modules.MAIN_MENU_SCENE.is("Night sky")));
-		shot(context, "eventide-main-menu-night-sky");
-		click(context, menuScale, "Scene: October");
-		context.waitTicks(10);
-		shot(context, "eventide-main-menu-october");
-		click(context, menuScale, "Scene: Panorama");
-		click(context, menuScale, "Time of day: Night");
-		click(context, menuScale, "Camera: Still");
-		context.waitTicks(10);
-		check(failed, "Camera Still stops the panorama turning", context.computeOnClient(client -> !TitleScreenStyle.panoramaSpins()));
-		shot(context, "eventide-main-menu-night");
-		click(context, menuScale, "Scene");
-		context.runOnClient(client -> {
-			Modules.MAIN_MENU_TIME.reset();
-			Modules.MAIN_MENU_CAMERA.reset();
-			Modules.MAIN_MENU_SCENE.reset();
-		});
-		context.waitTicks(10);
-		check(failed, "closing the scene panel hides its buttons", context.computeOnClient(client -> find(client, "Time of day: Dusk") == null));
-
 		// Mod Menu (CI adds it): Eventide's own entry in its list, with the new icon and name
 		boolean modMenuOpen = context.computeOnClient(client -> {
 			try {
@@ -276,9 +241,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 		}
 
-		click(context, menuScale, "Eventide");
+		context.getInput().pressKey(EventideClient.openSettingsKey);
 		context.waitTicks(30);
-		check(failed, "the Eventide button on the main menu opens the menu", context.computeOnClient(client ->
+		check(failed, "Right Shift on the main menu opens the menu", context.computeOnClient(client ->
 				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
 		shot(context, "eventide-menu-from-menu");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
@@ -296,9 +261,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> Compat.optionsScreen(new TitleScreen()));
 		context.waitTicks(10);
 		shot(context, "eventide-options-buttons");
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-		glassTitleScreens(context, failed);
 
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			context.waitTicks(200);
@@ -562,7 +524,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 			check(failed, "lyrics read from LRC", Lyrics.parse("[00:01.50] a\n[00:03.00][00:09.00] b").size() == 3);
 			context.runOnClient(client -> Modules.LYRICS.set(false));
 			knives(context, singleplayer, failed, false);
-			glassWorldScreens(context, singleplayer, failed);
 			skies(context, singleplayer, failed, false);
 			performance(context, failed);
 			context.runOnClient(client -> client.player.setXRot(10f));
@@ -764,7 +725,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			}
 			context.runOnClient(client -> TextRules.add("Kills: #", "Kills: 9999"));
 			for (Module module : List.of(Modules.CROSSHAIR, Modules.PLAYER_LIST, Modules.NAME_PROTECT, Modules.TEXT_HOTKEYS,
-					Modules.SKIN_PROTECT, Modules.WAYPOINTS, Modules.MUSIC, Modules.LYRICS, Modules.THEME, Modules.MAIN_MENU)) {
+					Modules.SKIN_PROTECT, Modules.WAYPOINTS, Modules.MUSIC, Modules.LYRICS, Modules.THEME)) {
 				context.setScreen(() -> MenuScreen.settings(null, module));
 				context.waitTicks(15);
 				shot(context, "eventide-menu-" + module.id.replace('_', '-'));
@@ -1134,22 +1095,14 @@ public final class EventideGameTest implements FabricClientGameTest {
 		if (focus.contains("title")) {
 			context.waitTicks(40);
 			shot(context, "eventide-main-menu");
-			EventideClient.LOG.info("eventide-check: logo drawn on the galaxy title screen: {}", Hooks.logoDrawn);
-			context.runOnClient(client -> Modules.MAIN_MENU_SCENE.set("Night sky"));
-			context.waitTicks(10);
-			shot(context, "eventide-main-menu-night-sky");
-			context.runOnClient(client -> Modules.MAIN_MENU_SCENE.reset());
-			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-			click(context, scale, "Eventide");
+			context.getInput().pressKey(EventideClient.openSettingsKey);
 			context.waitTicks(30);
 			shot(context, "eventide-menu-from-menu");
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(10);
 		}
-		if (focus.contains("glass")) glassTitleScreens(context, failed);
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			context.waitTicks(100);
-			if (focus.contains("glass")) glassWorldScreens(context, singleplayer, failed);
 			if (focus.contains("skies")) skies(context, singleplayer, failed, true);
 			if (focus.contains("protect")) nameDetect(context, singleplayer, failed);
 			if (focus.contains("nametags")) nametagCloseup(context, singleplayer, failed);
@@ -1596,197 +1549,6 @@ public final class EventideGameTest implements FabricClientGameTest {
 	private static void escape(ClientGameTestContext context) {
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(8);
-	}
-
-	/** Opens a screen through its button, takes its picture and goes back. */
-	private static void visit(ClientGameTestContext context, int scale, String button, String name, int wait) {
-		if (context.computeOnClient(client -> find(client, button) == null)) {
-			EventideClient.LOG.info("eventide-check: no {} button on {}", button, context.computeOnClient(client ->
-					client.screen == null ? "no screen" : client.screen.getClass().getSimpleName()));
-			return;
-		}
-		click(context, scale, button);
-		context.waitTicks(wait);
-		shot(context, "eventide-glass-" + name);
-		escape(context);
-	}
-
-	/**
-	 * Minecraft's screens out of a world, each pictured to check that every button, field, slider, checkbox,
-	 * list, tab and tooltip is drawn as Eventide glass: the title screen, servers, worlds, Realms, Options and its
-	 * pages, and a confirm dialog.
-	 */
-	private static void glassTitleScreens(ClientGameTestContext context, List<String> failed) {
-		int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(20);
-		shot(context, "eventide-glass-title");
-		int[] options = context.computeOnClient(client -> {
-			AbstractWidget widget = find(client, "Options...");
-			return widget == null ? null : new int[] {widget.getX() + widget.getWidth() / 2, widget.getY() + widget.getHeight() / 2};
-		});
-		if (options != null) {
-			context.getInput().setCursorPos(options[0] * scale, options[1] * scale);
-			context.waitTicks(10);
-			shot(context, "eventide-glass-title-hover");
-		}
-		check(failed, "every button on the title screen is glass", context.computeOnClient(client -> {
-			if (client.screen == null) return false;
-			for (AbstractWidget widget : Compat.widgets(client.screen)) {
-				if (widget.visible && !dev.eventide.client.gui.Glass.covers(widget)) {
-					EventideClient.LOG.info("eventide-check: not glass: {} \"{}\"", widget.getClass().getName(), widget.getMessage().getString());
-					return false;
-				}
-			}
-			return true;
-		}));
-
-		check(failed, "every button on the title screen fits on the screen", context.computeOnClient(client -> {
-			if (client.screen == null) return false;
-			for (AbstractWidget widget : Compat.widgets(client.screen)) {
-				if (widget.visible && (widget.getX() < 0 || widget.getY() < 0 || widget.getX() + widget.getWidth() > client.screen.width
-						|| widget.getY() + widget.getHeight() > client.screen.height)) {
-					EventideClient.LOG.info("eventide-check: off the screen: \"{}\" at {}, {} ({} x {})", widget.getMessage().getString(), widget.getX(),
-							widget.getY(), widget.getWidth(), widget.getHeight());
-					return false;
-				}
-			}
-			return true;
-		}));
-
-		context.runOnClient(client -> client.options.skipMultiplayerWarning = false);
-		click(context, scale, "Multiplayer");
-		context.waitTicks(20);
-		shot(context, "eventide-glass-multiplayer-warning");
-		context.runOnClient(client -> client.options.skipMultiplayerWarning = true);
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-		click(context, scale, "Multiplayer");
-		context.waitTicks(20);
-		shot(context, "eventide-glass-servers");
-		visit(context, scale, "Direct Connection", "direct-connect", 10);
-		visit(context, scale, "Add Server", "add-server", 10);
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-
-		click(context, scale, "Singleplayer");
-		context.waitTicks(20);
-		if (context.computeOnClient(client -> client.screen instanceof net.minecraft.client.gui.screens.worldselection.SelectWorldScreen)) {
-			shot(context, "eventide-glass-worlds");
-			click(context, scale, "Create New World");
-			context.waitTicks(30);
-		}
-		shot(context, "eventide-glass-create-world");
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-
-		click(context, scale, "Minecraft Realms");
-		context.waitTicks(40);
-		shot(context, "eventide-glass-realms");
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-
-		click(context, scale, "Options...");
-		context.waitTicks(10);
-		shot(context, "eventide-glass-options");
-		check(failed, "Options buttons and slider are glass (AbstractButton, AbstractSliderButton)", context.computeOnClient(client -> {
-			if (client.screen == null) return false;
-			int glass = 0;
-			for (AbstractWidget widget : Compat.widgets(client.screen)) {
-				if (!widget.visible) continue;
-				if (!dev.eventide.client.gui.Glass.covers(widget)) {
-					EventideClient.LOG.info("eventide-check: not glass: {} \"{}\"", widget.getClass().getName(), widget.getMessage().getString());
-					return false;
-				}
-				glass++;
-			}
-			return glass > 5;
-		}));
-		click(context, scale, "Video Settings...");
-		context.waitTicks(10);
-		shot(context, "eventide-glass-video");
-		int[] middle = context.computeOnClient(client -> new int[] {client.getWindow().getGuiScaledWidth() / 2 - 60,
-				client.getWindow().getGuiScaledHeight() / 2});
-		context.getInput().setCursorPos(middle[0] * scale, middle[1] * scale);
-		context.waitTicks(25);
-		shot(context, "eventide-glass-video-tooltip");
-		escape(context);
-		click(context, scale, "Controls...");
-		context.waitTicks(10);
-		shot(context, "eventide-glass-controls");
-		visit(context, scale, "Key Binds...", "key-binds", 10);
-		visit(context, scale, "Mouse Settings...", "mouse", 10);
-		escape(context);
-		visit(context, scale, "Language...", "language", 10);
-		visit(context, scale, "Accessibility Settings...", "accessibility", 10);
-		visit(context, scale, "Chat Settings...", "chat-settings", 10);
-		visit(context, scale, "Skin Customization...", "skin", 10);
-		visit(context, scale, "Online...", "online", 10);
-		visit(context, scale, "Resource Packs...", "packs", 20);
-		context.waitTicks(120);
-		java.util.Set<String> glazed = dev.eventide.client.gui.Glass.glazed();
-		EventideClient.LOG.info("eventide-check: Minecraft widget art drawn as glass: {}", glazed);
-		check(failed, "text fields, checkboxes, tabs, scrollbars and tooltips drawn as glass (GuiGraphics.blitSprite)",
-				glazed.stream().anyMatch(path -> path.startsWith("widget/text_field")) && glazed.stream().anyMatch(path -> path.startsWith("widget/checkbox"))
-						&& glazed.stream().anyMatch(path -> path.startsWith("widget/tab")) && glazed.stream().anyMatch(path -> path.startsWith("widget/scroller"))
-						&& glazed.contains("tooltip/background"));
-		java.util.Set<String> unglazed = dev.eventide.client.gui.Glass.unglazed();
-		EventideClient.LOG.info("eventide-check: Minecraft widget art left as it is: {}", unglazed);
-		check(failed, "no Minecraft button, field, checkbox, slider, scrollbar, tab or tooltip art left", unglazed.stream().noneMatch(path ->
-				path.matches("widget/(button|text_field|checkbox|slider|scroller|tab)(_.*)?|tooltip/(background|frame)")));
-		context.setScreen(() -> new net.minecraft.client.gui.screens.ConfirmScreen(yes -> {
-		}, Component.literal("Are you sure you want to delete this world?"), Component.literal("'New World' will be lost forever! (A long time!)")));
-		context.waitTicks(10);
-		shot(context, "eventide-glass-confirm");
-		context.setScreen(TitleScreen::new);
-		context.waitTicks(5);
-	}
-
-	/** Minecraft's screens in a world, pictured like {@link #glassTitleScreens}: chat, a sign, a book and an anvil. */
-	private static void glassWorldScreens(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
-		var server = singleplayer.getServer();
-		context.setScreen(() -> new net.minecraft.client.gui.screens.ChatScreen("Hello from Eventide", false));
-		context.waitTicks(10);
-		shot(context, "eventide-glass-chat");
-		context.setScreen(() -> null);
-		context.waitTicks(3);
-		int[] at = context.computeOnClient(client -> new int[] {(int) Math.floor(client.player.getX()), (int) Math.floor(client.player.getY()),
-				(int) Math.floor(client.player.getZ())});
-		net.minecraft.core.BlockPos sign = new net.minecraft.core.BlockPos(at[0] + 2, at[1], at[2]);
-		net.minecraft.core.BlockPos anvil = new net.minecraft.core.BlockPos(at[0] - 2, at[1], at[2]);
-		server.runCommand("setblock " + sign.getX() + " " + sign.getY() + " " + sign.getZ() + " minecraft:oak_sign");
-		server.runCommand("setblock " + anvil.getX() + " " + anvil.getY() + " " + anvil.getZ() + " minecraft:anvil");
-		context.waitTicks(10);
-		context.runOnClient(client -> {
-			if (client.level.getBlockEntity(sign) instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity) {
-				client.player.openTextEdit(entity, true);
-			}
-		});
-		context.waitTicks(10);
-		shot(context, "eventide-glass-sign");
-		context.setScreen(() -> null);
-		context.waitTicks(3);
-		context.runOnClient(client -> client.gameMode.useItemOn(client.player, net.minecraft.world.InteractionHand.MAIN_HAND,
-				new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(anvil), net.minecraft.core.Direction.UP, anvil,
-						false)));
-		context.waitTicks(15);
-		shot(context, "eventide-glass-anvil");
-		context.setScreen(() -> null);
-		context.waitTicks(3);
-		server.runCommand("item replace entity @p hotbar.8 with minecraft:writable_book");
-		context.waitTicks(3);
-		context.getInput().pressKey(GLFW.GLFW_KEY_9);
-		context.waitTicks(3);
-		context.runOnClient(client -> client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND));
-		context.waitTicks(15);
-		shot(context, "eventide-glass-book");
-		context.setScreen(() -> null);
-		context.waitTicks(3);
-		server.runCommand("setblock " + sign.getX() + " " + sign.getY() + " " + sign.getZ() + " minecraft:air");
-		server.runCommand("setblock " + anvil.getX() + " " + anvil.getY() + " " + anvil.getZ() + " minecraft:air");
-		server.runCommand("item replace entity @p hotbar.8 with minecraft:air");
-		context.getInput().pressKey(GLFW.GLFW_KEY_1);
-		context.waitTicks(3);
 	}
 
 	/** The average colour (r, g, b) of a part of a screenshot, given as shares of its width and height. */

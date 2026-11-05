@@ -9,8 +9,6 @@ import net.minecraft.client.Minecraft;
 public final class Hooks {
 	public static volatile boolean titleHookRan = false;
 	public static volatile boolean entityEventHookRan = false;
-	public static volatile boolean mainMenuShown = false;
-	public static volatile boolean titleButtonsStyled = false;
 	public static volatile boolean tabPingRan = false;
 	public static volatile boolean slotHighlightRan = false;
 	public static volatile boolean freelookCameraRan = false;
@@ -35,8 +33,6 @@ public final class Hooks {
 	public static volatile boolean textRuleRan = false;
 	public static volatile boolean customSkinLoaded = false;
 	public static volatile boolean menuNameDrawn = false;
-	public static volatile boolean logoDrawn = false;
-	public static volatile boolean buttonsStyled = false;
 	public static volatile boolean knifeRendered = false;
 	public static volatile boolean knifeDrawRan = false;
 	public static volatile boolean knifeSlashRan = false;

@@ -36,7 +36,7 @@ final class ModuleListWidget extends HudWidget {
 	private static final float ICON = 1.45f * CAP;
 	private static final float ICON_GAP = 0.75f * CAP;
 	private static final List<Module> SAMPLE = List.of(Modules.CROSSHAIR, Modules.KEYSTROKES, Modules.FREELOOK, Modules.ZOOM);
-	private static final Set<Module> OUT_OF_GAME = Set.of(Modules.MENU_NAME, Modules.MAIN_MENU, Modules.DISCORD, Modules.BORDERLESS,
+	private static final Set<Module> OUT_OF_GAME = Set.of(Modules.MENU_NAME, Modules.DISCORD, Modules.BORDERLESS,
 			Modules.PROFILES, Modules.THEME);
 
 	private final Map<String, RowState> states = new LinkedHashMap<>();

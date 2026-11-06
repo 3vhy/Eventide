@@ -110,6 +110,40 @@ public final class EventideGameTest implements FabricClientGameTest {
 		}
 	}
 
+	/** The top bar as the reference shows it: coordinates over your name, FPS, the server and the clock joined into one bar. */
+	private static final class BarShowcase extends CompatScreen {
+		BarShowcase() {
+			super(Component.literal("HUD bar close-up"));
+		}
+
+		@Override
+		protected void drawBackdrop(Draw d) {
+			d.fill(0, 0, this.width, this.height, 0xFF5850B0);
+		}
+
+		@Override
+		protected void draw(Draw d, int mouseX, int mouseY, float delta) {
+			Minecraft mc = Minecraft.getInstance();
+			float scale = 1.6f;
+			List<HudWidget> bar = List.of(HudWidgets.PLAYER_NAME, HudWidgets.FPS, HudWidgets.SERVER, HudWidgets.CLOCK);
+			int h = Math.round(dev.eventide.client.hud.Hud.PILL_H);
+			int total = 0;
+			for (HudWidget each : bar) total += each.width(mc);
+			float sw = this.width / scale;
+			float sh = this.height / scale;
+			int x = Math.round((sw - total) / 2f);
+			int y = Math.round(sh / 2f + 2);
+			List<Pills.Placed> placed = new ArrayList<>();
+			for (HudWidget each : bar) {
+				placed.add(new Pills.Placed(each, x, y, each.width(mc), h, scale));
+				x += each.width(mc);
+			}
+			int cw = HudWidgets.COORDS.width(mc);
+			placed.add(new Pills.Placed(HudWidgets.COORDS, Math.round((sw - cw) / 2f), y - h - 5, cw, h, scale));
+			Pills.draw(d, mc, placed, true);
+		}
+	}
+
 	private static final class MusicShowcase extends CompatScreen {
 		private final HudWidget widget;
 		private final List<HudWidget> row;
@@ -1478,6 +1512,10 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		shot(context, "eventide-hud-pills");
 		check(failed, "pills that touch are drawn as one bar", Hooks.pillsStuck);
+		context.setScreen(BarShowcase::new);
+		context.waitTicks(5);
+		shot(context, "eventide-hud-bar-closeup");
+		context.setScreen(() -> null);
 		context.runOnClient(client -> {
 			for (HudWidget widget : List.of(HudWidgets.CLOCK, HudWidgets.MEMORY, HudWidgets.SERVER, HudWidgets.FPS, HudWidgets.COORDS)) {
 				widget.resetPosition();
@@ -1486,6 +1524,29 @@ public final class EventideGameTest implements FabricClientGameTest {
 			Modules.MODULE_LIST.set(true);
 		});
 		server.runCommand("bossbar remove eventide:banner");
+		context.runOnClient(client -> {
+			Modules.MUSIC.set(false);
+			Modules.MODULE_LIST.set(false);
+			for (Module module : List.of(Modules.PLAYER_NAME, Modules.FPS, Modules.CLOCK, Modules.SERVER, Modules.COORDS)) module.set(true);
+		});
+		context.waitTicks(10);
+		shot(context, "eventide-hud-bar");
+		check(failed, "your name, FPS, the server and the clock sit edge to edge in one bar at the top", context.computeOnClient(client -> {
+			int w = client.getWindow().getGuiScaledWidth();
+			int h = client.getWindow().getGuiScaledHeight();
+			int[] name = HudWidgets.PLAYER_NAME.position(client, w, h);
+			int[] fps = HudWidgets.FPS.position(client, w, h);
+			int[] serverAt = HudWidgets.SERVER.position(client, w, h);
+			int[] clock = HudWidgets.CLOCK.position(client, w, h);
+			int[] coords = HudWidgets.COORDS.position(client, w, h);
+			return name[0] + HudWidgets.PLAYER_NAME.width(client) == fps[0] && fps[0] + HudWidgets.FPS.width(client) == serverAt[0]
+					&& serverAt[0] + HudWidgets.SERVER.width(client) == clock[0] && name[1] == clock[1] && coords[1] < name[1];
+		}));
+		context.runOnClient(client -> {
+			Modules.MUSIC.set(true);
+			Modules.MODULE_LIST.set(true);
+			for (Module module : List.of(Modules.FPS, Modules.CLOCK, Modules.SERVER, Modules.COORDS)) module.set(false);
+		});
 		context.runOnClient(client -> {
 			Modules.KEYSTROKES.set(true);
 			Modules.SKIES.set(false);

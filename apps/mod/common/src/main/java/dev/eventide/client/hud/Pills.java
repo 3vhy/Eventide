@@ -9,7 +9,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 
 /**
- * The HUD's glass pills (FPS, ping, the clock, coordinates and the rest) and how they stick together. A pill
+ * The HUD's glass pills (your name, FPS, ping, the server, the clock, coordinates and the rest) and how they stick together. A pill
  * stands alone, or, dropped against another in Edit HUD, snaps flush to it; pills that touch side by side (same
  * height, same size) are drawn as one long pill with a thin divider between each, and pulled apart they stand
  * alone again.
@@ -28,26 +28,30 @@ public final class Pills {
 	private Pills() {
 	}
 
-	/** A pill's glass: dark and see-through with a faint accent tint, a soft accent edge and a lit top edge. */
+	/** A pill's glass: see-through indigo washed with the theme colour, rounded corners and a light lavender edge. */
 	public static void glass(Draw d, float x1, float y1, float x2, float y2, float strength) {
 		if (strength <= 0.01f) return;
-		float r = (y2 - y1) / 2f;
+		float r = (y2 - y1) * 0.32f;
 		int accent = Accent.get();
 		float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
 		float hair = Hud.hairline(d);
-		Paint.shadow(d, x1, y1, x2, y2, r, 0, 1, 5, 0, 0x40000000);
-		Paint.rect(d, x1, y1, x2, y2, r, 0x9E0A0714);
-		Paint.rect(d, x1, y1, x2, y2, r, Paint.fade(accent, 0.1f));
-		Paint.stroke(d, x1, y1, x2, y2, r, hair, Paint.fade(Accent.lighten(accent, 0.3f), 0.55f));
-		Paint.rect(d, x1 + r * 0.6f, y1 + hair, x2 - r * 0.6f, y1 + hair * 2, 0, 0x14FFFFFF);
+		Paint.shadow(d, x1, y1, x2, y2, r, 0, 1, 6, 0, 0x30000000);
+		Paint.rect(d, x1, y1, x2, y2, r, 0x7A16123C);
+		Paint.rect(d, x1, y1, x2, y2, r, Paint.fade(accent, 0.16f));
+		Paint.stroke(d, x1, y1, x2, y2, r, hair * 1.25f, Paint.fade(Accent.lighten(accent, 0.55f), 0.6f));
 		Paint.opacity(old);
+	}
+
+	/** The lavender of a pill's icons and axis letters: the theme colour, lightened. */
+	public static int lavender() {
+		return Accent.lighten(Accent.get(), 0.48f);
 	}
 
 	/** The thin line between two pills stuck together. */
 	public static void divider(Draw d, float x, float y1, float y2) {
 		float hair = Hud.hairline(d);
 		float inset = (y2 - y1) * 0.27f;
-		Paint.rect(d, x - hair / 2f, y1 + inset, x + hair / 2f, y2 - inset, 0, Paint.fade(Accent.lighten(Accent.get(), 0.3f), 0.42f));
+		Paint.rect(d, x - hair / 2f, y1 + inset, x + hair / 2f, y2 - inset, 0, Paint.fade(lavender(), 0.5f));
 	}
 
 	/** Whether two placed pills touch side by side ({@code a} on the left), so they're drawn as one. */

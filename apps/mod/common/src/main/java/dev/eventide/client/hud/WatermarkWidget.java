@@ -53,8 +53,8 @@ final class WatermarkWidget extends HudWidget {
 
 	private float layout(Minecraft mc, boolean preview) {
 		float w = PAD + MARK + 4 + Logo.wordmarkWidth(WORD_CAP);
-		if (Modules.WATERMARK_FPS.get()) w += 6 + chipWidth(fps(mc, preview), "000", "fps");
-		if (Modules.WATERMARK_PING.get()) w += 4 + chipWidth(ping(mc, preview), "00", "ms");
+		if (Modules.WATERMARK_FPS.get() && !Modules.FPS.enabled()) w += 6 + chipWidth(fps(mc, preview), "000", "fps");
+		if (Modules.WATERMARK_PING.get() && !Modules.PING.enabled()) w += 4 + chipWidth(ping(mc, preview), "00", "ms");
 		return w + PAD;
 	}
 
@@ -71,29 +71,19 @@ final class WatermarkWidget extends HudWidget {
 	@Override
 	public void draw(Draw d, int x, int y, Minecraft mc, boolean preview) {
 		float w = width(mc);
-		float r = radius(7);
-		float strength = glassStrength();
-		int accent = Accent.get();
-		if (strength > 0.01f) {
-			float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
-			Paint.shadow(d, x, y, x + w, y + H, r, 0, 1, 6, 0, 0x55000000);
-			Paint.rect(d, x, y, x + w, y + H, r, 0xD90B0817);
-			Paint.shadow(d, x - 4, y - 6, x + 26, y + 10, 8, 0, 0, 16, 0, Paint.fade(accent, 0.22f));
-			Paint.stroke(d, x, y, x + w, y + H, r, Hud.hairline(d), Paint.fade(Accent.lighten(accent, 0.2f), 0.45f));
-			Paint.opacity(old);
-		}
+		Pills.glass(d, x, y, x + w, y + H, glassStrength());
 		float cy = y + H / 2f;
 		float cx = x + PAD;
 		Logo.mark(d, cx - 0.5f, cy - MARK / 2f, MARK, 1, System.currentTimeMillis());
 		cx += MARK + 4;
 		cx += Logo.wordmark(d, cx, cy - WORD_CAP / 2f - 0.6f, WORD_CAP, Tokens.BRAND_WORDMARK);
-		if (Modules.WATERMARK_FPS.get()) {
+		if (Modules.WATERMARK_FPS.get() && !Modules.FPS.enabled()) {
 			int fps = mc.getFps();
 			int dot = fps >= 120 ? Tokens.MINT : fps >= 60 ? Tokens.GOLD : Tokens.LOW;
 			cx += 6;
 			cx += chip(d, cx, cy, fps(mc, preview), "000", "fps", dot);
 		}
-		if (Modules.WATERMARK_PING.get()) {
+		if (Modules.WATERMARK_PING.get() && !Modules.PING.enabled()) {
 			int ms = latency(mc);
 			int dot = ms < 0 || ms <= 80 ? Tokens.MINT : ms <= 160 ? Tokens.GOLD : Tokens.LOW;
 			cx += 4;

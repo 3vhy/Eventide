@@ -21,6 +21,8 @@ public abstract class HudWidget {
 		TOP_LEFT,
 		TOP_RIGHT,
 		TOP_CENTER,
+		/** Side by side in one bar, centred at the top under the top-centre widgets. */
+		TOP_BAR,
 		MIDDLE_RIGHT,
 		BOTTOM_RIGHT,
 		BELOW_CROSSHAIR,
@@ -122,12 +124,45 @@ public abstract class HudWidget {
 				int y = bossBarsBottom(mc) + MARGIN + stackedBefore(mc);
 				yield new int[] {clearOfTopRight(mc, (screenWidth - w) / 2, y, w, h, screenWidth, screenHeight), y};
 			}
+			case TOP_BAR -> barPosition(mc, w, h, screenWidth, screenHeight);
 			case BOTTOM_RIGHT -> new int[] {screenWidth - w - MARGIN, screenHeight - h - MARGIN - stackedBefore(mc)};
 			case ABOVE_HOTBAR -> new int[] {(screenWidth - w) / 2, screenHeight - 58 - h - stackedBefore(mc)};
 			case MIDDLE_RIGHT -> new int[] {screenWidth - w - MARGIN, (screenHeight - h) / 2};
 			case BELOW_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 + 20};
 			case ABOVE_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 - 22 - h};
 		};
+	}
+
+	/**
+	 * Where this widget goes in the top bar: the bar's widgets sit edge to edge (so their pills join into one),
+	 * centred under the top-centre column and clear of the Music Player.
+	 */
+	private int[] barPosition(Minecraft mc, int w, int h, int screenWidth, int screenHeight) {
+		boolean editing = mc.screen instanceof HudEditorScreen;
+		int total = 0;
+		int before = 0;
+		boolean seen = false;
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor != Anchor.TOP_BAR || other.storedPosition() != null || !other.shown() || !(editing || other.visible(mc))) continue;
+			if (other == this) seen = true;
+			int ow = other.width(mc);
+			if (!seen) before += ow;
+			total += ow;
+		}
+		if (!seen) {
+			before = total;
+			total += w;
+		}
+		int column = 0;
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor == Anchor.TOP_CENTER && other.shown() && other.storedPosition() == null && other.usesAnchor()
+					&& (editing || other.visible(mc))) {
+				column += other.height(mc) + GAP;
+			}
+		}
+		int y = bossBarsBottom(mc) + MARGIN + column;
+		int start = clearOfTopRight(mc, (screenWidth - total) / 2, y, total, h, screenWidth, screenHeight);
+		return new int[] {start + before, y};
 	}
 
 	/** How far this top corner's column moves down to clear the boss bars, when one of its widgets would reach under them. */

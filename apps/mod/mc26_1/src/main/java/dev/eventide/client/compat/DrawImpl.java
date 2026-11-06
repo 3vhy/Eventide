@@ -93,6 +93,16 @@ public final class DrawImpl implements Draw {
 	}
 
 	@Override
+	public void scale(float x, float y) {
+		graphics.pose().scale(x, y);
+	}
+
+	@Override
+	public boolean sharpText() {
+		return true;
+	}
+
+	@Override
 	public void enableScissor(int x1, int y1, int x2, int y2) {
 		graphics.enableScissor(x1, y1, x2, y2);
 		ScreenRectangle rect = new ScreenRectangle(x1, y1, x2 - x1, y2 - y1).transformAxisAligned(graphics.pose());

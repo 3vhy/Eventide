@@ -13,7 +13,7 @@ import net.minecraft.world.entity.HumanoidArm;
 
 /**
  * Hats and wings for your player, and your knife in your hand in third person, all built from code and shaded
- * by the knife shader like the knives: a Glow Cone (a see-through cone of light), a Halo, a Crown, a Top Hat, a Witch
+ * by the knife shader like the knives: a Glow Cone (a wide, flat conical hat of soft white light), a Halo, a Crown, a Top Hat, a Witch
  * Hat, Horns and Cat Ears; Angel,
  * Demon and Energy wings that flap gently. Shapes are made the first time they're worn and kept. Units are
  * pixels, Y up; the callers turn Minecraft's model space (Y down) round.
@@ -34,9 +34,10 @@ public final class Cosmetics {
 		Shape m = new Shape();
 		switch (key) {
 			case "Halo" -> m.torus(0, 0, 0, 3.6f, 0.32f, 0.32f, 40, 10, KnifeShading.ENERGY);
-			case "Glow Cone" -> m.loft(new Shape.Ring[] {Shape.Ring.along(0, 0, 0, 7.2f, 7.2f), Shape.Ring.along(0, 3.0f, 0, 0.04f, 0.04f)}, 48, 0,
-					KnifeShading.ENERGY, Shape.OPEN, Shape.OPEN, false);
-			case "Glow Cone rim" -> hoop(m, 0, 7.2f, 0.18f, KnifeShading.ENERGY);
+			case "Glow Cone" -> m.loft(new Shape.Ring[] {Shape.Ring.along(0, 2.7f, 0, 0.02f, 0.02f), Shape.Ring.along(0, 2.35f, 0, 1.2f, 1.2f),
+					Shape.Ring.along(0, 0.1f, 0, 8.9f, 8.9f), Shape.Ring.along(0, -0.12f, 0, 8.9f, 8.9f), Shape.Ring.along(0, 2.1f, 0, 1.1f, 1.1f),
+					Shape.Ring.along(0, 2.45f, 0, 0.02f, 0.02f)}, 56, 0, KnifeShading.ENERGY, Shape.OPEN, Shape.OPEN, false);
+			case "Glow Cone rim" -> hoop(m, 0, 8.9f, 0.16f, KnifeShading.ENERGY);
 			case "Crown" -> crown(m);
 			case "Top Hat" -> topHat(m);
 			case "Witch Hat" -> witchHat(m);
@@ -276,6 +277,21 @@ public final class Cosmetics {
 		}
 	}
 
+	/** A glowing shape in a pale wash of the theme colour ({@code saturation} of it), nearly white where it faces you. */
+	private static void emitGlowing(Shape mesh, PoseStack pose, SubmitNodeCollector collector, int light, float saturation) {
+		int glowRgb = Accent.get();
+		float[] hsv = Widgets.toHsv(glowRgb);
+		int frame = KnifeShading.frame(63, 0, 1.0f, 1.0f);
+		if (KnifeShading.custom()) {
+			collector.submitCustomGeometry(pose, Compat.knifeShaded(),
+					(last, out) -> mesh.emit(last, out, light, Finish.FROST.id, hsv[0], hsv[1] * saturation, frame));
+		} else {
+			int pale = Widgets.mixColor(glowRgb, 0xFFFFFFFF, 1 - saturation);
+			collector.submitCustomGeometry(pose, Compat.knifeRenderType(KnifeAtlas.get(), false),
+					(last, out) -> mesh.emitPlain(last, out, light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, Finish.FROST.id, pale));
+		}
+	}
+
 	/** The hat, on a head whose model frame {@code pose} is in (Minecraft's: Y down, the face towards -Z). */
 	public static void drawHat(PoseStack pose, SubmitNodeCollector collector, int light, float ageTicks) {
 		String hat = Modules.HATS_TYPE.get();
@@ -291,14 +307,15 @@ public final class Cosmetics {
 			}
 			case "Horns" -> finish = Finish.VOID;
 			case "Glow Cone" -> {
-				pose.translate(0, 0.6f, 0);
-				int color = 0xA0000000 | Accent.get() & 0xFFFFFF;
+				pose.translate(0, 0.35f, 0);
+				int pale = Widgets.mixColor(Accent.get(), 0xFFFFFFFF, 0.55f);
 				Shape cone = shape("Glow Cone");
+				emitGlowing(cone, pose, collector, light, 0.42f);
+				emitGlowing(shape("Glow Cone rim"), pose, collector, light, 0.2f);
 				if (KnifeShading.custom()) {
-					collector.submitCustomGeometry(pose, Compat.knifeGlow(), (last, out) -> cone.emitGlow(last, out, color, 0));
-					collector.submitCustomGeometry(pose, Compat.knifeLine(), (last, out) -> cone.emitGlow(last, out, color, 0.08f));
+					int halo = 0x70000000 | pale & 0xFFFFFF;
+					collector.submitCustomGeometry(pose, Compat.knifeOutline(), (last, out) -> cone.emitGlow(last, out, halo, 0.55f));
 				}
-				emit(shape("Glow Cone rim"), pose, collector, light, finish, true);
 				pose.popPose();
 				return;
 			}

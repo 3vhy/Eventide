@@ -1406,6 +1406,24 @@ public final class EventideGameTest implements FabricClientGameTest {
 	 */
 	private static void hudLook(ClientGameTestContext context, TestSingleplayerContext singleplayer, List<String> failed) {
 		var server = singleplayer.getServer();
+		float[] sharpWidths = context.computeOnClient(client -> {
+			float[] out = new float[UiFont.SHARPNESS.length + 1];
+			out[0] = client.font.width(UiFont.bold("Snowfall 12:34 Eventide Test Band"));
+			for (int i = 0; i < UiFont.SHARPNESS.length; i++) out[i + 1] = client.font.width(UiFont.sharp("Snowfall 12:34 Eventide Test Band", 2, i));
+			return out;
+		});
+		EventideClient.LOG.info("eventide-check: the same text in each sharp copy of the font: {}", java.util.Arrays.toString(sharpWidths));
+		boolean same = context.computeOnClient(client -> {
+			String sample = "Snowfall 12:34 Eventide Test Band";
+			var splitter = client.font.getSplitter();
+			float layout = splitter.stringWidth(UiFont.bold(sample));
+			for (int i = 0; i < UiFont.SHARPNESS.length; i++) {
+				float drawn = splitter.stringWidth(UiFont.sharp(sample, 2, i)) * dev.eventide.client.ui.Type.stretch(sample, dev.eventide.client.ui.Type.Weight.BOLD, i);
+				if (Math.abs(drawn - layout) > 0.5f) return false;
+			}
+			return true;
+		});
+		check(failed, "text from every sharp copy of the font lands at the layout's width", same);
 		server.runCommand("time set midnight");
 		server.runCommand("bossbar add eventide:banner \"Join our community (/discord)\"");
 		server.runCommand("bossbar set eventide:banner color blue");

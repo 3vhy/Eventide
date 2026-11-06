@@ -31,6 +31,12 @@ public final class Type {
 	private static final Map<String, Component> BOLD = new HashMap<>();
 	private static final Map<String, Component> PIXEL = new HashMap<>();
 	private static final Map<String, Component> PIXEL_BOLD = new HashMap<>();
+	@SuppressWarnings("unchecked")
+	private static final Map<String, Sharp>[][] SHARP = new Map[3][UiFont.SHARPNESS.length];
+
+	/** Text in one sharp copy of the font, and how much to stretch it across to match the layout's width. */
+	private record Sharp(Component text, float stretch) {
+	}
 
 	private Type() {
 	}
@@ -55,6 +61,28 @@ public final class Type {
 		return made;
 	}
 
+	/** {@code text} in the clean font's copy rasterised for {@code level} (see {@link UiFont#level}). */
+	private static Sharp sharp(String text, Weight weight, int level) {
+		int w = weight.ordinal();
+		Map<String, Sharp> cache = SHARP[w][level];
+		if (cache == null) SHARP[w][level] = cache = new HashMap<>();
+		Sharp made = cache.get(text);
+		if (made != null) return made;
+		if (cache.size() > CACHE_LIMIT) cache.clear();
+		Component copy = UiFont.sharp(text, w, level);
+		var splitter = Minecraft.getInstance().font.getSplitter();
+		float own = splitter.stringWidth(copy);
+		float layout = splitter.stringWidth(component(text, weight));
+		made = new Sharp(copy, own > 0 ? layout / own : 1);
+		cache.put(text, made);
+		return made;
+	}
+
+	/** How much a sharp copy of the font is stretched across to match the layout (for the test). */
+	public static float stretch(String text, Weight weight, int level) {
+		return sharp(text, weight, level).stretch();
+	}
+
 	private static float baseCap() {
 		return UiFont.clean() ? CAP : MINECRAFT_CAP;
 	}
@@ -70,10 +98,17 @@ public final class Type {
 		int faded = Paint.fade(color, Paint.opacity());
 		if (text.isEmpty() || ((faded >>> 24) & 255) < 5) return;
 		float scale = cap / baseCap();
+		boolean clean = UiFont.clean();
 		d.push();
-		d.translate(x, capTop - (UiFont.clean() ? CAP_TOP : 0) * scale);
+		d.translate(x, capTop - (clean ? CAP_TOP : 0) * scale);
 		d.scale(scale);
-		d.text(component(text, weight), 0, 0, faded, false);
+		if (clean && d.sharpText()) {
+			Sharp copy = sharp(text, weight, UiFont.level(Paint.density(d)));
+			if (Math.abs(copy.stretch() - 1) > 0.002f) d.scale(copy.stretch(), 1);
+			d.text(copy.text(), 0, 0, faded, false);
+		} else {
+			d.text(component(text, weight), 0, 0, faded, false);
+		}
 		d.pop();
 	}
 

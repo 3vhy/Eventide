@@ -25,7 +25,38 @@ public final class UiFont {
 	private static final FontDescription BRAND = new FontDescription.Resource(
 			Identifier.fromNamespaceAndPath(EventideClient.MOD_ID, "brand"));
 
+	/** Pixels per GUI unit each sharp copy of the UI font is drawn at; {@link #sharp} picks the nearest. */
+	public static final float[] SHARPNESS = {1, 1.5f, 2, 3, 4, 6, 8};
+	private static final String[] SHARP_NAMES = {"1", "1_5", "2", "3", "4", "6", "8"};
+	private static final FontDescription[][] SHARP = new FontDescription[3][SHARPNESS.length];
+
+	static {
+		String[] weights = {"medium", "semibold", "bold"};
+		for (int w = 0; w < 3; w++) {
+			for (int i = 0; i < SHARPNESS.length; i++) {
+				SHARP[w][i] = new FontDescription.Resource(Identifier.fromNamespaceAndPath(EventideClient.MOD_ID, "ui_" + weights[w] + "_" + SHARP_NAMES[i]));
+			}
+		}
+	}
+
 	private UiFont() {
+	}
+
+	/**
+	 * Text in the clean font rasterised at {@code SHARPNESS[level]} pixels per GUI unit ({@code weight} 0 medium,
+	 * 1 semibold, 2 bold): text drawn from a raster close to its size on screen stays crisp instead of turning
+	 * jagged when a big raster is shrunk.
+	 */
+	public static Component sharp(String text, int weight, int level) {
+		return Component.literal(text).withStyle(Style.EMPTY.withFont(SHARP[weight][level]));
+	}
+
+	/** The copy of the font to draw text at {@code pixels} screen pixels per GUI unit with. */
+	public static int level(float pixels) {
+		for (int i = 0; i < SHARPNESS.length; i++) {
+			if (SHARPNESS[i] >= pixels * 0.9f) return i;
+		}
+		return SHARPNESS.length - 1;
 	}
 
 	/** Whether the clean font is picked (Theme > Menu font). */

@@ -1,0 +1,38 @@
+{
+	"providers": [
+		{
+			"type": "ttf",
+			"file": "eventide:inter_700_latin.ttf",
+			"size": 9.35,
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "ttf",
+			"file": "eventide:inter_700_latin_ext.ttf",
+			"size": 9.35,
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "ttf",
+			"file": "eventide:inter_700_cyrillic.ttf",
+			"size": 9.35,
+			"oversample": 4.0,
+			"shift": [
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:default"
+		}
+	]
+}

@@ -78,6 +78,16 @@ public interface Draw {
 
 	void scale(float scale);
 
+	/** Stretches what's drawn next {@code x} times across and {@code y} times down. */
+	default void scale(float x, float y) {
+		scale(y);
+	}
+
+	/** Whether text should come from the font copy that matches its size on screen (screens and the HUD, not the world). */
+	default boolean sharpText() {
+		return false;
+	}
+
 	/** Only draw inside this rectangle until disableScissor(). */
 	void enableScissor(int x1, int y1, int x2, int y2);
 

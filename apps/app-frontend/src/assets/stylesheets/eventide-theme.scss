@@ -1,16 +1,14 @@
 // Eventide design system
 //
-// The same look as the mod's menus (ui/Tokens.java): a midnight ground with surfaces a step of
-// lightness apart, electric violet for what's on or chosen, cyan and pink as rare highlights, Inter
-// for the interface and Unbounded (the wordmark's face) for titles. Corners are soft and round,
-// edges a single light hairline, and the shell sits on a quiet violet nebula.
+// A quiet near-black launcher: the ground, then panels and cards each a step lighter with a faint
+// hairline edge, white text, and a soft lavender only for what's on or chosen. The one bright control
+// is the white Launch button. Inter throughout; corners soft and round.
 //
-//   night   #05030b  the ground everything sits on
-//   raised  #141024  cards and panels
-//   violet  #9461ff  actions, focus, what's on
-//   cyan    #4fd8ff  rare highlights
-//   pink    #ff6ad5  rare highlights
-//   text    #f4f0ff  primary text
+//   ground  #08080b  the window behind everything
+//   panel   #0d0d11  the content panel
+//   card    #121217  cards inside it
+//   lilac   #8b7cf6  actions, focus, what's on
+//   text    #ececf1  primary text
 
 @import './eventide-fonts.scss';
 
@@ -59,13 +57,25 @@
 
 html.dark-mode,
 html.oled-mode {
-	--surface-1: #000000;
-	--surface-1-5: #030207;
-	--surface-2: #06040c;
-	--surface-3: #0d0a18;
-	--surface-4: #151024;
-	--surface-5: #1e1733;
-	--eventide-night: #000000;
+	--surface-1: #08080b;
+	--surface-1-5: #0a0a0d;
+	--surface-2: #0d0d11;
+	--surface-3: #121217;
+	--surface-4: #17171d;
+	--surface-5: #1e1e25;
+	--eventide-night: #08080b;
+	--color-brand: #8b7cf6;
+	--color-brand-highlight: rgba(139, 124, 246, 0.14);
+	--color-button-bg-selected: #8b7cf6;
+	--color-text-primary: #ececf1;
+	--color-text-default: #b9b9c6;
+	--color-text-tertiary: #7d7d8c;
+	--eventide-card-bg: #121217;
+	--eventide-card-border: rgba(255, 255, 255, 0.07);
+	--eventide-chip-bg: rgba(255, 255, 255, 0.05);
+	--brand-gradient-border: rgba(255, 255, 255, 0.07);
+	--brand-gradient-button: rgba(255, 255, 255, 0.04);
+	--loading-bar-gradient: linear-gradient(to right, #8b7cf6 0%, #c9c1ff 100%);
 }
 
 html.light-mode {
@@ -109,11 +119,11 @@ html body {
 	font-family: var(--eventide-font-ui);
 }
 
-// Page and section titles use the wordmark's face
+// Page and section titles: Inter, bold and a little tight
 html body :is(h1, h2) {
-	font-family: var(--eventide-font-pixel);
+	font-family: var(--eventide-font-ui);
 	font-weight: 700;
-	letter-spacing: -0.01em;
+	letter-spacing: -0.02em;
 }
 
 .eventide-pixel {
@@ -174,7 +184,7 @@ html body :is(input, textarea) {
 // ---------- Scrollbars ----------
 
 html body {
-	scrollbar-color: #2a2245 transparent;
+	scrollbar-color: #26262e transparent;
 }
 
 html body ::-webkit-scrollbar {
@@ -183,13 +193,13 @@ html body ::-webkit-scrollbar {
 }
 
 html body ::-webkit-scrollbar-thumb {
-	background: #2a2245;
+	background: #26262e;
 	border: 3px solid transparent;
 	background-clip: content-box;
 }
 
 html body ::-webkit-scrollbar-thumb:hover {
-	background-color: #3a2f5c;
+	background-color: #34343e;
 }
 
 html body ::-webkit-scrollbar-track {
@@ -208,6 +218,13 @@ html body :focus-visible {
 	}
 }
 
+// Toasts: a dark card with a hairline edge, like the rest of the launcher
+html.dark-mode body .popup-notification-group,
+html.oled-mode body .popup-notification-group {
+	--color-raised-bg: #131318;
+	--surface-5: rgba(255, 255, 255, 0.08);
+}
+
 // Soft corners for components that use the radius tokens
 html {
 	--radius-sm: 0.375rem;
@@ -218,8 +235,8 @@ html {
 
 // Shell surfaces
 :root {
-	--eventide-slab: rgba(10, 7, 20, 0.78);
-	--eventide-sidebar: rgba(5, 3, 11, 0.45);
+	--eventide-slab: #0d0d11;
+	--eventide-sidebar: #0b0b0e;
 }
 
 html.light-mode {
@@ -236,7 +253,7 @@ html body .clickable-card {
 
 html.dark-mode body .clickable-card:hover,
 html.oled-mode body .clickable-card:hover {
-	border-color: rgba(148, 97, 255, 0.5) !important;
+	border-color: rgba(139, 124, 246, 0.45) !important;
 }
 
 @import './eventide-october.scss';

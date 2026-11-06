@@ -189,26 +189,25 @@ function subtitle(instance: GameInstance) {
 	gap: 0.75rem;
 	width: 100%;
 	height: 100%;
-	min-height: 4.25rem;
-	padding: 0.6rem 1rem 0.6rem 1.15rem;
+	min-height: 3.6rem;
+	padding: 0.55rem 0.95rem;
 	border: none;
-	background: rgba(4, 18, 63, 0.6);
-	clip-path: var(--eventide-pixel-corners);
-	box-shadow:
-		inset 0 0 0 2px rgba(140, 196, 234, 0.2),
-		inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+	border-radius: 10px;
+	background: #17171d;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	color: var(--color-contrast);
 	text-align: left;
 	cursor: pointer;
-	transition: box-shadow 0.15s ease;
+	transition:
+		box-shadow 0.15s ease-out,
+		background-color 0.15s ease-out;
 
 	&:hover,
 	&:focus-visible,
 	.tvh-picker--open & {
 		outline: none;
-		box-shadow:
-			inset 0 0 0 2px var(--color-brand),
-			inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+		background: #1b1b22;
+		box-shadow: inset 0 0 0 1px rgba(139, 124, 246, 0.5);
 	}
 }
 

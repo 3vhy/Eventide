@@ -3,41 +3,26 @@
 		<section
 			v-if="showControls"
 			ref="controlsEl"
-			class="pointer-events-auto fixed top-0 right-0 z-[10001] flex h-12 items-center gap-2 px-1.5"
+			class="ev-window-dots pointer-events-auto fixed top-0 right-0 z-[10001] flex h-11 items-center gap-2.5 px-4"
 			data-tauri-drag-region-exclude
 		>
-			<IconButton
-				type="quiet"
-				label="Minimize window"
-				class="relative expanded-button"
+			<button
+				type="button"
+				class="ev-dot ev-dot--minimize"
+				aria-label="Minimize window"
 				@click="getCurrentWindow().minimize()"
-			>
-				<MinimizeIcon />
-			</IconButton>
-			<IconButton
-				type="quiet"
-				label="Toggle maximize window"
-				class="relative expanded-button"
-				@click="getCurrentWindow().toggleMaximize()"
-			>
-				<RestoreIcon v-if="isMaximized" />
-				<MaximizeIcon v-else />
-			</IconButton>
-			<IconButton
-				type="quiet"
-				label="Close window"
-				class="relative expanded-button close-button hover:!bg-red focus-visible:!bg-red hover:!text-[var(--color-accent-contrast)]"
+			/>
+			<button
+				type="button"
+				class="ev-dot ev-dot--close"
+				aria-label="Close window"
 				@click="handleClose"
-			>
-				<XIcon />
-			</IconButton>
+			/>
 		</section>
 	</Teleport>
 </template>
 
 <script setup>
-import { MaximizeIcon, MinimizeIcon, RestoreIcon, XIcon } from '@modrinth/assets'
-import { IconButton } from '@modrinth/ui'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -112,14 +97,45 @@ const handleClose = async () => {
 	await getCurrentWindow().close()
 }
 </script>
-<style scoped>
-.expanded-button::before {
-	inset: -9px -6px;
-	content: '';
-	position: absolute;
+<style lang="scss" scoped>
+.ev-dot {
+	position: relative;
+	width: 13px;
+	height: 13px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	transition:
+		filter 0.12s ease-out,
+		transform 0.12s ease-out;
+
+	&::before {
+		content: '';
+		position: absolute;
+		inset: -8px -5px;
+	}
+
+	&:hover {
+		filter: brightness(1.15);
+		transform: scale(1.08);
+	}
+
+	&:active {
+		transform: scale(0.94);
+	}
+
+	&:focus-visible {
+		outline: 2px solid rgba(255, 255, 255, 0.6);
+		outline-offset: 2px;
+	}
 }
 
-.expanded-button.close-button::before {
-	inset: -9px -9px -9px -6px;
+.ev-dot--minimize {
+	background: #e8b13a;
+}
+
+.ev-dot--close {
+	background: #e5484d;
 }
 </style>

@@ -22,6 +22,7 @@ import {
 	LogInIcon,
 	LogOutIcon,
 	NewspaperIcon,
+	PlayIcon,
 	PlusIcon,
 	RefreshCwIcon,
 	RightArrowIcon,
@@ -77,9 +78,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import AccountsCard from '@/components/ui/AccountsCard.vue'
 import AppActionBar from '@/components/ui/AppActionBar.vue'
-import PixelGhosts from '@/components/ui/brand/PixelGhosts.vue'
-import PixelSnow from '@/components/ui/brand/PixelSnow.vue'
-import EventideLogo from '@/components/ui/brand/EventideLogo.vue'
+import EventideGlyph from '@/components/ui/brand/EventideGlyph.vue'
 import Breadcrumbs from '@/components/ui/Breadcrumbs.vue'
 import ErrorModal from '@/components/ui/ErrorModal.vue'
 import FriendsList from '@/components/ui/friends/FriendsList.vue'
@@ -250,7 +249,8 @@ const forceSidebar = computed(
 		route.path.startsWith('/project') ||
 		route.path.startsWith('/user'),
 )
-const sidebarVisible = computed(() => sidebarToggled.value || forceSidebar.value)
+// Eventide: the side panel only opens where browsing and project pages need it
+const sidebarVisible = computed(() => forceSidebar.value)
 const hostingRouteActive = computed(() => route.path.startsWith('/hosting'))
 const prideFundraiserEnabled = computed(
 	() => appSettings.getFeatureFlag('pride_fundraiser') && Date.now() < PRIDE_FUNDRAISER_END_DATE,
@@ -1858,9 +1858,6 @@ function handleContextMenu(event) {
 		class="app-grid-layout relative"
 		:class="{ 'disable-advanced-rendering': !appTheme.advancedRendering }"
 	>
-		<!-- Eventide: pixel snow falls on the night sky behind everything (ghosts float up in October) -->
-		<PixelGhosts v-if="appTheme.advancedRendering && octoberActive" class="app-snow" />
-		<PixelSnow v-else-if="appTheme.advancedRendering" class="app-snow" />
 		<Transition name="fade">
 			<div
 				v-if="restarting"
@@ -1901,85 +1898,48 @@ function handleContextMenu(event) {
 			@saved="onCreationIconSaved"
 		/>
 		<UnknownPackWarningModal ref="unknownPackWarningModal" />
-		<div class="app-grid-navbar flex flex-col p-[0.6rem] pt-1 gap-[0.35rem] w-[--left-bar-width]">
-			<NavButton
-				:label="formatMessage(messages.home)"
-				to="/"
-				:is-primary="(r) => r.path === '/'"
-				:is-subpage="() => false"
-			>
-				<HomeIcon />
-			</NavButton>
-			<NavButton
-				:label="formatMessage(navMessages.modpacks)"
-				to="/browse/modpack"
-				:is-primary="(r) => r.path.startsWith('/browse/modpack') && !r.query.i && !r.query.sid"
-				:is-subpage="(r) => r.path.startsWith('/modpack/') && !r.query.i"
-			>
-				<LayersIcon />
-			</NavButton>
-			<NavButton
-				:label="formatMessage(navMessages.mods)"
-				to="/browse/mod"
-				:is-primary="
-					(r) =>
-						r.path.startsWith('/browse') &&
-						!r.path.startsWith('/browse/modpack') &&
-						!r.query.i &&
-						!r.query.sid
-				"
-				:is-subpage="
-					(r) =>
-						(r.path.startsWith('/project') ||
-							/^\/(mod|plugin|datapack|resourcepack|shader)\//.test(r.path)) &&
-						!r.query.i
-				"
-			>
-				<BoxIcon />
-			</NavButton>
-			<NavButton
-				:label="formatMessage(navMessages.library)"
-				to="/library"
-				:is-primary="(r) => r.path === '/library'"
-				:is-subpage="
-					(r) =>
-						r.path.startsWith('/instance') ||
-						((r.path.startsWith('/browse') || r.path.startsWith('/project')) && !!r.query.i)
-				"
-			>
-				<LibraryIcon />
-			</NavButton>
-			<NavButton
-				v-if="appSettings.showSkinSelectorInSidebar"
-				:label="formatMessage(navMessages.skins)"
-				to="/skins"
-			>
-				<ShirtIcon />
-			</NavButton>
-			<NavButton
-				v-if="globalSyncedOptionsQuery.data.value?.screenshots"
-				:label="formatMessage(navMessages.screenshots)"
-				to="/screenshots"
-			>
-				<ImageIcon />
-			</NavButton>
-			<NavButton :label="formatMessage(navMessages.settings)" :to="() => appSettingsModal?.show()">
-				<SettingsIcon />
-			</NavButton>
+		<div class="app-grid-navbar ev-rail flex flex-col items-center px-3 pb-3 pt-3 gap-2 w-[--left-bar-width]">
+			<RouterLink to="/" class="ev-rail__logo" :aria-label="formatMessage(messages.home)">
+				<EventideGlyph tile class="size-9" />
+			</RouterLink>
+			<div class="ev-rail__group">
+				<NavButton
+					v-tooltip.right="formatMessage(messages.home)"
+					to="/"
+					:is-primary="(r) => r.path === '/'"
+					:is-subpage="() => false"
+				>
+					<PlayIcon />
+				</NavButton>
+				<NavButton
+					v-tooltip.right="formatMessage(navMessages.library)"
+					to="/library"
+					:is-primary="(r) => r.path === '/library'"
+					:is-subpage="
+						(r) =>
+							r.path.startsWith('/instance') ||
+							((r.path.startsWith('/browse') || r.path.startsWith('/project')) && !!r.query.i)
+					"
+				>
+					<BoxIcon />
+				</NavButton>
+				<NavButton
+					v-if="appSettings.showSkinSelectorInSidebar"
+					v-tooltip.right="formatMessage(navMessages.skins)"
+					to="/skins"
+				>
+					<UserIcon />
+				</NavButton>
+				<NavButton
+					v-tooltip.right="formatMessage(navMessages.settings)"
+					:to="() => appSettingsModal?.show()"
+				>
+					<SettingsIcon />
+				</NavButton>
+			</div>
 			<div class="flex-grow" />
-			<NavButton
-				v-tooltip.right="formatMessage(navMessages.logsTooltip)"
-				:label="formatMessage(navMessages.logs)"
-				:to="openSelectedLogs"
-			>
+			<NavButton v-tooltip.right="formatMessage(navMessages.logsTooltip)" :to="openSelectedLogs">
 				<TerminalSquareIcon />
-			</NavButton>
-			<NavButton
-				v-tooltip.right="formatMessage(navMessages.folderTooltip)"
-				:label="formatMessage(navMessages.folder)"
-				:to="openSelectedFolder"
-			>
-				<FolderOpenIcon />
 			</NavButton>
 			<IconButton
 				v-if="credentials === undefined"
@@ -2048,8 +2008,7 @@ function handleContextMenu(event) {
 		</div>
 		<div data-tauri-drag-region class="app-grid-statusbar h-[--top-bar-height] flex">
 			<div data-tauri-drag-region class="flex min-w-0 flex-1 items-center overflow-hidden p-2">
-				<EventideLogo class="ml-1 shrink-0 pointer-events-none" />
-				<div data-tauri-drag-region class="ml-2 flex shrink-0 items-center gap-2">
+				<div v-if="route.path !== '/'" data-tauri-drag-region class="ml-1 flex shrink-0 items-center gap-2">
 					<IconButton
 						type="outlined"
 						:label="formatMessage(messages.goBack)"
@@ -2075,7 +2034,7 @@ function handleContextMenu(event) {
 						/>
 					</IconButton>
 				</div>
-				<Breadcrumbs />
+				<Breadcrumbs v-if="route.path !== '/'" />
 			</div>
 			<section data-tauri-drag-region class="flex shrink-0 ml-auto items-center">
 				<IconButton
@@ -2088,7 +2047,7 @@ function handleContextMenu(event) {
 				>
 					<RightArrowIcon />
 				</IconButton>
-				<div class="flex mr-3">
+				<div v-if="route.path !== '/'" class="flex mr-3">
 					<Suspense>
 						<AppActionBar />
 					</Suspense>
@@ -2297,8 +2256,8 @@ function handleContextMenu(event) {
 <style lang="scss" scoped>
 .app-grid-layout,
 .app-contents {
-	--top-bar-height: 3rem;
-	--left-bar-width: 6rem;
+	--top-bar-height: 2.75rem;
+	--left-bar-width: 4.5rem;
 	--right-bar-width: 300px;
 }
 
@@ -2309,14 +2268,9 @@ function handleContextMenu(event) {
 	grid-template-rows: auto minmax(0, 1fr);
 	position: relative;
 	//z-index: 0;
-	// Eventide: the shell sits on a quiet violet nebula; isolation keeps the snow canvas above
-	// this background but behind everything in the shell
+	// Eventide: a near-black shell, the icon rail and title bar on the bare ground
 	isolation: isolate;
-	background:
-		radial-gradient(110% 60% at 0% 0%, rgba(148, 97, 255, 0.28), transparent 60%),
-		radial-gradient(70% 50% at 100% 0%, rgba(255, 106, 213, 0.1), transparent 60%),
-		radial-gradient(80% 60% at 70% 100%, rgba(79, 216, 255, 0.07), transparent 60%),
-		var(--eventide-stars), var(--eventide-night);
+	background: var(--eventide-night);
 	height: 100vh;
 }
 
@@ -2354,20 +2308,11 @@ function handleContextMenu(event) {
 	right: 0;
 	bottom: 0;
 	height: calc(100vh - var(--top-bar-height));
-	// Eventide: content is a slab on the night sky with one stepped pixel corner
+	// Eventide: content is a panel a step lighter than the ground, its top left corner rounded
 	background-color: var(--eventide-slab);
-	clip-path: polygon(
-		0 12px,
-		4px 12px,
-		4px 8px,
-		8px 8px,
-		8px 4px,
-		12px 4px,
-		12px 0,
-		100% 0,
-		100% 100%,
-		0 100%
-	);
+	border-top-left-radius: 16px;
+	box-shadow: inset 1px 1px 0 var(--eventide-card-border);
+	overflow: hidden;
 
 	display: grid;
 	grid-template-columns: 1fr 0px;
@@ -2426,21 +2371,66 @@ function handleContextMenu(event) {
 }
 
 .app-contents::before {
-	// The banner's cyan rim light along the top edge of the content slab
-	z-index: 30;
-	content: '';
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 0;
-	height: 1px;
-	background: linear-gradient(
-		90deg,
-		rgba(91, 200, 230, 0.7),
-		rgba(91, 200, 230, 0.15) 60%,
-		transparent
-	);
-	pointer-events: none;
+	content: none;
+}
+
+.ev-rail__logo {
+	display: flex;
+	margin-bottom: 0.75rem;
+	border-radius: 12px;
+	transition: transform 0.15s ease-out;
+
+	&:hover {
+		transform: scale(1.04);
+	}
+}
+
+.ev-rail__group {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+// The rail's buttons: quiet grey icons in rounded squares; the page you're on gets a dark tile and a white icon
+.ev-rail :deep(.nav-button) {
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: 12px;
+	color: #7d7d8c;
+	font-size: 1.2rem;
+
+	&::before {
+		border-radius: 12px;
+		background-color: #1b1b22;
+	}
+
+	&:hover {
+		background: transparent;
+		color: #ececf1;
+
+		&::before {
+			opacity: 1;
+			scale: 1;
+		}
+	}
+
+	svg {
+		filter: none !important;
+	}
+}
+
+.ev-rail :deep(.nav-button.router-link-active),
+.ev-rail :deep(.nav-button.subpage-active) {
+	color: #ffffff;
+	background: transparent;
+
+	&::before {
+		opacity: 1;
+		scale: 1;
+		background-color: #1d1d25;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+	}
 }
 
 .sidebar-teleport-content {

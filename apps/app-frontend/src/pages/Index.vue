@@ -1,32 +1,16 @@
 <script setup lang="ts">
-import {
-	BoxIcon,
-	LayersIcon,
-	PaletteIcon,
-	PlayIcon,
-	PlusIcon,
-	ServerIcon,
-	SparklesIcon,
-	SpinnerIcon,
-	StopCircleIcon,
-} from '@modrinth/assets'
+import { PlayIcon, PlusIcon, SpinnerIcon, StopCircleIcon } from '@modrinth/assets'
 import { defineMessages, injectNotificationManager, useVIntl } from '@modrinth/ui'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, inject, onBeforeUnmount, onMounted } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import GhostSprite from '@/components/ui/brand/GhostSprite.vue'
-import PixelSnow from '@/components/ui/brand/PixelSnow.vue'
-import EventideLogo from '@/components/ui/brand/EventideLogo.vue'
-import InGamePanel from '@/components/ui/home/InGamePanel.vue'
+import preview from '@/assets/images/eventide/preview.webp'
 import InstancePicker from '@/components/ui/home/InstancePicker.vue'
-import QuickModsPanel from '@/components/ui/home/QuickModsPanel.vue'
-import ServersPanel from '@/components/ui/home/ServersPanel.vue'
+import LaunchOverlay from '@/components/ui/home/LaunchOverlay.vue'
 import { EVENTIDE_VERSIONS } from '@/components/ui/home/eventide'
-import RecentWorldsList from '@/components/ui/world/RecentWorldsList.vue'
 import { useAppEvent } from '@/composables/use-app-event'
 import { useAppSettings } from '@/composables/use-app-settings.ts'
-import { octoberActive } from '@/composables/use-october'
 import { handleSevereError } from '@/composables/use-error.js'
 import { useInstanceMods } from '@/composables/use-instance-mods'
 import { useSelectedInstance } from '@/composables/use-selected-instance'
@@ -40,9 +24,9 @@ import { traceStartupStep } from '@/helpers/startup-debug'
 import { useRootBreadcrumb } from '@/providers/breadcrumbs'
 import { injectOnboardingChecklist } from '@/providers/onboarding-checklist'
 
-// Eventide home: a greeting with your stats, the banner sky with Play front and
-// centre, and a hotbar of shortcuts underneath — press 1 to 5 to jump to one, like in
-// Minecraft. In October the sky turns to a pale moonlit graveyard with ghosts.
+// Eventide home: a big look at the client on the left, and on the right "Ready to launch"
+// with the version, your in-game name, mods on and memory, over a white Launch game button.
+// Launching shows a full-window screen with a progress bar until the game is up.
 defineOptions({
 	name: 'HomePage',
 })
@@ -59,7 +43,6 @@ const messages = defineMessages({
 	home: { id: 'app.navigation.home', defaultMessage: 'Home' },
 	welcome: { id: 'app.Eventide.home.welcome', defaultMessage: 'Welcome to Eventide' },
 	welcomeBack: { id: 'app.Eventide.home.welcome-back', defaultMessage: 'Welcome back,' },
-	october: { id: 'app.Eventide.home.october', defaultMessage: 'Happy October' },
 	modsOn: { id: 'app.Eventide.home.stat.mods', defaultMessage: 'mods on' },
 	instances: {
 		id: 'app.Eventide.home.stat.instances',
@@ -71,17 +54,24 @@ const messages = defineMessages({
 		defaultMessage:
 			'Your PC has {total} GB. Minecraft can use {allocated} GB (change it in Settings).',
 	},
-	play: { id: 'app.Eventide.home.play', defaultMessage: 'Play' },
+	play: { id: 'app.Eventide.home.launch', defaultMessage: 'Launch game' },
+	eyebrow: { id: 'app.Eventide.home.eyebrow', defaultMessage: 'Eventide client' },
+	ready: { id: 'app.Eventide.home.ready', defaultMessage: 'Ready to launch' },
+	inGame: { id: 'app.Eventide.home.in-game', defaultMessage: 'In game' },
+	setUp: { id: 'app.Eventide.home.set-up', defaultMessage: 'Set up Eventide' },
+	lede: {
+		id: 'app.Eventide.home.lede',
+		defaultMessage:
+			'A Minecraft client with 80+ built-in mods, a clean HUD, knives, skies and smooth performance. Built for 1.21.11 and 26.1.',
+	},
+	version: { id: 'app.Eventide.home.version', defaultMessage: 'Version' },
+	nickname: { id: 'app.Eventide.home.nickname', defaultMessage: 'In-game nickname' },
+	notSignedIn: { id: 'app.Eventide.home.not-signed-in', defaultMessage: 'Not signed in' },
+	memory: { id: 'app.Eventide.home.memory', defaultMessage: 'Memory' },
+	editInstance: { id: 'app.Eventide.home.edit-instance', defaultMessage: 'Edit instance and add mods' },
 	stop: { id: 'app.Eventide.home.stop', defaultMessage: 'Stop' },
 	installing: { id: 'app.Eventide.home.installing', defaultMessage: 'Installing' },
 	createFirst: { id: 'app.Eventide.home.create-first', defaultMessage: 'Set up' },
-	hotbarLabel: { id: 'app.Eventide.home.hotbar', defaultMessage: 'Find content on Modrinth' },
-	hotbarKey: { id: 'app.Eventide.home.hotbar.key', defaultMessage: 'Press {key}' },
-	modpacks: { id: 'app.Eventide.home.hotbar.modpacks', defaultMessage: 'Modpacks' },
-	mods: { id: 'app.Eventide.home.hotbar.mods', defaultMessage: 'Mods' },
-	shaders: { id: 'app.Eventide.home.hotbar.shaders', defaultMessage: 'Shaders' },
-	resourcePacks: { id: 'app.Eventide.home.hotbar.resource-packs', defaultMessage: 'Packs' },
-	servers: { id: 'app.Eventide.home.hotbar.servers', defaultMessage: 'Servers' },
 })
 
 useRootBreadcrumb({
@@ -180,242 +170,79 @@ async function onPlay() {
 		return
 	}
 	if (isInstalling.value || instance.quarantined) return
-	await run(instance.id).catch((error) => handleSevereError(error, { instanceId: instance.id }))
-}
-
-const hotbar = computed(() => [
-	{ to: '/browse/modpack', icon: LayersIcon, label: formatMessage(messages.modpacks) },
-	{ to: '/browse/mod', icon: BoxIcon, label: formatMessage(messages.mods) },
-	{ to: '/browse/shader', icon: SparklesIcon, label: formatMessage(messages.shaders) },
-	{ to: '/browse/resourcepack', icon: PaletteIcon, label: formatMessage(messages.resourcePacks) },
-	{ to: '/browse/server', icon: ServerIcon, label: formatMessage(messages.servers) },
-])
-
-function onHotbarKey(event: KeyboardEvent) {
-	if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return
-	const target = event.target as HTMLElement | null
-	if (
-		target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') ||
-		document.querySelector('[role="dialog"][aria-modal="true"]')
-	) {
-		return
-	}
-	const slot = hotbar.value[Number(event.key) - 1]
-	if (slot) {
-		event.preventDefault()
-		router.push(slot.to)
-	}
-}
-
-onMounted(() => window.addEventListener('keydown', onHotbarKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onHotbarKey))
-
-type Run = { x: number; y: number; w: number }
-
-/** The filled runs of a pixel sprite (# filled, . empty), one rect each. */
-function spriteRuns(rows: string[]): Run[] {
-	const runs: Run[] = []
-	rows.forEach((row, y) => {
-		for (let x = 0; x < row.length; x++) {
-			if (row[x] !== '#') continue
-			let end = x
-			while (end < row.length && row[end] === '#') end++
-			runs.push({ x, y, w: end - x })
-			x = end
-		}
+	await run(instance.id).catch((error) => {
+		launching.value = false
+		handleSevereError(error, { instanceId: instance.id })
 	})
-	return runs
 }
 
-// October: a pixel moon, 20 cells across
-const moonRows: Run[] = Array.from({ length: 20 }, (_, y) => {
-	const half = Math.round(Math.sqrt(Math.max(0, 100 - (y + 0.5 - 10) ** 2)))
-	return { x: 10 - half, y, w: half * 2 }
+/** The launching screen: up from Launch until the game is running (or cancelled). */
+const launching = ref(false)
+const launched = ref(false)
+
+watch(isRunning, (running) => {
+	if (!launching.value || !running) return
+	launched.value = true
+	setTimeout(() => {
+		launching.value = false
+		launched.value = false
+	}, 700)
 })
 
-// October: bats flapping by the moon, wings up and wings down
-const batUp = spriteRuns([
-	'#.........#',
-	'##.......##',
-	'###.#.#.###',
-	'.#########.',
-	'...#####...',
-])
-const batDown = spriteRuns([
-	'....#.#....',
-	'..#######..',
-	'.#########.',
-	'##.#####.##',
-	'#.........#',
-])
+async function onLaunch() {
+	if (selected.value && !isRunning.value && !isInstalling.value && !selected.value.quarantined) {
+		launching.value = true
+		launched.value = false
+	}
+	try {
+		await onPlay()
+	} catch {
+		launching.value = false
+	}
+}
 
-// October: tombstones and pumpkins standing on the front hill, as [left %, bottom %, kind]
-const graveyard: [number, number, 'stone' | 'cross' | 'pumpkin'][] = [
-	[5, 8.5, 'stone'],
-	[18, 11.3, 'pumpkin'],
-	[26, 8.5, 'cross'],
-	[75, 14.2, 'cross'],
-	[85, 11.3, 'pumpkin'],
-	[93, 11.3, 'stone'],
-]
+async function onCancelLaunch() {
+	const instance = selected.value
+	launching.value = false
+	if (instance && isRunning.value) await kill(instance.id).catch(handleError)
+}
 
-// Pixel clouds in the hero sky, in grid cells: [x, y, width]
-const clouds: [number, number, number][] = [
-	[3, 3, 7],
-	[28, 2, 9],
-	[52, 5, 6],
-]
+function editInstance() {
+	if (selected.value) router.push(`/instance/${encodeURIComponent(selected.value.id)}`)
+}
 </script>
 
 <template>
-	<div class="tvh-home">
-		<header class="tvh-greet">
-			<p class="tvh-greet__hello">
-				<template v-if="playerName">
-					{{ formatMessage(messages.welcomeBack) }} <b>{{ playerName }}</b>
-				</template>
-				<template v-else>{{ formatMessage(messages.welcome) }}</template>
-				<span v-if="octoberActive" class="tvh-greet__season">
-					<GhostSprite :size="14" />
-					{{ formatMessage(messages.october) }}
-				</span>
-			</p>
-
-			<div class="tvh-stats">
-				<span v-if="selected" class="tvh-stat">
-					<b>{{ enabledCount }}</b> {{ formatMessage(messages.modsOn) }}
-				</span>
-				<span class="tvh-stat">
-					<b>{{ instances.length }}</b>
-					{{ formatMessage(messages.instances, { count: instances.length }) }}
-				</span>
-				<span
-					v-if="ramGb"
-					v-tooltip="
-						allocatedGb
-							? formatMessage(messages.ramTooltip, { total: ramGb, allocated: allocatedGb })
-							: undefined
-					"
-					class="tvh-stat"
-				>
-					<b>{{ ramGb }}</b> {{ formatMessage(messages.ram) }}
-				</span>
+	<div class="ev-home">
+		<section class="ev-stage" aria-hidden="true">
+			<img class="ev-stage__shot" :src="preview" alt="" />
+			<div class="ev-stage__shade" />
+			<div class="ev-stage__caption">
+				<span class="ev-stage__live" />
+				{{ selected?.name ?? 'Eventide' }}
 			</div>
-		</header>
+		</section>
 
-		<section class="tvh-hero">
-			<div class="tvh-hero__sky" aria-hidden="true">
-				<svg
-					class="tvh-hero__clouds"
-					viewBox="0 0 64 24"
-					preserveAspectRatio="xMidYMin slice"
-					shape-rendering="crispEdges"
-				>
-					<g v-for="([x, y, w], index) in clouds" :key="index" class="tvh-cloud">
-						<rect :x="x + 2" :y="y" :width="w - 3" height="1" />
-						<rect :x="x" :y="y + 1" :width="w" height="1" />
-					</g>
-				</svg>
-				<template v-if="octoberActive">
-					<svg class="tvh-moon" viewBox="0 0 20 20" shape-rendering="crispEdges">
-						<rect
-							v-for="row in moonRows"
-							:key="row.y"
-							class="tvh-moon__face"
-							:x="row.x"
-							:y="row.y"
-							:width="row.w"
-							height="1"
-						/>
-						<path
-							class="tvh-moon__crater"
-							d="M5 5h3v1h1v2H8v1H5V8H4V6h1zM12 11h3v3h-1v1h-2v-1h-1v-2h1zM13 4h2v2h-2zM6 13h2v2H6z"
-						/>
-					</svg>
-					<div class="tvh-bats">
-						<svg
-							v-for="index in 3"
-							:key="index"
-							class="tvh-bat"
-							viewBox="0 0 11 5"
-							shape-rendering="crispEdges"
-						>
-							<g class="tvh-bat__up">
-								<rect
-									v-for="(cell, i) in batUp"
-									:key="i"
-									:x="cell.x"
-									:y="cell.y"
-									:width="cell.w"
-									height="1"
-								/>
-							</g>
-							<g class="tvh-bat__down">
-								<rect
-									v-for="(cell, i) in batDown"
-									:key="i"
-									:x="cell.x"
-									:y="cell.y"
-									:width="cell.w"
-									height="1"
-								/>
-							</g>
-						</svg>
-					</div>
-					<GhostSprite class="tvh-ghost tvh-ghost--far" :size="40" facing="left" />
-					<GhostSprite class="tvh-ghost tvh-ghost--left" :size="112" />
-					<GhostSprite class="tvh-ghost tvh-ghost--right" :size="84" facing="left" />
-					<div class="tvh-mist tvh-mist--back" />
-				</template>
-				<PixelSnow v-else :density="1.6" :speed="12" />
-				<svg
-					class="tvh-hero__hills"
-					viewBox="0 0 64 12"
-					preserveAspectRatio="none"
-					shape-rendering="crispEdges"
-				>
-					<path class="tvh-hill--back" d="M0 6h6v-1h7v1h5v-2h8v1h6v1h9v-2h7v1h9v1h7v6H0z" />
-					<path class="tvh-hill--front" d="M0 9h9v-1h8v1h11v-1h6v1h10v-2h8v1h12v4H0z" />
-				</svg>
-				<template v-if="octoberActive">
-					<svg
-						v-for="([left, bottom, kind], index) in graveyard"
-						:key="index"
-						class="tvh-grave"
-						:class="`tvh-grave--${kind}`"
-						:style="{ left: `${left}%`, bottom: `${bottom}%` }"
-						viewBox="0 0 6 6"
-						shape-rendering="crispEdges"
-					>
-						<template v-if="kind === 'pumpkin'">
-							<path class="tvh-pumpkin__stem" d="M2 0h1v1H2z" />
-							<path class="tvh-pumpkin__body" d="M1 1h4v1h1v3H5v1H1V5H0V2h1z" />
-							<path class="tvh-pumpkin__face" d="M1 2h1v1H1zM4 2h1v1H4zM2 4h2v1H2z" />
-						</template>
-						<path v-else-if="kind === 'cross'" d="M2 0h1v1h1v1H3v4H2V2H1V1h1z" />
-						<path v-else d="M1 0h3v1h1v5H0V1h1z" />
-					</svg>
-					<div class="tvh-mist tvh-mist--front" />
-				</template>
-			</div>
+		<section class="ev-launch">
+			<p class="ev-launch__eyebrow">{{ formatMessage(messages.eyebrow) }}</p>
+			<h1 class="ev-launch__title">
+				{{
+					isRunning
+						? formatMessage(messages.inGame)
+						: isInstalling
+							? formatMessage(messages.installing)
+							: selected
+								? formatMessage(messages.ready)
+								: formatMessage(messages.setUp)
+				}}
+			</h1>
+			<p class="ev-launch__lede">{{ formatMessage(messages.lede) }}</p>
 
-			<div class="tvh-hero__content">
-				<EventideLogo size="lg" />
-
-				<div class="tvh-playbar">
-					<button
-						class="tvh-play"
-						:class="{ 'tvh-play--stop': isRunning }"
-						:disabled="isInstalling"
-						@click="onPlay"
-					>
-						<SpinnerIcon v-if="isInstalling" class="animate-spin" />
-						<StopCircleIcon v-else-if="isRunning" />
-						<PlusIcon v-else-if="!selected" />
-						<PlayIcon v-else />
-						<span>{{ playLabel }}</span>
-					</button>
+			<div class="ev-facts">
+				<div class="ev-fact ev-fact--wide">
+					<span class="ev-fact__label">{{ formatMessage(messages.version) }}</span>
 					<InstancePicker
+						class="ev-fact__picker"
 						:instances="instances"
 						:selected="selected"
 						@select="select"
@@ -423,630 +250,276 @@ const clouds: [number, number, number][] = [
 						@create-eventide="createEventideInstance"
 					/>
 				</div>
+				<div class="ev-fact">
+					<span class="ev-fact__label">{{ formatMessage(messages.nickname) }}</span>
+					<span class="ev-fact__value">{{ playerName ?? formatMessage(messages.notSignedIn) }}</span>
+				</div>
+				<div class="ev-fact">
+					<span class="ev-fact__label">{{ formatMessage(messages.modsOn) }}</span>
+					<span class="ev-fact__value">{{ selected ? enabledCount : '-' }}</span>
+				</div>
+				<div
+					v-tooltip="
+						ramGb && allocatedGb
+							? formatMessage(messages.ramTooltip, { total: ramGb, allocated: allocatedGb })
+							: undefined
+					"
+					class="ev-fact"
+				>
+					<span class="ev-fact__label">{{ formatMessage(messages.memory) }}</span>
+					<span class="ev-fact__value">{{ allocatedGb ? `${allocatedGb} GB` : '-' }}</span>
+				</div>
+				<div class="ev-fact">
+					<span class="ev-fact__label">{{ formatMessage(messages.instances, { count: instances.length }) }}</span>
+					<span class="ev-fact__value">{{ instances.length }}</span>
+				</div>
 			</div>
 
-			<nav class="tvh-hotbar" :aria-label="formatMessage(messages.hotbarLabel)">
-				<RouterLink
-					v-for="(slot, index) in hotbar"
-					:key="slot.to"
-					v-tooltip="formatMessage(messages.hotbarKey, { key: index + 1 })"
-					:to="slot.to"
-					class="tvh-slot"
-				>
-					<span class="tvh-slot__key" aria-hidden="true">{{ index + 1 }}</span>
-					<component :is="slot.icon" class="tvh-slot__icon" />
-					<span class="tvh-slot__label">{{ slot.label }}</span>
-				</RouterLink>
-			</nav>
+			<div class="ev-launch__grow" />
+
+			<button
+				class="ev-launch__button"
+				:class="{ 'ev-launch__button--stop': isRunning }"
+				:disabled="isInstalling"
+				@click="onLaunch"
+			>
+				<SpinnerIcon v-if="isInstalling" class="animate-spin" />
+				<StopCircleIcon v-else-if="isRunning" />
+				<PlusIcon v-else-if="!selected" />
+				<PlayIcon v-else />
+				<span>{{ playLabel }}</span>
+			</button>
+			<button v-if="selected" class="ev-launch__link" @click="editInstance">
+				{{ formatMessage(messages.editInstance) }}
+			</button>
 		</section>
 
-		<div v-if="instances.length > 0 && appSettings.showJumpIn" class="tvh-jump">
-			<RecentWorldsList :recent-instances="instances" />
-		</div>
-
-		<Teleport to="#sidebar-teleport-target">
-			<QuickModsPanel :instance="selected" />
-			<InGamePanel :instance="selected" />
-			<ServersPanel :instances="instances" :selected="selected" />
-		</Teleport>
+		<LaunchOverlay :open="launching" :done="launched" @cancel="onCancelLaunch" />
 	</div>
 </template>
 
 <style scoped lang="scss">
-.tvh-home {
-	display: flex;
-	flex-direction: column;
-	gap: 1.25rem;
-	padding: 1.25rem 1.5rem 2rem;
+.ev-home {
+	display: grid;
+	grid-template-columns: minmax(0, 1.12fr) minmax(20rem, 1fr);
+	height: 100%;
+	min-height: 32rem;
 }
 
-// Greeting, like a launcher's welcome line: who's playing on the left, stats on the right
-.tvh-greet {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.6rem 1rem;
-	margin-bottom: -0.35rem;
-}
-
-.tvh-greet__hello {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.4rem;
-	margin: 0;
-	font-size: 1.05rem;
-	color: var(--color-base);
-
-	b {
-		font-family: var(--eventide-font-pixel);
-		font-weight: 600;
-		color: var(--color-contrast);
-	}
-}
-
-.tvh-greet__season {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
-	margin-left: 0.35rem;
-	padding: 0.18rem 0.55rem 0.22rem 0.4rem;
-	font-size: 0.78rem;
-	font-weight: 600;
-	color: #b4561a;
-	background: rgba(255, 138, 43, 0.12);
-	clip-path: var(--eventide-pixel-corners);
-
-	.ghost-sprite {
-		filter: none;
-	}
-}
-
-.tvh-hero {
-	// The hero is always the dark banner sky, even in light mode
-	--eventide-ice: #e3f3fc;
-	--eventide-card-bg: rgba(10, 26, 84, 0.62);
-	--eventide-card-border: rgba(140, 196, 234, 0.16);
-	--color-contrast: #e3f3fc;
-	--color-base: #b4cdea;
-	--color-secondary: #9fb9de;
-	--color-raised-bg: #0e2159;
-	--color-button-bg: #16307a;
-	--color-divider: rgba(140, 196, 234, 0.12);
-	--color-brand: #5bc8e6;
-	--color-brand-highlight: rgba(91, 200, 230, 0.2);
+.ev-stage {
 	position: relative;
-	z-index: 2;
-	min-height: 24.5rem;
-	margin-bottom: 2.6rem;
-}
-
-.tvh-hero__sky {
-	position: absolute;
-	inset: 0;
+	margin: 1rem 0 1rem 1rem;
+	border-radius: 14px;
 	overflow: hidden;
-	pointer-events: none;
-	clip-path: var(--eventide-pixel-corners-lg);
-	background: var(--eventide-stars), var(--eventide-sky-panel);
-	box-shadow: inset 0 2px 0 rgba(91, 200, 230, 0.55);
+	background: #0f0f16;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.tvh-hero__clouds {
+.ev-stage__shot {
 	position: absolute;
 	inset: 0;
 	width: 100%;
 	height: 100%;
+	object-fit: cover;
+	filter: saturate(1.05);
+	transform: scale(1.02);
+	animation: ev-drift 28s ease-in-out infinite alternate;
 }
 
-.tvh-cloud {
-	fill: rgba(227, 243, 252, 0.15);
-	animation: tvh-drift 60s linear infinite alternate;
-
-	&:nth-child(2) {
-		animation-duration: 80s;
-		fill: rgba(227, 243, 252, 0.1);
-	}
-
-	&:nth-child(3) {
-		animation-duration: 70s;
-	}
-}
-
-@keyframes tvh-drift {
-	from {
-		transform: translateX(-3px);
-	}
-	to {
-		transform: translateX(3px);
-	}
-}
-
-.tvh-hero__hills {
+.ev-stage__shade {
 	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	width: 100%;
-	height: 34%;
+	inset: 0;
+	background:
+		linear-gradient(90deg, transparent 55%, rgba(13, 13, 17, 0.9) 100%),
+		linear-gradient(0deg, rgba(8, 8, 11, 0.75) 0%, transparent 35%);
 }
 
-.tvh-hill--back {
-	fill: rgba(140, 196, 234, 0.16);
+.ev-stage__caption {
+	position: absolute;
+	left: 1.25rem;
+	bottom: 1.1rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: #d6d6df;
 }
 
-.tvh-hill--front {
-	fill: rgba(140, 196, 234, 0.24);
+.ev-stage__live {
+	width: 0.45rem;
+	height: 0.45rem;
+	border-radius: 50%;
+	background: #8b7cf6;
+	box-shadow: 0 0 0 3px rgba(139, 124, 246, 0.2);
 }
 
-.tvh-hero__content {
-	position: relative;
+.ev-launch {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 0.85rem;
-	min-height: 24.5rem;
-	padding: 2.2rem 1.5rem 5rem;
-	text-align: center;
+	padding: 2.75rem 2.25rem 1.75rem;
+	min-width: 0;
 }
 
-.tvh-stats {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 0.5rem;
+.ev-launch__eyebrow {
+	margin: 0 0 0.5rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: #7d7d8c;
 }
 
-.tvh-stat {
-	padding: 0.32rem 0.8rem 0.38rem;
-	font-size: 0.85rem;
-	color: var(--color-secondary);
-	background: var(--eventide-chip-bg);
-	clip-path: var(--eventide-pixel-corners);
-
-	b {
-		color: var(--color-contrast);
-		font-weight: 700;
-	}
+.ev-launch__title {
+	margin: 0 0 1.1rem;
+	font-size: 2.1rem;
+	line-height: 1.1;
+	color: #ececf1;
 }
 
-.tvh-playbar {
-	position: relative;
-	z-index: 5;
-	display: flex;
-	align-items: stretch;
+.ev-launch__lede {
+	margin: 0 0 1.75rem;
+	padding-left: 0.9rem;
+	border-left: 2px solid #26262e;
+	max-width: 30rem;
+	font-size: 0.9rem;
+	line-height: 1.6;
+	color: #8f8f9d;
+}
+
+.ev-facts {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 0.6rem;
-	margin-top: 1.1rem;
 }
 
-.tvh-play {
+.ev-fact {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	min-width: 0;
+	padding: 0.8rem 0.95rem;
+	border-radius: 12px;
+	background: #121217;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.ev-fact--wide {
+	grid-column: 1 / -1;
+}
+
+.ev-fact__label {
+	font-size: 0.65rem;
+	font-weight: 600;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #6e6e7c;
+}
+
+.ev-fact__value {
+	overflow: hidden;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #ececf1;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ev-fact__picker {
+	width: 100%;
+}
+
+.ev-launch__grow {
+	flex: 1;
+	min-height: 1.5rem;
+}
+
+.ev-launch__button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 0.75rem;
-	min-width: 15rem;
-	padding: 0 2.2rem 4px;
+	gap: 0.55rem;
+	width: 100%;
+	height: 3.4rem;
 	border: none;
-	font-family: var(--eventide-font-pixel);
-	font-size: 1.75rem;
-	font-weight: 600;
-	color: #04123f;
-	background: var(--eventide-play-bg);
-	clip-path: var(--eventide-pixel-corners);
-	box-shadow:
-		inset 0 -6px 0 rgba(4, 18, 63, 0.4),
-		inset 0 3px 0 rgba(255, 255, 255, 0.45);
+	border-radius: 12px;
+	background: #e7e7ee;
+	color: #0d0d11;
+	font-size: 1rem;
+	font-weight: 700;
 	cursor: pointer;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 	transition:
-		transform 0.08s ease,
-		filter 0.15s ease;
+		background-color 0.15s ease-out,
+		transform 0.12s ease-out;
 
 	svg {
-		width: 1.4rem;
-		height: 1.4rem;
+		width: 1.15rem;
+		height: 1.15rem;
 	}
 
 	&:hover:not(:disabled) {
-		filter: brightness(1.07);
+		background: #ffffff;
 	}
 
 	&:active:not(:disabled) {
-		transform: translateY(3px);
-		box-shadow:
-			inset 0 -2px 0 rgba(4, 18, 63, 0.4),
-			inset 0 3px 0 rgba(4, 18, 63, 0.15);
-	}
-
-	&:focus-visible {
-		outline: none;
-		box-shadow:
-			inset 0 0 0 3px #fff,
-			inset 0 -6px 0 rgba(4, 18, 63, 0.4);
+		transform: scale(0.985);
 	}
 
 	&:disabled {
-		cursor: progress;
-		opacity: 0.8;
+		opacity: 0.6;
+		cursor: default;
 	}
 }
 
-.tvh-play--stop {
-	color: #fff;
-	background: linear-gradient(180deg, #ff8aa0 0%, #ff496e 55%, #d92a52 100%);
-}
+.ev-launch__button--stop {
+	background: #2a1a1d;
+	color: #f2777a;
+	box-shadow: inset 0 0 0 1px rgba(229, 72, 77, 0.35);
 
-// Hotbar, sitting on the bottom edge of the sky like Minecraft's
-.tvh-hotbar {
-	position: absolute;
-	left: 50%;
-	bottom: -2.4rem;
-	z-index: 3;
-	display: flex;
-	gap: 4px;
-	padding: 6px;
-	translate: -50% 0;
-	background: #050c2a;
-	clip-path: var(--eventide-pixel-corners);
-	box-shadow:
-		inset 0 0 0 2px rgba(140, 196, 234, 0.22),
-		inset 0 -4px 0 rgba(0, 0, 0, 0.35);
-}
-
-.tvh-slot {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 0.3rem;
-	width: 5.25rem;
-	height: 4.25rem;
-	color: var(--eventide-pale);
-	text-decoration: none;
-	background: #0b1a4f;
-	box-shadow:
-		inset 3px 3px 0 rgba(0, 0, 0, 0.35),
-		inset -3px -3px 0 rgba(140, 196, 234, 0.12);
-	transition:
-		background 0.12s,
-		color 0.12s;
-
-	&:hover,
-	&:focus-visible {
-		outline: none;
-		color: #fff;
-		background: #12286e;
-		box-shadow:
-			inset 0 0 0 3px #e3f3fc,
-			inset 3px 3px 0 3px rgba(0, 0, 0, 0.25);
-	}
-
-	&:active {
-		background: #0e2159;
+	&:hover:not(:disabled) {
+		background: #33202a;
 	}
 }
 
-.tvh-slot__key {
-	position: absolute;
-	top: 4px;
-	left: 6px;
-	font-family: var(--eventide-font-pixel);
-	font-size: 0.72rem;
-	color: rgba(207, 232, 247, 0.45);
-}
-
-.tvh-slot__icon {
-	width: 1.45rem;
-	height: 1.45rem;
-	color: var(--eventide-cyan);
-}
-
-.tvh-slot__label {
-	font-size: 0.78rem;
+.ev-launch__link {
+	align-self: center;
+	margin-top: 0.85rem;
+	border: none;
+	background: none;
+	color: #7d7d8c;
+	font-size: 0.8rem;
 	font-weight: 600;
-}
+	cursor: pointer;
 
-.tvh-moon {
-	position: absolute;
-	top: 9%;
-	right: 7%;
-	width: 4.6rem;
-	height: 4.6rem;
-	filter: drop-shadow(0 0 18px rgba(143, 132, 173, 0.35));
-}
-
-.tvh-moon__face {
-	fill: #fcfaff;
-}
-
-.tvh-moon__crater {
-	fill: #ebe5f4;
-}
-
-.tvh-bats {
-	position: absolute;
-	top: 7%;
-	right: 5%;
-	width: 11rem;
-	height: 6rem;
-}
-
-.tvh-bat {
-	position: absolute;
-	width: 1.4rem;
-	fill: #2a2238;
-	animation: tvh-bat-path 9s ease-in-out infinite alternate;
-
-	&:nth-child(1) {
-		top: 10%;
-		left: 4%;
-	}
-
-	&:nth-child(2) {
-		top: 64%;
-		left: 22%;
-		width: 1.1rem;
-		animation-duration: 11s;
-		animation-delay: -3s;
-	}
-
-	&:nth-child(3) {
-		top: 30%;
-		left: 82%;
-		width: 0.9rem;
-		animation-duration: 7s;
-		animation-delay: -5s;
+	&:hover {
+		color: #c9c1ff;
 	}
 }
 
-.tvh-bat__up {
-	animation: tvh-flap 0.36s steps(1) infinite;
-}
-
-.tvh-bat__down {
-	animation: tvh-flap 0.36s steps(1) infinite reverse;
-}
-
-@keyframes tvh-flap {
-	0% {
-		opacity: 1;
-	}
-	50% {
-		opacity: 0;
-	}
-}
-
-@keyframes tvh-bat-path {
+@keyframes ev-drift {
 	from {
-		transform: translate(0, 0);
+		transform: scale(1.02) translate(0, 0);
 	}
 	to {
-		transform: translate(-1.6rem, 0.6rem);
+		transform: scale(1.08) translate(-1.5%, -1%);
 	}
 }
 
-.tvh-ghost {
-	position: absolute;
-	animation: tvh-bob 4.2s ease-in-out infinite;
-}
-
-.tvh-ghost--left {
-	left: 6%;
-	top: 26%;
-}
-
-.tvh-ghost--right {
-	right: 4%;
-	top: 44%;
-	animation-duration: 5s;
-	animation-delay: -1.6s;
-}
-
-.tvh-ghost--far {
-	left: 23%;
-	top: 12%;
-	opacity: 0.55;
-	animation-duration: 6s;
-	animation-delay: -3s;
-}
-
-// Narrow windows: keep the ghosts clear of the Play button and the instance picker
-@media (max-width: 1180px) {
-	.tvh-ghost--far,
-	.tvh-ghost--right {
-		display: none;
+@media (max-width: 900px) {
+	.ev-home {
+		grid-template-columns: 1fr;
 	}
 
-	.tvh-ghost--left {
-		left: 2%;
-		top: 8%;
-		scale: 0.7;
-		transform-origin: top left;
-	}
-}
-
-@keyframes tvh-bob {
-	0%,
-	100% {
-		translate: 0 0;
-	}
-	50% {
-		translate: 0 -10px;
-	}
-}
-
-.tvh-mist {
-	position: absolute;
-	left: -20%;
-	width: 140%;
-	height: 1.6rem;
-	background: repeating-linear-gradient(
-		90deg,
-		rgba(255, 255, 255, 0) 0,
-		rgba(255, 255, 255, 0.7) 9rem,
-		rgba(255, 255, 255, 0) 20rem
-	);
-	animation: tvh-mist 26s linear infinite alternate;
-}
-
-.tvh-mist--back {
-	bottom: 21%;
-	opacity: 0.8;
-}
-
-.tvh-mist--front {
-	bottom: 4%;
-	height: 1.2rem;
-	opacity: 0.6;
-	animation-duration: 34s;
-	animation-direction: alternate-reverse;
-}
-
-@keyframes tvh-mist {
-	from {
-		transform: translateX(-4%);
-	}
-	to {
-		transform: translateX(4%);
-	}
-}
-
-.tvh-grave {
-	position: absolute;
-	width: 1.5rem;
-	height: 1.5rem;
-	translate: -50% 0;
-	fill: #a79dbf;
-}
-
-.tvh-grave--pumpkin {
-	width: 1.8rem;
-	height: 1.8rem;
-	filter: drop-shadow(0 0 10px rgba(255, 138, 43, 0.45));
-}
-
-.tvh-pumpkin__stem {
-	fill: #4e7a3a;
-}
-
-.tvh-pumpkin__body {
-	fill: #ff8a2b;
-}
-
-.tvh-pumpkin__face {
-	fill: #ffd45c;
-	animation: tvh-flicker 2.4s steps(1) infinite;
-}
-
-@keyframes tvh-flicker {
-	0%,
-	70%,
-	100% {
-		fill: #ffd45c;
-	}
-	72%,
-	80% {
-		fill: #ffe9a3;
+	.ev-stage {
+		min-height: 14rem;
+		margin: 1rem 1rem 0;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.tvh-cloud,
-	.tvh-ghost,
-	.tvh-bat,
-	.tvh-bat__up,
-	.tvh-bat__down,
-	.tvh-mist,
-	.tvh-pumpkin__face {
+	.ev-stage__shot {
 		animation: none;
 	}
-
-	.tvh-bat__down {
-		display: none;
-	}
-
-	.tvh-play:active:not(:disabled) {
-		transform: none;
-	}
-}
-</style>
-
-<style lang="scss">
-// October: a pale moonlit graveyard with ghosts, everything else in white and ink. Not scoped,
-// because it hangs off the `eventide-october` class on <html>; every class here is tvh- prefixed.
-html.eventide-october .tvh-hero {
-	--eventide-ice: #221c30;
-	--eventide-card-bg: rgba(255, 255, 255, 0.86);
-	--eventide-card-border: rgba(34, 28, 48, 0.1);
-	--color-contrast: #221c30;
-	--color-base: #3d3650;
-	--color-secondary: #6f6886;
-	--color-raised-bg: #ffffff;
-	--color-button-bg: #f1eff6;
-	--color-divider: rgba(34, 28, 48, 0.08);
-	--color-brand: #2d2440;
-	--color-brand-highlight: rgba(45, 36, 64, 0.08);
-}
-
-html.eventide-october .tvh-hero__sky {
-	background:
-		radial-gradient(38% 46% at 88% 14%, rgba(143, 132, 173, 0.22), transparent 70%),
-		var(--eventide-sky-panel);
-	box-shadow:
-		inset 0 0 0 2px rgba(34, 28, 48, 0.06),
-		inset 0 2px 0 rgba(255, 255, 255, 0.9);
-}
-
-html.eventide-october .tvh-cloud {
-	fill: rgba(143, 132, 173, 0.14);
-}
-
-html.eventide-october .tvh-hill--back {
-	fill: #ddd7ea;
-}
-
-html.eventide-october .tvh-hill--front {
-	fill: #c9c0db;
-}
-
-html.eventide-october .tvh-play:not(.tvh-play--stop) {
-	color: #ffffff;
-	box-shadow:
-		inset 0 -6px 0 rgba(10, 6, 20, 0.45),
-		inset 0 3px 0 rgba(255, 255, 255, 0.16);
-}
-
-html.eventide-october .tvh-hotbar {
-	background: #ffffff;
-	box-shadow:
-		inset 0 0 0 2px rgba(34, 28, 48, 0.1),
-		inset 0 -4px 0 rgba(34, 28, 48, 0.08),
-		0 10px 24px rgba(60, 48, 92, 0.12);
-}
-
-html.eventide-october .tvh-slot {
-	color: #3d3650;
-	background: #f6f5fa;
-	box-shadow:
-		inset 3px 3px 0 rgba(34, 28, 48, 0.07),
-		inset -3px -3px 0 rgba(255, 255, 255, 0.9);
-
-	&:hover,
-	&:focus-visible {
-		color: #221c30;
-		background: #ffffff;
-		box-shadow:
-			inset 0 0 0 3px #2d2440,
-			inset 3px 3px 0 3px rgba(34, 28, 48, 0.06);
-	}
-}
-
-html.eventide-october .tvh-slot__key {
-	color: rgba(111, 104, 134, 0.6);
-}
-
-html.eventide-october .tvh-slot__icon {
-	color: #6d5fa0;
 }
 </style>

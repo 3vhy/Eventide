@@ -112,7 +112,8 @@ public final class MainMenuScreen extends CompatTitleScreen {
 		float cx = this.width / 2f;
 		float left = cx - column / 2f;
 		float dockH = 145 * u;
-		float content = 705 * u;
+		Config.LastPlayed last = LastPlayed.get();
+		float content = (last != null ? 705 : 485) * u;
 		float bottomRoom = dockH + 56 * u;
 		float top = Math.max(6, (this.height - bottomRoom - content) / 2f - 14 * u);
 
@@ -145,7 +146,6 @@ public final class MainMenuScreen extends CompatTitleScreen {
 		Paint.opacity(old);
 
 		in = intro(now, 150);
-		Config.LastPlayed last = LastPlayed.get();
 		if (last != null) {
 			old = Paint.opacity(Paint.opacity() * in);
 			continueCard(d, last, left, top + (940 - 405) * u + 6 * u * (1 - in), column, 168 * u, u, mouseX, mouseY);

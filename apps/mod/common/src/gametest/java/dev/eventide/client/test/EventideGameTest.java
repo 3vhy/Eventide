@@ -1618,6 +1618,11 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.waitTicks(40);
 			shot(context, "eventide-main-menu");
 			mainMenuHover(context);
+			Config.LastPlayed saved = context.computeOnClient(client -> Config.get().lastPlayed);
+			context.runOnClient(client -> Config.get().lastPlayed = null);
+			context.waitTicks(3);
+			shot(context, "eventide-main-menu-nothing-played");
+			context.runOnClient(client -> Config.get().lastPlayed = saved);
 			context.getInput().pressKey(EventideClient.openSettingsKey);
 			context.waitTicks(30);
 			shot(context, "eventide-menu-from-menu");

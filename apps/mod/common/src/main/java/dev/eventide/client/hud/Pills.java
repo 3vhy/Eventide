@@ -30,8 +30,12 @@ public final class Pills {
 
 	/** A pill's glass: see-through indigo washed with the theme colour, rounded corners and a light lavender edge. */
 	public static void glass(Draw d, float x1, float y1, float x2, float y2, float strength) {
+		glass(d, x1, y1, x2, y2, (y2 - y1) * 0.32f, strength);
+	}
+
+	/** The same glass with corners of radius {@code r}, for cards. */
+	public static void glass(Draw d, float x1, float y1, float x2, float y2, float r, float strength) {
 		if (strength <= 0.01f) return;
-		float r = (y2 - y1) * 0.32f;
 		int accent = Accent.get();
 		float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
 		float hair = Hud.hairline(d);

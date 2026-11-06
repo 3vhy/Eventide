@@ -365,6 +365,9 @@ public final class Modules {
 			"How dark the bar is", 0, 100, 5, 75, "%"));
 	public static final Module MUSIC = sized(background(new Module("music", "Music Player",
 			"The song playing on Spotify, YouTube or any other app", Category.HUD, false).icon("music").markNew(), 90));
+	public static final Choice MUSIC_STYLE = MUSIC.add(new Choice("style", "Style",
+			"Glass: a see-through card with the buttons under the song. Compact: a slim dark card with the buttons at its side. Classic: the big card",
+			0, "Glass", "Compact", "Classic"));
 	public static final Toggle MUSIC_ART = MUSIC.add(new Toggle("art", "Album art", "The cover next to the song", true));
 	public static final Toggle MUSIC_PROGRESS = MUSIC.add(new Toggle("progress", "Progress bar", "Time played and time left", true));
 	public static final Toggle MUSIC_VOLUME = MUSIC.add(new Toggle("volume", "Volume", "Windows' volume under the song", false));
@@ -372,7 +375,7 @@ public final class Modules {
 	public static final Toggle MUSIC_PAUSED = MUSIC.add(new Toggle("paused", "Show when paused",
 			"Keep it on screen while the music is paused", true));
 	public static final Toggle MUSIC_LYRICS = MUSIC.add(new Toggle("lyrics", "Lyrics line",
-			"The line being sung, above the player, filling in as it's sung (lyrics from LRCLIB)", true));
+			"The line being sung in a bar under the player (over it in Classic), filling in as it's sung (lyrics from LRCLIB)", true));
 	public static final Module MODULE_LIST = sized(background(new Module("module_list", "Active Modules",
 			"The mods you have on, listed down the side of the screen", Category.HUD, true).icon("list").markNew(), 90));
 	public static final Toggle MODULE_LIST_HUD = MODULE_LIST.add(new Toggle("hud", "HUD mods",

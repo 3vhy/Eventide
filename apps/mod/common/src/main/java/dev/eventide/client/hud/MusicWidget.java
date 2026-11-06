@@ -44,6 +44,13 @@ final class MusicWidget extends HudWidget {
 	private static final float NEXT_CAP = 14 * 0.727f * S;
 	private static final long CHANGE_MS = 520;
 	private static final Grad ART_FILL = new Grad(0xFF2A2142, 0xFF2A2142, 0);
+	/** Glass and Compact: the cards' sizes and the lyrics bar under them. */
+	private static final float GLASS_W = 172;
+	private static final float GLASS_H = 50;
+	private static final float COMPACT_W = 190;
+	private static final float COMPACT_H = 44;
+	private static final float BAR_H = 16;
+	private static final float BAR_GAP = 3;
 
 	private final Anim appear = new Anim(0, 480, Ease.OUT);
 	private final Anim playing = new Anim(0, 260, Ease.OUT);
@@ -100,9 +107,17 @@ final class MusicWidget extends HudWidget {
 		return playingNow() || appear.get() > 0.01f;
 	}
 
+	private static boolean classic() {
+		return Modules.MUSIC_STYLE.is("Classic");
+	}
+
+	private static boolean compact() {
+		return Modules.MUSIC_STYLE.is("Compact");
+	}
+
 	@Override
 	public int width(Minecraft mc) {
-		return W;
+		return classic() ? W : Math.round(compact() ? COMPACT_W : GLASS_W);
 	}
 
 	private float cardHeight(NowPlaying song) {
@@ -111,6 +126,7 @@ final class MusicWidget extends HudWidget {
 
 	@Override
 	public int height(Minecraft mc) {
+		if (!classic()) return (int) Math.ceil((compact() ? COMPACT_H : GLASS_H) + (BAR_GAP + BAR_H) * lyricsShown.get());
 		NowPlaying song = MusicBridge.current();
 		return (int) Math.ceil(LYRICS_H * lyricsShown.get() + cardHeight(song != null ? song : last != null ? last : sample()));
 	}
@@ -138,6 +154,11 @@ final class MusicWidget extends HudWidget {
 		float old = Paint.opacity(Paint.opacity() * a);
 		float top = y - (1 - a) * 8;
 		boolean shadow = textShadow();
+		if (!classic()) {
+			drawSlim(d, song, current, x, top, now, dt, shadow, compact());
+			Paint.opacity(old);
+			return;
+		}
 		float shown = lyricsShown.get();
 		if (shown > 0.01f) {
 			float lyricOld = Paint.opacity(Paint.opacity() * shown);
@@ -294,26 +315,177 @@ final class MusicWidget extends HudWidget {
 
 	/** The cover with soft corners, fading in for a new song over the website's violet tile with the Eventide mark, and the app's icon on its corner. */
 	private static void drawArt(Draw d, NowPlaying song, float x, float y, float change) {
-		float r = 12 * S;
+		drawArt(d, song, x, y, ART, 12 * S, change);
+	}
+
+	private static void drawArt(Draw d, NowPlaying song, float x, float y, float size, float r, float change) {
 		boolean hasArt = song.art() != null;
 		if (!hasArt || change < 1) {
-			Paint.rect(d, x, y, x + ART, y + ART, r, ART_FILL);
-			Paint.stroke(d, x, y, x + ART, y + ART, r, Hud.hairline(d), 0x1FFFFFFF);
-			float mark = 30 * S;
-			Logo.mark(d, x + (ART - mark) / 2f, y + (ART - mark) / 2f, mark, 1, System.currentTimeMillis());
+			Paint.rect(d, x, y, x + size, y + size, r, ART_FILL);
+			Paint.stroke(d, x, y, x + size, y + size, r, Hud.hairline(d), 0x1FFFFFFF);
+			float mark = size * 0.6f;
+			Logo.mark(d, x + (size - mark) / 2f, y + (size - mark) / 2f, mark, 1, System.currentTimeMillis());
 		}
 		if (hasArt) {
 			float old = Paint.opacity(Paint.opacity() * change);
-			MusicArt.COVER.draw(d, song.art(), song.artVersion(), x, y, ART, r);
+			MusicArt.COVER.draw(d, song.art(), song.artVersion(), x, y, size, r);
 			Paint.opacity(old);
 		}
 		if (song.icon() != null) {
-			float badge = ART * 0.36f;
-			float bx = x + ART - badge * 0.75f;
-			float by = y + ART - badge * 0.75f;
+			float badge = size * 0.36f;
+			float bx = x + size - badge * 0.75f;
+			float by = y + size - badge * 0.75f;
 			Paint.circle(d, bx + badge / 2f, by + badge / 2f, badge / 2f + 1, Tokens.GLASS_SOLID);
 			MusicArt.ICON.draw(d, song.icon(), song.iconVersion(), bx, by, badge, badge / 2f);
 		}
+	}
+
+	/**
+	 * Glass and Compact: a small card with the cover on its left and the title and artist beside it. Glass (see-
+	 * through, like the HUD's pills) has back, play / pause and next under the song and a bar along its bottom;
+	 * Compact (slim and dark) has the buttons at its right, play / pause in a lilac square, and a thin bar with the
+	 * time. The line being sung sits in a bar under the card.
+	 */
+	private void drawSlim(Draw d, NowPlaying song, NowPlaying current, float x, float top, long now, float dt, boolean shadow, boolean compact) {
+		float w = compact ? COMPACT_W : GLASS_W;
+		float h = compact ? COMPACT_H : GLASS_H;
+		float strength = glassStrength();
+		if (compact) {
+			if (strength > 0.01f) {
+				float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
+				Paint.shadow(d, x, top, x + w, top + h, 7, 0, 2, 10, 0, 0x55000000);
+				Paint.rect(d, x, top, x + w, top + h, 7, 0xE8110E1F);
+				Paint.stroke(d, x, top, x + w, top + h, 7, Hud.hairline(d), 0x1CFFFFFF);
+				Paint.opacity(old);
+			}
+		} else {
+			Pills.glass(d, x, top, x + w, top + h, 9, strength);
+		}
+		float change = Ease.OUT.apply((now - changedAt) / (double) CHANGE_MS);
+		float art = compact ? 32 : 38;
+		float pad = (h - art) / 2f;
+		float textX = x + pad;
+		if (Modules.MUSIC_ART.get()) {
+			drawArt(d, song, x + pad, top + pad, art, art * 0.16f, change);
+			textX = x + pad + art + 8;
+		}
+		float textRight = x + w - (compact ? 60 : 10);
+		float metaW = textRight - textX;
+		float titleCap = 5.6f;
+		float artistCap = 4.5f;
+		float titleTop = top + (compact ? 9.5f : 8.5f);
+		float artistTop = titleTop + 9;
+		if (change < 1 && !oldTitle.isEmpty()) {
+			float old = Paint.opacity(Paint.opacity() * (1 - change));
+			slimMeta(d, oldTitle, oldArtist, textX, titleTop - 3 * change, artistTop - 3 * change, metaW, titleCap, artistCap, shadow);
+			Paint.opacity(old);
+		}
+		float in = Paint.opacity(Paint.opacity() * change);
+		slimMeta(d, song.title(), song.artist(), textX, titleTop + 3 * (1 - change), artistTop + 3 * (1 - change), metaW, titleCap, artistCap, shadow);
+		Paint.opacity(in);
+		if (compact) compactControls(d, x + w - 30, top + 15.5f, now);
+		else glassControls(d, (textX + x + w - 10) / 2f, top + 31, now);
+		if (progress(song)) {
+			double position = song.positionNow();
+			float target = song.duration() > 0 ? (float) Math.max(0, Math.min(1, position / song.duration())) : 0;
+			if (shownProgress < 0 || Math.abs(target - shownProgress) < 0.004f) shownProgress = target;
+			else shownProgress += (target - shownProgress) * (1 - (float) Math.exp(-dt * 9));
+			float barY = compact ? top + 33.5f : top + 41.5f;
+			float bh = compact ? 2.2f : 2.6f;
+			float bx1 = textX;
+			float bx2 = compact ? x + w - 30 : x + w - 10;
+			Paint.rect(d, bx1, barY - bh / 2f, bx2, barY + bh / 2f, bh / 2f, compact ? 0x2EFFFFFF : 0x4D0E0A2A);
+			float fx = bx1 + (bx2 - bx1) * shownProgress;
+			int lilac = Accent.lighten(fill().from(), 0.35f);
+			if (fx > bx1 + bh) Paint.rect(d, bx1, barY - bh / 2f, fx, barY + bh / 2f, bh / 2f, lilac);
+			if (compact) {
+				String played = NowPlaying.time(position);
+				float cap = 4.4f;
+				Hud.text(d, played, x + w - 8 - Type.width(played, cap, Weight.SEMIBOLD), barY - cap / 2f, cap, Weight.SEMIBOLD, Tokens.TEXT_2, shadow);
+			}
+		}
+		float shown = lyricsShown.get();
+		if (shown > 0.01f && current != null) {
+			float old = Paint.opacity(Paint.opacity() * shown);
+			lyricBar(d, current, x, top + h + BAR_GAP, w, shadow);
+			Paint.opacity(old);
+		}
+	}
+
+	private static void slimMeta(Draw d, String title, String artist, float x, float titleTop, float artistTop, float width, float titleCap,
+			float artistCap, boolean shadow) {
+		Hud.text(d, Type.fit(title.isBlank() ? "Unknown song" : title, width, titleCap, Weight.BOLD), x, titleTop, titleCap, Weight.BOLD, Tokens.TEXT,
+				shadow);
+		Hud.text(d, Type.fit(artist, width, artistCap, Weight.MEDIUM), x, artistTop, artistCap, Weight.MEDIUM, Tokens.TEXT_2, shadow);
+	}
+
+	/** The line being sung in a dark bar under the card, after a lilac sound-wave icon, filling in as it's sung. */
+	private void lyricBar(Draw d, NowPlaying song, float x, float y, float w, boolean shadow) {
+		float strength = glassStrength();
+		if (strength > 0.01f) {
+			float old = Paint.opacity(Paint.opacity() * Math.min(1, strength * 1.15f));
+			Paint.rect(d, x, y, x + w, y + BAR_H, 5, 0xBF110E1F);
+			Paint.stroke(d, x, y, x + w, y + BAR_H, 5, Hud.hairline(d), 0x14FFFFFF);
+			Paint.opacity(old);
+		}
+		float cy = y + BAR_H / 2f;
+		Paint.icon(d, "audio-lines", x + 6, cy - 3.5f, 7, Pills.lavender());
+		float cap = 5f;
+		float t = lyrics.change();
+		String line = lyrics.current().isBlank() ? "· · ·" : Type.fit(lyrics.current(), w - 25, cap, Weight.BOLD);
+		float sung = lyrics.current().isBlank() ? 1 : lyrics.sung(song);
+		float old = Paint.opacity(Paint.opacity() * t);
+		Hud.karaoke(d, line, x + 17, cy - cap / 2f + 2 * (1 - t), cap, Weight.BOLD, sung, 0xFFFFFFFF, 0x8CF6F3FF, shadow);
+		Paint.opacity(old);
+	}
+
+	/** Glass: back, play / pause and next, small and white, centred under the song. */
+	private void glassControls(Draw d, float cx, float cy, long now) {
+		float icon = 7;
+		float spread = 14;
+		float flash = pressed >= 0 ? 1 - Math.min(1, (now - pressedAt) / 220f) : 0;
+		for (int i = 0; i < 3; i++) {
+			if (pressed == i && flash > 0) Paint.circle(d, cx + (i - 1) * spread, cy, icon * 0.85f, Paint.fade(0xFFFFFFFF, 0.2f * flash));
+		}
+		Paint.icon(d, "skip-back", cx - spread - icon / 2f, cy - icon / 2f, icon, 1.2f, true, 0xFFFFFFFF, null);
+		Paint.icon(d, "skip-forward", cx + spread - icon / 2f, cy - icon / 2f, icon, 1.2f, true, 0xFFFFFFFF, null);
+		playPause(d, cx, cy, icon, 0xFFFFFFFF);
+		remember(d, 0, cx - spread, cy, icon * 1.6f);
+		remember(d, 1, cx, cy, icon * 1.6f);
+		remember(d, 2, cx + spread, cy, icon * 1.6f);
+	}
+
+	/** Compact: a back chevron, play / pause in a lilac rounded square, and a next chevron. */
+	private void compactControls(Draw d, float cx, float cy, long now) {
+		float box = 13;
+		float spread = 17;
+		int lilac = Pills.lavender();
+		float flash = pressed >= 0 ? 1 - Math.min(1, (now - pressedAt) / 220f) : 0;
+		float pop = 0.92f + 0.08f * Ease.SPRING.apply(Math.min(1, (now - toggledAt) / 420.0));
+		float half = box / 2f * pop;
+		Paint.rect(d, cx - half, cy - half, cx + half, cy + half, 4 * pop, Paint.fade(lilac, 0.32f + (pressed == 1 ? 0.25f * flash : 0)));
+		playPause(d, cx, cy, 6.5f, Accent.lighten(lilac, 0.4f));
+		for (int i = 0; i <= 2; i += 2) {
+			float bx = cx + (i - 1) * spread;
+			if (pressed == i && flash > 0) Paint.circle(d, bx, cy, 6, Paint.fade(0xFFFFFFFF, 0.18f * flash));
+			Paint.icon(d, i == 0 ? "chevron-left" : "chevron-right", bx - 3.5f, cy - 3.5f, 7, Tokens.TEXT_2);
+		}
+		remember(d, 0, cx - spread, cy, 10);
+		remember(d, 1, cx, cy, box);
+		remember(d, 2, cx + spread, cy, 10);
+	}
+
+	/** Pause while playing and play while paused, turning into each other. */
+	private void playPause(Draw d, float cx, float cy, float glyph, int color) {
+		float p = playing.get();
+		float pause = glyph * (0.6f + 0.4f * p);
+		float old = Paint.opacity(Paint.opacity() * p);
+		Paint.icon(d, "pause", cx - pause / 2f, cy - pause / 2f, pause, 1, true, color, null);
+		Paint.opacity(old);
+		float play = glyph * (0.6f + 0.4f * (1 - p));
+		old = Paint.opacity(Paint.opacity() * (1 - p));
+		Paint.icon(d, "play", cx - play / 2f + 0.3f, cy - play / 2f, play, 1, true, color, null);
+		Paint.opacity(old);
 	}
 
 	/**

@@ -1465,6 +1465,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> {
 			Modules.MUSIC.set(true);
 			MusicBridge.simulate(SAMPLE_SONG);
+			Lyrics.simulate(MusicBridge.current(), "[00:50.00] Snow falls on the quiet town\n[00:55.00] Every light is burning down\n"
+					+ "[01:05.00] Hold on, we're almost home\n[01:20.00] Under violet skies we roam");
 			Modules.SKIES.set(true);
 			dev.eventide.client.sky.LivingSky.select(dev.eventide.client.sky.SkyType.GALAXY);
 			Modules.KEYSTROKES.set(false);
@@ -1475,6 +1477,13 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(30);
 		check(failed, "the Watermark shows on the HUD", context.computeOnClient(client -> HudWidgets.WATERMARK.shown()));
 		shot(context, "eventide-hud-look");
+		context.runOnClient(client -> Modules.MUSIC_STYLE.set("Compact"));
+		context.waitTicks(5);
+		shot(context, "eventide-music-compact");
+		context.runOnClient(client -> Modules.MUSIC_STYLE.set("Classic"));
+		context.waitTicks(5);
+		shot(context, "eventide-music-classic");
+		context.runOnClient(client -> Modules.MUSIC_STYLE.reset());
 		context.setScreen(() -> new MusicShowcase(HudWidgets.MUSIC));
 		context.waitTicks(10);
 		shot(context, "eventide-music-card");

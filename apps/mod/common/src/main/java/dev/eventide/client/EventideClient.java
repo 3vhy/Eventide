@@ -96,6 +96,7 @@ public final class EventideClient implements ClientModInitializer {
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(EventideClient::tick);
 		dev.eventide.client.module.GroundFx.init();
+		ClientPlayConnectionEvents.JOIN.register((listener, sender, client) -> client.execute(() -> dev.eventide.client.gui.LastPlayed.record(client)));
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> {
 			PopTracker.reset();
 			TpsTracker.reset();
@@ -119,7 +120,8 @@ public final class EventideClient implements ClientModInitializer {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((shown, event) ->
 						!(event.button() == 0 && HudWidgets.musicClick(event.x(), event.y())));
 			}
-			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen || screen instanceof PauseScreen) {
+			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen || screen instanceof dev.eventide.client.gui.MainMenuScreen
+					|| screen instanceof PauseScreen) {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.afterKeyPress(screen).register((shown, event) -> {
 					if (openSettingsKey != null && openSettingsKey.matches(event) && client.screen == shown) {
 						dev.eventide.client.gui.menu.MenuHost.show(shown, dev.eventide.client.module.Module.Category.RENDER);

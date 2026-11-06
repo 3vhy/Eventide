@@ -19,6 +19,8 @@ import net.minecraft.resources.Identifier;
 public final class MusicArt {
 	public static final MusicArt COVER = new MusicArt("music_art");
 	public static final MusicArt ICON = new MusicArt("music_icon");
+	/** The main menu's Continue card: the icon of the world or server you last played on. */
+	public static final MusicArt PLACE = new MusicArt("last_played");
 	private static final int SAMPLES = 4;
 
 	private final String path;

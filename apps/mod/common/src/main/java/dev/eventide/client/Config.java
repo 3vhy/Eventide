@@ -51,6 +51,19 @@ public final class Config {
 	/** The skin file (in eventide/skins) Skin Protect shows when set to use a file. */
 	public String skinFile = "";
 
+	/** Where you last played, for the main menu's Continue card (null until you've played). */
+	public LastPlayed lastPlayed = null;
+
+	/** A world or server you played on: "world" (target is its folder) or "server" (target is its address). */
+	public static final class LastPlayed {
+		public String kind = "world";
+		public String name = "";
+		public String target = "";
+		public long time = 0;
+		/** Its icon as base64 PNG, or empty. */
+		public String icon = "";
+	}
+
 	/** Overrides the Discord application ID the mod was built with. */
 	public String discordAppId = "";
 	/** The player's own options, put back when the Eventide module that changes them is turned off. */

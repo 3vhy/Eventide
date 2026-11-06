@@ -274,7 +274,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		EventideClient.LOG.info("eventide-check: \"PANELS AND MUSIC\" is {} wide in the clean font, {} in Minecraft's bold", fontWidths[0],
 				fontWidths[1]);
 		check(failed, "clean font (Inter) loads from the mod's resources", fontWidths[0] > 20 && fontWidths[0] != fontWidths[1]);
-		check(failed, "the title screen is Minecraft's own again", context.computeOnClient(client -> client.screen instanceof TitleScreen));
+		check(failed, "the main menu is Eventide's", context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen));
 		List<String> unlisted = new ArrayList<>();
 		for (java.lang.reflect.Field field : Modules.class.getFields()) {
 			try {
@@ -285,16 +285,20 @@ public final class EventideGameTest implements FabricClientGameTest {
 		}
 		EventideClient.LOG.info("eventide-check: modules missing from the menu: {}", unlisted);
 		check(failed, "every mod is in the menu (Modules.ALL)", unlisted.isEmpty());
-		check(failed, "main menu keeps Singleplayer, Multiplayer, Realms, Options and Quit", context.computeOnClient(client -> {
-			int found = 0;
-			for (AbstractWidget widget : Compat.widgets(client.screen)) {
-				if (widget.visible && widget.getMessage().getContents() instanceof TranslatableContents key
-						&& List.of("menu.singleplayer", "menu.multiplayer", "menu.online", "menu.options", "menu.quit").contains(key.getKey())) {
-					found++;
-				}
+		check(failed, "main menu has Singleplayer, Multiplayer, Realms, Options, the Eventide menu and Quit", context.computeOnClient(client -> {
+			if (!(client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu)) return false;
+			for (String id : List.of("singleplayer", "multiplayer", "realms", "options", "eventide", "quit")) {
+				if (menu.centre(id) == null) return false;
 			}
-			return found == 5;
+			return true;
 		}));
+		context.runOnClient(client -> Modules.MAIN_MENU.set(false));
+		context.waitTicks(5);
+		check(failed, "Main Menu off brings back Minecraft's own title screen", context.computeOnClient(client ->
+				client.screen != null && client.screen.getClass() == TitleScreen.class));
+		shot(context, "eventide-main-menu-vanilla");
+		context.runOnClient(client -> Modules.MAIN_MENU.set(true));
+		context.waitTicks(5);
 		// Mod Menu (CI adds it): Eventide's own entry in its list, with the new icon and name
 		boolean modMenuOpen = context.computeOnClient(client -> {
 			try {
@@ -906,7 +910,12 @@ public final class EventideGameTest implements FabricClientGameTest {
 
 		context.waitTicks(10);
 		check(failed, "Eventide main menu after leaving a world",
-				context.computeOnClient(client -> client.screen instanceof TitleScreen));
+				context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen));
+		context.waitTicks(20);
+		shot(context, "eventide-main-menu-continue");
+		check(failed, "the main menu's Continue card offers the world you just left", context.computeOnClient(client ->
+				dev.eventide.client.gui.LastPlayed.get() != null && client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu
+						&& menu.centre("continue") != null));
 		int freezesBefore = FreezeWatch.freezes();
 		context.runOnClient(client -> {
 			try {

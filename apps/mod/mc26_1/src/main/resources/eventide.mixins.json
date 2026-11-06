@@ -37,6 +37,7 @@
 		"LivingEntityRendererInvoker",
 		"LivingEntityRendererMixin",
 		"LocalPlayerMixin",
+		"MainMenuSwapMixin",
 		"MinecraftMixin",
 		"MouseHandlerMixin",
 		"OptionInstanceAccessor",

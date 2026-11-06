@@ -536,6 +536,9 @@ public final class Modules {
 	public static final Choice THEME_WINDOW_TITLE = THEME.add(new Choice("window_title", "Window title",
 			"Keep \"Minecraft\" in it so Medal, OBS and Discord recognise the game", 0,
 			"Minecraft - Eventide", "Eventide").group("Window"));
+	public static final Module MAIN_MENU = new Module("main_menu", "Main Menu",
+			"Eventide's main menu: a greeting, big buttons, a Continue card for where you last played and a dock; off for Minecraft's own",
+			Category.CLIENT, true).icon("house").markNew();
 	public static final Module UI_ANIMATIONS = new Module("ui_animations", "UI Animations",
 			"Eventide's menus and HUD glide and fade; off, everything snaps into place at once", Category.CLIENT, true).icon("sparkle").markNew();
 	public static final Slider UI_ANIMATIONS_SPEED = UI_ANIMATIONS.add(new Slider("speed", "Length", "How long each glide takes", 50, 200, 10, 100, "%"));
@@ -568,8 +571,8 @@ public final class Modules {
 			STAFF_LIST, TOGGLE_SPRINT, WAYPOINTS, FULLBRIGHT, NO_FOG, WEATHER, RIPPLE, NO_PARTICLES, NO_EXPLOSION_PARTICLES, BLOCK_OUTLINE,
 			SHULKER_PREVIEW, CHAT, TEXT_HOTKEYS, TAB_EDITOR, CONFIRM_DISCONNECT, BORDERLESS, STAY_OPEN, FPS_CAP, WATERMARK, PLAYER_NAME,
 			FPS, CPS, PING, TPS, CLOCK, MEMORY, SERVER, COORDS, KEYSTROKES, ARMOR, POTIONS, SCOREBOARD, BOSS_BARS, HOTBAR, MUSIC,
-			MODULE_LIST, KNIVES, SWORD_MODELS, HAND_AURA, MODEL_SKIN, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, UI_ANIMATIONS,
-			PERFORMANCE, DISCORD, PROFILES);
+			MODULE_LIST, KNIVES, SWORD_MODELS, HAND_AURA, MODEL_SKIN, HATS, WINGS, JUMP_CIRCLES, BADGE, MENU_NAME, THEME, MAIN_MENU,
+			UI_ANIMATIONS, PERFORMANCE, DISCORD, PROFILES);
 
 	/** The modules in one tab, in order. */
 	public static List<Module> in(Category category) {
@@ -597,6 +600,11 @@ public final class Modules {
 		Zoom.tick(mc);
 		Freelook.tick(mc);
 		StayOpen.tick(mc);
+		if (mc.screen instanceof dev.eventide.client.gui.MainMenuScreen && !MAIN_MENU.enabled()) {
+			mc.setScreen(new net.minecraft.client.gui.screens.TitleScreen());
+		} else if (mc.screen != null && mc.screen.getClass() == net.minecraft.client.gui.screens.TitleScreen.class && MAIN_MENU.enabled()) {
+			mc.setScreen(new dev.eventide.client.gui.MainMenuScreen());
+		}
 		Target.tick(mc);
 		Combo.tick(mc);
 		JumpReset.tick(mc);

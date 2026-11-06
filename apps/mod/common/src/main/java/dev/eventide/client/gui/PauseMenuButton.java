@@ -2,7 +2,6 @@ package dev.eventide.client.gui;
 
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.gui.menu.MenuHost;
-import dev.eventide.client.module.Module.Category;
 import dev.eventide.client.ui.Logo;
 import dev.eventide.client.module.ConfirmDisconnect;
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ public final class PauseMenuButton {
 			}
 		}
 		String label = LABEL;
-		Button mods = Button.builder(Component.literal(label), button -> MenuHost.show(screen, Category.RENDER)).build();
+		Button mods = Button.builder(Component.literal(label), button -> MenuHost.show(screen, null)).build();
 		GEMS.add(mods);
 		Compat.afterScreen(screen, d -> {
 			for (AbstractWidget widget : Compat.widgets(screen)) {

@@ -20,20 +20,20 @@ import dev.eventide.client.ui.Type.Weight;
 import dev.eventide.client.ui.Widgets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /**
- * The Eventide mod menu: one window with a sidebar of sections down the left (each with how many of its
- * mods are on), the section's title and a search field across the top, and its mods as cards in a grid,
- * each with its icon on a tile, its name, a line or two about it, a settings button and a switch. Click a
- * card to switch it; its settings open in a panel built into the right of the window, and the grid
- * makes room for it. The sidebar's foot holds Edit HUD, the Screen / Floating switch and your profile.
+ * The Eventide mod menu: one window with a rail of sections down the left (Mods, Cosmetics, Client and
+ * Profiles, with Floating and Edit HUD at its foot), the section's title, a line about it (or about the mod
+ * under the mouse) and a search field across the top, a row of pills for the Mods categories, and the mods
+ * as cards in a grid, each with its icon on a tile, its name, a line about it and a dot that lights when
+ * it's on. Click a card to switch it; the gear on a hovered card, or a right click, opens its settings in a
+ * panel built into the right of the window, and the grid makes room for it.
  *
  * <p>Keys: arrows move between cards, Space switches one, Enter opens its settings, Tab and Shift+Tab
- * change section, {@code /} searches (or just start typing), Esc steps back out. Everything is laid out in
+ * move through the pills and sections, {@code /} searches (or just start typing), Esc steps back out. Everything is laid out in
  * layout units on a window {@link #WIN_W} x {@link #WIN_H}: on screen it's scaled to fit the window, and in
  * Floating mode {@link FloatingMenu} draws the same window on a panel in the world. This class has no
  * Minecraft screen in it; {@link MenuScreen} and {@link FloatingMenuScreen} host it.
@@ -70,56 +70,75 @@ public final class MenuView {
 		}
 	}
 
-	/** A section in the sidebar: the Profile page or a module category. */
-	public record Tab(String name, String icon, String tagline, Category category) {
+	/** A place in the menu: a section of the rail and, in Mods, one of its pills (All when {@code category} is null). */
+	public record Place(String section, String icon, String pill, String tagline, Category category) {
+		boolean profiles() {
+			return section.equals("Profiles");
+		}
 	}
 
 	/** The design canvas the screen menu is fitted into. */
 	static final float DESIGN_W = 1600;
 	static final float DESIGN_H = 900;
 	/** The window, in layout units. */
-	public static final float WIN_W = 1440;
-	public static final float WIN_H = 800;
-	private static final float WIN_R = 22;
-	private static final float SIDE_W = 250;
-	private static final float PAD = 30;
-	private static final float NAV_TOP = 98;
-	private static final float NAV_H = 40;
-	private static final float NAV_GAP = 4;
-	private static final float GRID_TOP = 112;
-	private static final float CARD_H = 88;
-	private static final float GAP = 14;
-	private static final float MIN_CARD_W = 300;
-	private static final float TILE = 40;
-	private static final float SEARCH_W = 300;
-	private static final float HEAD_H = 38;
-	private static final int REVEAL_STAGGER = 18;
+	public static final float WIN_W = 1500;
+	public static final float WIN_H = 850;
+	private static final float WIN_R = 30;
+	private static final float RAIL_W = 148;
+	private static final float RAIL_ITEM_W = 112;
+	private static final float RAIL_ITEM_H = 100;
+	private static final float RAIL_R = 22;
+	private static final float RAIL_TOP = 128;
+	private static final float RAIL_PITCH = 108;
+	private static final float PAD = 36;
+	private static final float HEAD_TOP = 32;
+	private static final float SEARCH_W = 330;
+	private static final float SEARCH_H = 52;
+	private static final float PILL_TOP = 116;
+	private static final float PILL_H = 40;
+	private static final float CARD_H = 96;
+	private static final float CARD_R = 16;
+	private static final float GAP = 18;
+	private static final float ROW_GAP = 16;
+	private static final float MIN_CARD_W = 340;
+	private static final float TILE = 56;
+	/** The settings panel is drawn this much bigger than its own layout, to match the cards. */
+	private static final float SHEET_SCALE = 1.2f;
+	private static final float SHEET_W = SettingsSheet.WIDTH * SHEET_SCALE;
+	private static final float SHEET_LEFT = WIN_W - PAD - SHEET_W;
+	private static final int REVEAL_STAGGER = 16;
 	private static final int REVEAL_TIME = 300;
 
-	public static final List<Tab> TABS = tabs();
+	public static final List<Place> PLACES = places();
+	/** The sections down the rail, each as the first place in it. */
+	private static final List<Place> SECTIONS = sections();
+	private static final int PROFILES = PLACES.size() - 1;
 
 	private final Host host;
 	private final Hits hits = new Hits();
 	private final SettingsSheet sheet;
 	private final long openedAt = System.currentTimeMillis();
 	private final Map<Module, CardState> cards = new HashMap<>();
-	private final Map<String, List<String>> wraps = new LinkedHashMap<>(64, 0.75f, true) {
-		@Override
-		protected boolean removeEldestEntry(Map.Entry<String, List<String>> eldest) {
-			return size() > 256;
-		}
-	};
-	private final Anim[] navHover = new Anim[TABS.size()];
-	private final Anim navY = new Anim(0, 320, Ease.SPRING);
+	private final Anim[] railHover = new Anim[SECTIONS.size() + 2];
+	private final Anim railY = new Anim(0, 320, Ease.SPRING);
+	private final Anim[] pillHover = new Anim[PLACES.size()];
+	private final float[] pillMid = new float[PLACES.size()];
+	private final Anim pillX = new Anim(0, 300, Ease.SPRING);
+	private final Anim pillW = new Anim(0, 300, Ease.SPRING);
 	private final Anim searchHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
-	private final Anim editHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
-	private final Anim closeHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
-	private final Anim chipHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
-	private final Anim modeAt = new Anim(0, Tokens.T_INDICATOR, Ease.OUT);
+	private final Anim searchFocus = new Anim(0, Tokens.T_COLOR, Ease.OUT);
 	private final Anim gridRight = new Anim(WIN_W - PAD, Tokens.T_SHEET, Ease.OUT);
 
-	private int tab;
-	private long tabSince = System.currentTimeMillis();
+	private int place;
+	/** The last pill chosen in Mods, to come back to from another section. */
+	private int lastModsPlace = 0;
+	private long placeSince = System.currentTimeMillis();
+	private boolean pillsPlaced = false;
+	/** The card under the mouse as last drawn, whose description the header shows. */
+	private Module hovered = null;
+	private String subtitle = "";
+	private long subtitleSince = 0;
+	private List<Module> allMods = null;
 	private String search = "";
 	private final float[] searchMid = new float[2];
 	private boolean searchFocused = false;
@@ -145,33 +164,72 @@ public final class MenuView {
 	public MenuView(Host host, Category start) {
 		this.host = host;
 		this.sheet = new SettingsSheet(host.extras(), host::clickSound);
-		for (int i = 0; i < TABS.size(); i++) navHover[i] = new Anim(0, Tokens.T_HOVER, Ease.OUT);
-		tab = indexOf(start);
-		modeAt.snap(host.floating() ? 1 : 0);
+		for (int i = 0; i < railHover.length; i++) railHover[i] = new Anim(0, Tokens.T_HOVER, Ease.OUT);
+		for (int i = 0; i < pillHover.length; i++) pillHover[i] = new Anim(0, Tokens.T_HOVER, Ease.OUT);
+		place = indexOf(start);
+		if (PLACES.get(place).pill() != null) lastModsPlace = place;
 	}
 
-	private static List<Tab> tabs() {
-		List<Tab> list = new ArrayList<>();
-		for (Category category : Category.values()) list.add(new Tab(category.label, category.icon, category.tagline, category));
-		list.add(new Tab("Profiles", "layers", "Your setups, one click apart", null));
+	private static List<Place> places() {
+		List<Place> list = new ArrayList<>();
+		list.add(new Place("Mods", "layout-grid", "All", "Every mod, all in one place", null));
+		for (Category category : Category.values()) {
+			if (category == Category.COSMETICS || category == Category.CLIENT) continue;
+			list.add(new Place("Mods", "layout-grid", category.label, category.tagline, category));
+		}
+		list.add(new Place("Cosmetics", "shirt", null, Category.COSMETICS.tagline, Category.COSMETICS));
+		list.add(new Place("Client", "settings", null, Category.CLIENT.tagline, Category.CLIENT));
+		list.add(new Place("Profiles", "layers", null, "Your setups, one click apart", null));
 		return List.copyOf(list);
 	}
 
-	/** The section for a category (the Profiles page for null). */
-	public static int indexOf(Category category) {
-		for (int i = 0; i < TABS.size(); i++) {
-			if (TABS.get(i).category() == category) return i;
+	private static List<Place> sections() {
+		List<Place> list = new ArrayList<>();
+		for (Place each : PLACES) {
+			if (list.isEmpty() || !list.get(list.size() - 1).section().equals(each.section())) list.add(each);
+		}
+		return List.copyOf(list);
+	}
+
+	private static int sectionOf(int place) {
+		String section = PLACES.get(place).section();
+		for (int i = 0; i < SECTIONS.size(); i++) {
+			if (SECTIONS.get(i).section().equals(section)) return i;
 		}
 		return 0;
 	}
 
+	/** The place showing a category's mods (Mods, All for null). */
+	public static int indexOf(Category category) {
+		for (int i = 0; i < PLACES.size(); i++) {
+			if (PLACES.get(i).category() == category && !PLACES.get(i).profiles()) return i;
+		}
+		return 0;
+	}
+
+	/** The category on show: the chosen pill's in Mods, or the section's; null for All and on the Profiles page. */
 	public Category category() {
-		return TABS.get(tab).category();
+		return PLACES.get(place).category();
+	}
+
+	/** Whether the menu is showing every mod (Mods, All, not searching). */
+	public boolean showingAll() {
+		return place == 0 && search.isEmpty();
+	}
+
+	/** Takes the place, search and open settings of another view of the menu, as when it moves between the screen and the world. */
+	public MenuView follow(MenuView other) {
+		place = other.place;
+		lastModsPlace = other.lastModsPlace;
+		search = other.search;
+		if (other.sheetOpen()) openSettings(other.sheetModule());
+		return this;
 	}
 
 	/** Opens a module's settings straight away. */
 	public MenuView openSettings(Module module) {
-		tab = indexOf(module.category);
+		place = indexOf(module.category);
+		if (PLACES.get(place).pill() != null) lastModsPlace = place;
 		focused = module;
 		sheet.open(module);
 		return this;
@@ -179,7 +237,7 @@ public final class MenuView {
 
 	/** Shows the Profiles page. */
 	public MenuView openProfiles() {
-		tab = indexOf(null);
+		place = PROFILES;
 		return this;
 	}
 
@@ -206,10 +264,10 @@ public final class MenuView {
 		return new float[] {(winX + state.cx) * unit, (winY + state.cy) * unit};
 	}
 
-	/** The middle of a sidebar section as last drawn, in GUI units. */
-	public float[] tabCenter(int index) {
-		float y = NAV_TOP + index * (NAV_H + NAV_GAP) + (index == TABS.size() - 1 ? 14 : 0) + NAV_H / 2f;
-		return new float[] {(winX + SIDE_W / 2f) * unit, (winY + y) * unit};
+	/** The middle of a category's pill as last drawn, in GUI units (Mods, All for null), or null when the pills aren't on show. */
+	public float[] pillCenter(Category category) {
+		if (!pillsShown()) return null;
+		return new float[] {(winX + pillMid[indexOf(category)]) * unit, (winY + PILL_TOP + PILL_H / 2f) * unit};
 	}
 
 	public boolean sheetOpen() {
@@ -228,20 +286,38 @@ public final class MenuView {
 	/** The open panel's first row as last drawn ({x, y} in GUI units) and the layout scale, for clicking its parts. */
 	public float[] sheetContent() {
 		float[] origin = sheet.contentOrigin();
-		return new float[] {(winX + origin[0]) * unit, (winY + origin[1]) * unit, unit};
+		return new float[] {(winX + fromSheetX(origin[0])) * unit, (winY + fromSheetY(origin[1])) * unit, unit * SHEET_SCALE};
 	}
 
 	/** The middle of knife slot {@code slot} in the Knives settings as last drawn, in GUI units, for the in-game test. */
 	public float[] knifeSlot(int slot) {
 		float[] at = ((SheetExtras) sheet.extras()).knifeSlotsAt;
 		float cx = at[0] + slot * (at[2] + 6) + at[2] / 2f;
-		return new float[] {(winX + cx) * unit, (winY + at[1] + at[2] / 2f) * unit};
+		return new float[] {(winX + fromSheetX(cx)) * unit, (winY + fromSheetY(at[1] + at[2] / 2f)) * unit};
 	}
 
 	/** The middle of the first knife slot's knife picker in the Knives settings as last drawn, in GUI units, for the in-game test. */
 	public float[] knifePicker() {
 		float[] at = ((SheetExtras) sheet.extras()).knifePickerAt;
-		return new float[] {(winX + (at[0] + at[2]) / 2f) * unit, (winY + (at[1] + at[3]) / 2f) * unit};
+		return new float[] {(winX + fromSheetX((at[0] + at[2]) / 2f)) * unit, (winY + fromSheetY((at[1] + at[3]) / 2f)) * unit};
+	}
+
+	/** A point in the window as the settings panel's own layout sees it. */
+	private static float sheetX(float x) {
+		return SHEET_LEFT + (x - SHEET_LEFT) / SHEET_SCALE;
+	}
+
+	private static float sheetY(float y) {
+		return PILL_TOP + (y - PILL_TOP) / SHEET_SCALE;
+	}
+
+	/** A point of the settings panel's own layout, in the window. */
+	private static float fromSheetX(float x) {
+		return SHEET_LEFT + (x - SHEET_LEFT) * SHEET_SCALE;
+	}
+
+	private static float fromSheetY(float y) {
+		return PILL_TOP + (y - PILL_TOP) * SHEET_SCALE;
 	}
 
 	/** Draws the menu over a {@code guiW} x {@code guiH} screen, its window scaled to fit; the mouse is in GUI units. */
@@ -301,36 +377,41 @@ public final class MenuView {
 		shownScroll += (scroll - shownScroll) * Math.min(1.0, dt * 16);
 		if (Math.abs(scroll - shownScroll) < 0.3) shownScroll = scroll;
 		hits.clear();
-		modeAt.set(host.floating() ? 1 : 0);
 
-		boolean overSheet = sheet.over(mx, my);
+		boolean overSheet = sheet.over(sheetX(mx), sheetY(my));
 		float hx = overSheet ? -9999 : mx;
 		float hy = overSheet ? -9999 : my;
 		int accent = Accent.get();
 		boolean floating = host.floating();
-		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 28, 80, -8, 0x99000000);
-		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 0, 110, -30, Paint.fade(accent, 0.2f));
-		Paint.rect(d, 0, 0, WIN_W, WIN_H, WIN_R, Grad.down(floating ? 0xE81C1642 : 0xB21C1642, floating ? 0xF20C0920 : 0xCC0C0920));
+		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 30, 90, -8, 0xA6000000);
+		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 0, 120, -30, Paint.fade(accent, 0.16f));
+		Paint.rect(d, 0, 0, WIN_W, WIN_H, WIN_R, Grad.down(floating ? 0xF2171424 : 0xD6171424, floating ? 0xF70C0A14 : 0xE80C0A14));
 		drawGlassLight(d, accent, now);
-		Paint.rect(d, 0, 0, SIDE_W, WIN_H, WIN_R, 0x38050310);
-		Paint.rect(d, SIDE_W - WIN_R, 0, SIDE_W, WIN_H, 0, 0x38050310);
-		Paint.rect(d, SIDE_W, 0, SIDE_W + 1, WIN_H, 0, 0x1AFFFFFF);
-		Paint.stroke(d, 0, 0, WIN_W, WIN_H, WIN_R, 1, 0x38FFFFFF);
+		Paint.rect(d, 0, 0, RAIL_W, WIN_H, WIN_R, 0x24000000);
+		Paint.rect(d, RAIL_W - WIN_R, 0, RAIL_W, WIN_H, 0, 0x24000000);
+		Paint.rect(d, RAIL_W, 0, RAIL_W + 1, WIN_H, 0, 0x14FFFFFF);
+		Paint.stroke(d, 0, 0, WIN_W, WIN_H, WIN_R, 1, 0x2EFFFFFF);
 		Widgets.shine(d, 0, 0, WIN_W, WIN_R * 2);
 
-		drawSidebar(d, hx, hy, now);
-		float x0 = SIDE_W + PAD;
+		drawRail(d, hx, hy, now);
+		float x0 = RAIL_W + PAD;
 		float sheetT = sheet.openness();
-		gridRight.set(sheet.isOpen() ? WIN_W - PAD - SettingsSheet.WIDTH - 22 : WIN_W - PAD);
+		gridRight.set(sheet.isOpen() ? SHEET_LEFT - 22 : WIN_W - PAD);
 		drawHeader(d, x0, hx, hy, now);
-		Tab current = TABS.get(tab);
-		if (current.category() == null && search.isEmpty()) {
+		drawPills(d, x0, hx, hy);
+		if (PLACES.get(place).profiles() && search.isEmpty()) {
+			hovered = null;
 			drawProfiles(d, x0, hx, hy, now);
 		} else {
 			drawModules(d, x0, hx, hy, now, (float) dt);
 		}
 		if (sheetT > 0.001f || sheet.isOpen()) {
-			sheet.draw(d, WIN_W - PAD - SettingsSheet.WIDTH, GRID_TOP - 12, WIN_W - PAD, WIN_H - 22, mx, my, now);
+			d.push();
+			d.translate(SHEET_LEFT, PILL_TOP);
+			d.scale(SHEET_SCALE);
+			d.translate(-SHEET_LEFT, -PILL_TOP);
+			sheet.draw(d, SHEET_LEFT, PILL_TOP, SHEET_LEFT + SettingsSheet.WIDTH, sheetY(WIN_H - 22), sheetX(mx), sheetY(my), now);
+			d.pop();
 		}
 		drawNotice(d, now);
 	}
@@ -344,12 +425,12 @@ public final class MenuView {
 		d.enableScissor(0, 0, Math.round(WIN_W), Math.round(WIN_H));
 		float ax = -220 + (float) Math.sin(t * 0.21) * 70;
 		float ay = -260 + (float) Math.cos(t * 0.17) * 50;
-		Paint.shadow(d, ax, ay, ax + 680, ay + 400, 200, 0, 0, 260, 0, Paint.fade(accent, 0.24f));
+		Paint.shadow(d, ax, ay, ax + 680, ay + 400, 200, 0, 0, 260, 0, Paint.fade(accent, 0.18f));
 		float bx = WIN_W - 380 + (float) Math.cos(t * 0.15) * 80;
 		float by = WIN_H - 120 + (float) Math.sin(t * 0.19) * 50;
-		Paint.shadow(d, bx, by, bx + 580, by + 380, 200, 0, 0, 260, 0, Paint.fade(Accent.secondary(), 0.12f));
+		Paint.shadow(d, bx, by, bx + 580, by + 380, 200, 0, 0, 260, 0, Paint.fade(Accent.secondary(), 0.09f));
 		float cx = WIN_W * 0.55f + (float) Math.sin(t * 0.11) * 160;
-		Paint.shadow(d, cx - 160, -200, cx + 160, 60, 140, 0, 0, 220, 0, Paint.fade(Accent.lighten(accent, 0.3f), 0.1f));
+		Paint.shadow(d, cx - 160, -200, cx + 160, 60, 140, 0, 0, 220, 0, Paint.fade(Accent.lighten(accent, 0.3f), 0.07f));
 		if (Anim.speed() > 0) {
 			float sweep = (float) ((now - openedAt) * Anim.speed() / 1200.0);
 			if (sweep < 1) {
@@ -364,171 +445,173 @@ public final class MenuView {
 		d.disableScissor();
 	}
 
-	private void drawSidebar(Draw d, float mx, float my, long now) {
-		Logo.lockup(d, 26, 30, 30, 10.5f, now);
-		Type.draw(d, "Modules", 26, 76, 9, Weight.SEMIBOLD, Tokens.TEXT_3);
-		float x1 = 14;
-		float x2 = SIDE_W - 14;
-		float activeY = NAV_TOP + tab * (NAV_H + NAV_GAP) + (tab == TABS.size() - 1 ? 14 : 0);
-		navY.set(activeY);
+	private void drawRail(Draw d, float mx, float my, long now) {
+		Logo.mark(d, RAIL_W / 2f - 27, 34, 54, 1, now);
+		int accent = Accent.get();
+		float x1 = (RAIL_W - RAIL_ITEM_W) / 2f;
+		float x2 = x1 + RAIL_ITEM_W;
+		int current = sectionOf(place);
+		boolean searching = !search.isEmpty();
+		float activeY = RAIL_TOP + current * RAIL_PITCH;
+		railY.set(activeY);
 		if (!laidOut) {
-			navY.snap(activeY);
+			railY.snap(activeY);
 			laidOut = true;
 		}
-		boolean searching = !search.isEmpty();
-		float ay = navY.get();
-		int accent = Accent.get();
-		if (!searching) {
-			Paint.shadow(d, x1, ay, x2, ay + NAV_H, 11, 0, 4, 22, -6, Paint.fade(accent, 0.3f));
-			Paint.rect(d, x1, ay, x2, ay + NAV_H, 11, Grad.across(Paint.fade(accent, 0.34f), Paint.fade(accent, 0.1f)));
-			Paint.stroke(d, x1, ay, x2, ay + NAV_H, 11, 1, Paint.fade(Accent.lighten(accent, 0.3f), 0.45f));
-			Widgets.shine(d, x1, ay, x2, 11);
-			Paint.shadow(d, x1, ay + 10, x1 + 3, ay + NAV_H - 10, 1.5f, 0, 0, 10, 0, Paint.fade(accent, 0.8f));
-			Paint.rect(d, x1, ay + 11, x1 + 3, ay + NAV_H - 11, 1.5f, Accent.lighten(accent, 0.2f));
-		}
-		for (int i = 0; i < TABS.size(); i++) {
-			Tab each = TABS.get(i);
-			float y = NAV_TOP + i * (NAV_H + NAV_GAP) + (i == TABS.size() - 1 ? 14 : 0);
-			if (i == TABS.size() - 1) Paint.rect(d, 26, y - 10, SIDE_W - 26, y - 9, 0, 0x12FFFFFF);
-			boolean active = i == tab && !searching;
-			boolean hover = within(mx, my, x1, y, x2, y + NAV_H);
-			navHover[i].set(hover && !active);
-			float h = navHover[i].get();
-			if (h > 0.01f) Paint.rect(d, x1, y, x2, y + NAV_H, 11, Paint.fade(0x0FFFFFFF, h));
-			int iconColor = active ? Accent.text() : Widgets.mixColor(Tokens.TEXT_3, Tokens.TEXT_2, h);
-			Paint.icon(d, each.icon(), x1 + 16, y + (NAV_H - 16) / 2f, 16, iconColor);
-			Type.draw(d, each.name(), x1 + 44, y + (NAV_H - 11f) / 2f, 11f, Weight.SEMIBOLD, active ? Tokens.TEXT : Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, h));
-			if (each.category() != null) {
-				int on = 0;
-				int total = 0;
-				for (Module module : Modules.in(each.category())) {
-					if (!module.toggleable()) continue;
-					total++;
-					if (module.enabled()) on++;
-				}
-				if (total > 0) {
-					String count = on + "/" + total;
-					float cap = 8.5f;
-					float cw = Type.width(count, cap, Weight.SEMIBOLD) + 12;
-					float cx = x2 - 10 - cw;
-					float cy = y + (NAV_H - 18) / 2f;
-					Paint.rect(d, cx, cy, cx + cw, cy + 18, 9, active ? Paint.fade(accent, 0.28f) : 0x0FFFFFFF);
-					Type.center(d, count, cx + cw / 2f, cy + (18 - cap) / 2f, cap, Weight.SEMIBOLD, active ? Tokens.TEXT : Tokens.TEXT_3);
-				}
-			}
+		if (!searching) drawRailLight(d, x1, railY.get(), x2, accent, 1);
+		for (int i = 0; i < SECTIONS.size(); i++) {
+			Place each = SECTIONS.get(i);
 			int index = i;
-			hits.add(x1, y, x2, y + NAV_H, () -> switchTab(index));
+			drawRailItem(d, i, each.icon(), each.section(), x1, RAIL_TOP + i * RAIL_PITCH, x2, i == current && !searching, mx, my, () -> switchSection(index));
 		}
-		drawSidebarFoot(d, mx, my);
+		float editY = WIN_H - 24 - RAIL_ITEM_H;
+		float floatY = editY - RAIL_PITCH;
+		boolean floating = host.floating();
+		if (floating) drawRailLight(d, x1, floatY, x2, accent, 0.6f);
+		drawRailItem(d, SECTIONS.size(), "app-window", "Floating", x1, floatY, x2, floating, mx, my, () -> host.setFloating(!host.floating()));
+		drawRailItem(d, SECTIONS.size() + 1, "panels-top-left", "Edit HUD", x1, editY, x2, false, mx, my, host::openHudEditor);
 	}
 
-	private void drawSidebarFoot(Draw d, float mx, float my) {
-		float x1 = 14;
-		float x2 = SIDE_W - 14;
-		float chipH = 54;
-		float chipY = WIN_H - 14 - chipH;
-		boolean chip = within(mx, my, x1, chipY, x2, chipY + chipH);
-		chipHover.set(chip);
-		float ch = chipHover.get();
-		Paint.rect(d, x1, chipY, x2, chipY + chipH, 12, Widgets.mixColor(0x0AFFFFFF, 0x16FFFFFF, ch));
-		Paint.stroke(d, x1, chipY, x2, chipY + chipH, 12, 1, Widgets.mixColor(0x12FFFFFF, 0x26FFFFFF, ch));
-		host.drawFace(d, x1 + 12, chipY + 11, 32, 8);
-		Type.draw(d, Type.fit(host.playerName(), x2 - x1 - 76, 11, Weight.SEMIBOLD), x1 + 54, chipY + 14, 11, Weight.SEMIBOLD, Tokens.TEXT);
-		Type.draw(d, Type.fit(Config.get().profile, x2 - x1 - 76, 9, Weight.MEDIUM), x1 + 54, chipY + 31, 9, Weight.MEDIUM, Tokens.TEXT_3);
-		Paint.icon(d, "chevron-right", x2 - 24, chipY + (chipH - 14) / 2f, 14, Widgets.mixColor(Tokens.TEXT_3, Tokens.TEXT, ch));
-		hits.add(x1, chipY, x2, chipY + chipH, () -> switchTab(indexOf(null)));
+	/** The lit square behind the chosen rail item. */
+	private static void drawRailLight(Draw d, float x1, float y, float x2, int accent, float strength) {
+		float y2 = y + RAIL_ITEM_H;
+		Paint.shadow(d, x1, y, x2, y2, RAIL_R, 0, 6, 28, -8, Paint.fade(accent, 0.34f * strength));
+		Paint.rect(d, x1, y, x2, y2, RAIL_R, Grad.down(Paint.fade(accent, 0.3f * strength), Paint.fade(accent, 0.15f * strength)));
+		Paint.stroke(d, x1, y, x2, y2, RAIL_R, 1, Paint.fade(Accent.lighten(accent, 0.3f), 0.35f * strength));
+		Widgets.shine(d, x1, y, x2, RAIL_R);
+	}
 
-		float segH = 32;
-		float segY = chipY - 12 - segH;
-		String[] labels = {"Screen", "Floating"};
-		int over = -1;
-		float half = (x2 - x1) / 2f;
-		if (within(mx, my, x1, segY, x1 + half, segY + segH)) over = 0;
-		else if (within(mx, my, x1 + half, segY, x2, segY + segH)) over = 1;
-		Widgets.segmented(d, x1, segY, x2, segY + segH, null, labels, modeAt.get(), over);
-		hits.add(x1, segY, x1 + half, segY + segH, () -> {
-			if (host.floating()) host.setFloating(false);
-		});
-		hits.add(x1 + half, segY, x2, segY + segH, () -> {
-			if (!host.floating()) host.setFloating(true);
-		});
-		Type.draw(d, "Menu display", x1 + 4, segY - 18, 9, Weight.SEMIBOLD, Tokens.TEXT_3);
-
-		float editH = 34;
-		float editY = segY - 30 - editH;
-		boolean edit = within(mx, my, x1, editY, x2, editY + editH);
-		editHover.set(edit);
-		float e = editHover.get();
-		Widgets.control(d, x1, editY, x2, editY + editH, 10, e);
-		Paint.icon(d, "move", x1 + 14, editY + (editH - 14) / 2f, 14, Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, e));
-		Type.draw(d, "Edit HUD layout", x1 + 38, editY + (editH - 10.5f) / 2f, 10.5f, Weight.SEMIBOLD, Tokens.TEXT);
-		hits.add(x1, editY, x2, editY + editH, host::openHudEditor);
+	private void drawRailItem(Draw d, int slot, String icon, String label, float x1, float y, float x2, boolean active, float mx, float my, Runnable action) {
+		boolean hover = within(mx, my, x1, y, x2, y + RAIL_ITEM_H);
+		railHover[slot].set(hover && !active);
+		float h = railHover[slot].get();
+		if (h > 0.01f) Paint.rect(d, x1, y, x2, y + RAIL_ITEM_H, RAIL_R, Paint.fade(0x10FFFFFF, h));
+		int color = active ? Accent.text() : Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, h);
+		float size = 30;
+		float cx = (x1 + x2) / 2f;
+		Paint.icon(d, icon, cx - size / 2f, y + 22 - 2 * h, size, color);
+		Type.center(d, label, cx, y + 68, 12, Weight.SEMIBOLD, color);
+		hits.add(x1, y, x2, y + RAIL_ITEM_H, action);
 	}
 
 	private void drawHeader(Draw d, float x0, float mx, float my, long now) {
 		boolean searching = !search.isEmpty();
-		Tab current = TABS.get(tab);
-		String title = searching ? "Search" : current.name();
-		List<Module> shown = shownModules();
-		String subtitle;
-		if (searching) {
-			subtitle = shown.isEmpty() ? "Nothing matches \"" + search.trim() + "\"" : shown.size() + (shown.size() == 1 ? " result" : " results") + " for \""
+		Place current = PLACES.get(place);
+		String title = searching ? "Search" : current.section();
+		String line;
+		if (hovered != null) {
+			line = hovered.description;
+		} else if (searching) {
+			List<Module> shown = shownModules();
+			line = shown.isEmpty() ? "Nothing matches \"" + search.trim() + "\"" : shown.size() + (shown.size() == 1 ? " result" : " results") + " for \""
 					+ search.trim() + "\"";
 		} else {
-			subtitle = current.tagline();
+			line = current.tagline();
 		}
-		float t = Ease.OUT.apply((now - tabSince) / (double) Tokens.T_CAPTION);
+		if (!line.equals(subtitle)) {
+			subtitle = line;
+			subtitleSince = now;
+		}
+		float sx2 = WIN_W - PAD;
+		float sx1 = sx2 - SEARCH_W;
+		float t = Ease.OUT.apply((now - placeSince) / (double) Tokens.T_CAPTION);
 		float old = Paint.opacity(Paint.opacity() * t);
 		float rise = (1 - t) * 4;
-		Type.draw(d, title, x0, 32 + rise, 21, Weight.BOLD, Tokens.TEXT);
-		float tw = Type.width(title, 21, Weight.BOLD);
-		if (current.category() != null || searching) {
-			int on = 0;
-			int total = 0;
-			for (Module module : shown) {
-				if (!module.toggleable()) continue;
-				total++;
-				if (module.enabled()) on++;
-			}
-			if (total > 0) {
-				String count = on + " of " + total + " on";
-				float cap = 9.5f;
-				float pw = 22 + Type.width(count, cap, Weight.SEMIBOLD) + 12;
-				float px = x0 + tw + 14;
-				float py = 32 + rise + 1;
-				Paint.rect(d, px, py, px + pw, py + 21, 10.5f, 0x0FFFFFFF);
-				Paint.stroke(d, px, py, px + pw, py + 21, 10.5f, 1, 0x14FFFFFF);
-				Widgets.pulseDot(d, px + 12, py + 10.5f, 3, on > 0 ? Accent.get() : Tokens.TEXT_3, now);
-				Type.draw(d, count, px + 22, py + (21 - cap) / 2f, cap, Weight.SEMIBOLD, Tokens.TEXT_2);
-			}
-		}
-		Type.draw(d, subtitle, x0, 64 + rise, 11, Weight.MEDIUM, Tokens.TEXT_2);
+		Type.draw(d, title, x0, HEAD_TOP + 6 + rise, 24, Weight.BOLD, Tokens.TEXT);
+		float s = Ease.OUT.apply((now - subtitleSince) / 180.0);
+		float faded = Paint.opacity(Paint.opacity() * s);
+		Type.draw(d, Type.fit(subtitle, sx1 - x0 - 30, 13, Weight.MEDIUM), x0, HEAD_TOP + 41 + rise + (1 - s) * 3, 13, Weight.MEDIUM, Tokens.TEXT_2);
+		Paint.opacity(faded);
 		Paint.opacity(old);
 
-		float right = WIN_W - PAD;
-		float cx1 = right - HEAD_H;
-		boolean close = within(mx, my, cx1, 28, right, 28 + HEAD_H);
-		closeHover.set(close);
-		Widgets.iconButton(d, cx1, 28, right, 28 + HEAD_H, "x", closeHover.get(), false);
-		hits.add(cx1, 28, right, 28 + HEAD_H, host::back);
-		float sx2 = cx1 - 10;
-		float sx1 = sx2 - SEARCH_W;
-		boolean searchHovered = within(mx, my, sx1, 28, sx2, 28 + HEAD_H);
+		float sy = HEAD_TOP;
+		boolean searchHovered = within(mx, my, sx1, sy, sx2, sy + SEARCH_H);
 		searchHover.set(searchHovered);
-		Widgets.search(d, sx1, 28, sx2, 28 + HEAD_H, search, "Search mods", "/", searchFocused, searchHover.get(), now);
-		hits.add(sx1, 28, sx2, 28 + HEAD_H, () -> searchFocused = true);
+		searchFocus.set(searchFocused);
+		drawSearch(d, sx1, sy, sx2, sy + SEARCH_H, searchHover.get(), searchFocus.get(), now);
+		hits.add(sx1, sy, sx2, sy + SEARCH_H, () -> searchFocused = true);
 		searchMid[0] = (sx1 + sx2) / 2f;
-		searchMid[1] = 28 + HEAD_H / 2f;
-		if (category() == Category.HUD && !searching) {
-			String label = "Edit layout";
-			float cap = 10f;
-			float w = 14 + 14 + 8 + Type.width(label, cap, Weight.SEMIBOLD) + 16;
-			float bx = sx1 - 10 - w;
-			boolean hover = within(mx, my, bx, 28, bx + w, 28 + HEAD_H);
-			Widgets.control(d, bx, 28, bx + w, 28 + HEAD_H, 11, hover ? 1 : 0);
-			Paint.icon(d, "move", bx + 14, 28 + (HEAD_H - 14) / 2f, 14, hover ? Tokens.TEXT : Tokens.TEXT_2);
-			Type.draw(d, label, bx + 36, 28 + (HEAD_H - cap) / 2f, cap, Weight.SEMIBOLD, Tokens.TEXT);
-			hits.add(bx, 28, bx + w, 28 + HEAD_H, host::openHudEditor);
+		searchMid[1] = sy + SEARCH_H / 2f;
+	}
+
+	/** The search field: an outlined box with a magnifier, lit in the theme colour while it has the keyboard. */
+	private void drawSearch(Draw d, float x1, float y1, float x2, float y2, float hover, float focus, long now) {
+		int accent = Accent.get();
+		float r = 18;
+		if (focus > 0.01f) Paint.shadow(d, x1, y1, x2, y2, r, 0, 0, 24, -4, Paint.fade(accent, 0.32f * focus));
+		Paint.rect(d, x1, y1, x2, y2, r, Widgets.mixColor(0x08FFFFFF, 0x10FFFFFF, Math.max(hover, focus)));
+		int edge = Widgets.mixColor(Widgets.mixColor(0x30FFFFFF, 0x4AFFFFFF, hover), Paint.fade(Accent.lighten(accent, 0.25f), 0.9f), focus);
+		Paint.stroke(d, x1, y1, x2, y2, r, 1.5f, edge);
+		float h = y2 - y1;
+		float cap = 13;
+		Paint.icon(d, "search", x1 + 20, y1 + (h - 18) / 2f, 18, Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, focus));
+		float tx = x1 + 50;
+		float ty = y1 + (h - cap) / 2f;
+		String shown = search.isEmpty() ? "" : Type.fit(search, x2 - tx - 20, cap, Weight.MEDIUM);
+		if (search.isEmpty()) Type.draw(d, "Search mods", tx, ty, cap, Weight.MEDIUM, Tokens.TEXT_3);
+		else Type.draw(d, shown, tx, ty, cap, Weight.MEDIUM, Tokens.TEXT);
+		if (searchFocused && (now / 530) % 2 == 0) {
+			float cx = tx + Type.width(shown, cap, Weight.MEDIUM) + 1.5f;
+			Paint.rect(d, cx, ty - 3, cx + 1.5f, ty + cap + 3, 0.75f, Accent.lighten(accent, 0.3f));
+		}
+	}
+
+	private boolean pillsShown() {
+		return PLACES.get(place).pill() != null && search.isEmpty();
+	}
+
+	/** Where the grid starts: under the pills in Mods, straight under the header elsewhere. */
+	private float gridTop() {
+		return pillsShown() ? PILL_TOP + PILL_H + 22 : PILL_TOP;
+	}
+
+	/** The Mods pills (All and each category), the chosen one lit, its light gliding across when you pick another. */
+	private void drawPills(Draw d, float x0, float mx, float my) {
+		if (!pillsShown()) {
+			pillsPlaced = false;
+			return;
+		}
+		int accent = Accent.get();
+		float cap = 12.5f;
+		float y = PILL_TOP;
+		float r = PILL_H / 2f;
+		float x = x0;
+		float activeX = x0;
+		float activeW = 0;
+		for (int i = 0; i < PLACES.size(); i++) {
+			Place each = PLACES.get(i);
+			if (each.pill() == null) continue;
+			float w = Type.width(each.pill(), cap, Weight.MEDIUM) + 44;
+			pillMid[i] = x + w / 2f;
+			if (i == place) {
+				activeX = x;
+				activeW = w;
+			}
+			boolean hover = within(mx, my, x, y, x + w, y + PILL_H);
+			pillHover[i].set(hover && i != place);
+			Paint.rect(d, x, y, x + w, y + PILL_H, r, Widgets.mixColor(0x12FFFFFF, 0x1FFFFFFF, pillHover[i].get()));
+			int index = i;
+			hits.add(x, y, x + w, y + PILL_H, () -> switchPlace(index));
+			x += w + 12;
+		}
+		pillX.set(activeX);
+		pillW.set(activeW);
+		if (!pillsPlaced) {
+			pillX.snap(activeX);
+			pillW.snap(activeW);
+			pillsPlaced = true;
+		}
+		float ax = pillX.get();
+		float aw = pillW.get();
+		Paint.shadow(d, ax, y, ax + aw, y + PILL_H, r, 0, 4, 20, -6, Paint.fade(accent, 0.36f));
+		Paint.rect(d, ax, y, ax + aw, y + PILL_H, r, Grad.down(Paint.fade(accent, 0.44f), Paint.fade(accent, 0.28f)));
+		Paint.stroke(d, ax, y, ax + aw, y + PILL_H, r, 1, Paint.fade(Accent.lighten(accent, 0.35f), 0.45f));
+		Widgets.shine(d, ax, y, ax + aw, r);
+		for (int i = 0; i < PLACES.size(); i++) {
+			Place each = PLACES.get(i);
+			if (each.pill() == null) continue;
+			int color = i == place ? Tokens.TEXT : Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, pillHover[i].get());
+			Type.center(d, each.pill(), pillMid[i], y + (PILL_H - cap) / 2f, cap, Weight.MEDIUM, color);
 		}
 	}
 
@@ -547,8 +630,18 @@ public final class MenuView {
 			}
 			return found;
 		}
-		Category category = category();
-		return category == null ? List.of() : Modules.in(category);
+		Place current = PLACES.get(place);
+		if (current.profiles()) return List.of();
+		if (current.category() != null) return Modules.in(current.category());
+		if (allMods == null) {
+			List<Module> all = new ArrayList<>();
+			for (Place each : PLACES) {
+				if (each.pill() == null || each.category() == null) continue;
+				all.addAll(Modules.in(each.category()));
+			}
+			allMods = List.copyOf(all);
+		}
+		return allMods;
 	}
 
 	private void drawModules(Draw d, float x0, float mx, float my, long now, float dt) {
@@ -558,21 +651,23 @@ public final class MenuView {
 		float target = gridRight.target() - x0;
 		columns = Math.max(1, Math.min(3, (int) ((target + GAP) / (MIN_CARD_W + GAP))));
 		float cardW = (target - (columns - 1) * GAP) / columns;
-		float viewTop = GRID_TOP - 12;
-		float viewBottom = WIN_H - 18;
+		float gridTop = gridTop();
+		float viewTop = gridTop - 10;
+		float viewBottom = WIN_H - 22;
 		int rows = (shown.size() + columns - 1) / columns;
-		float contentH = rows * (CARD_H + GAP) - GAP + 12;
-		maxScroll = Math.max(0, contentH - (viewBottom - GRID_TOP));
+		float contentH = rows * (CARD_H + ROW_GAP) - ROW_GAP + 12;
+		maxScroll = Math.max(0, contentH - (viewBottom - gridTop));
 		scroll = Math.max(0, Math.min(scroll, maxScroll));
 		shownScroll = Math.max(0, Math.min(shownScroll, maxScroll));
 
 		d.enableScissor(Math.round(x0 - 20), Math.round(viewTop), Math.round(WIN_W), Math.round(viewBottom));
 		hits.clip(x0 - 20, viewTop, right + 4, viewBottom);
 		boolean mouseInGrid = my >= viewTop && my < viewBottom && mx < right + 4;
+		hovered = null;
 		for (int i = 0; i < shown.size(); i++) {
 			Module module = shown.get(i);
 			float tx = x0 + (i % columns) * (cardW + GAP);
-			float ty = GRID_TOP + (i / columns) * (CARD_H + GAP);
+			float ty = gridTop + (i / columns) * (CARD_H + ROW_GAP);
 			CardState state = state(module);
 			state.x.set(tx);
 			state.y.set(ty);
@@ -587,25 +682,25 @@ public final class MenuView {
 			float y = state.y.get() - (float) shownScroll;
 			float w = state.w.get();
 			if (y > viewBottom + 10 || y + CARD_H < viewTop - 10) continue;
-			float reveal = Ease.OUT.apply((now - tabSince - Math.min(i, 12) * REVEAL_STAGGER) / (double) REVEAL_TIME);
+			float reveal = Ease.OUT.apply((now - placeSince - Math.min(i, 12) * REVEAL_STAGGER) / (double) REVEAL_TIME);
 			drawCard(d, module, x, y, w, reveal, mouseInGrid ? mx : -9999, mouseInGrid ? my : -9999, now);
 		}
 		hits.unclip();
 		d.disableScissor();
 		if (maxScroll > 0) {
-			float barH = viewBottom - GRID_TOP;
+			float barH = viewBottom - gridTop;
 			float thumb = Math.max(40, barH * barH / (barH + (float) maxScroll));
-			float ty = GRID_TOP + (barH - thumb) * (float) (shownScroll / maxScroll);
-			float bx = right + 8;
-			Paint.rect(d, bx, GRID_TOP, bx + 3, GRID_TOP + barH, 1.5f, 0x0DFFFFFF);
-			Paint.rect(d, bx, ty, bx + 3, ty + thumb, 1.5f, 0x33FFFFFF);
+			float ty = gridTop + (barH - thumb) * (float) (shownScroll / maxScroll);
+			float bx = right + 11;
+			Paint.rect(d, bx, gridTop, bx + 4, gridTop + barH, 2, 0x0DFFFFFF);
+			Paint.rect(d, bx, ty, bx + 4, ty + thumb, 2, 0x38FFFFFF);
 		}
 		if (shown.isEmpty()) {
 			boolean searching = !search.isEmpty();
 			float cx = (x0 + right) / 2f;
-			Paint.icon(d, searching ? "search" : "sparkles", cx - 14, GRID_TOP + 60, 28, Tokens.TEXT_3);
+			Paint.icon(d, searching ? "search" : "sparkles", cx - 16, gridTop + 60, 32, Tokens.TEXT_3);
 			String hint = searching ? "Try another word, or Esc to clear the search" : "Nothing here yet";
-			Type.center(d, hint, cx, GRID_TOP + 104, 11.5f, Weight.MEDIUM, Tokens.TEXT_3);
+			Type.center(d, hint, cx, gridTop + 108, 13, Weight.MEDIUM, Tokens.TEXT_3);
 		}
 	}
 
@@ -620,100 +715,117 @@ public final class MenuView {
 		state.cx = x + w / 2f;
 		state.cy = y + CARD_H / 2f;
 		boolean on = module.enabled();
-		state.knob.set(on);
 		state.lit.set(on);
 		boolean hover = within(mx, my, x, y, x + w, y + CARD_H);
+		if (hover) hovered = module;
 		state.hover.set(hover);
-		boolean chosen = sheet.isOpen() && sheet.module() == module || focused == module && !sheet.isOpen();
-		state.chosen.set(chosen);
+		boolean open = sheet.isOpen() && sheet.module() == module;
+		state.chosen.set(open || focused == module && !sheet.isOpen());
 		float h = state.hover.get();
+		float chosen = state.chosen.get();
+		int accent = Accent.get();
 		float old = Paint.opacity(Paint.opacity() * reveal);
 		float top = y + (1 - reveal) * Tokens.REVEAL_RISE;
-		float lit = module.toggleable() ? state.lit.get() : 1;
-		float grow = (0.95f + 0.05f * Ease.SPRING.apply(reveal)) * (1 + 0.014f * h);
-		float liftBy = 3 * h;
+		float lit = module.toggleable() ? state.lit.get() : 0;
+		float grow = (0.95f + 0.05f * Ease.SPRING.apply(reveal)) * (1 + 0.012f * h);
+		float x2 = x + w;
+		float y2 = top + CARD_H;
+		float midX = x + w / 2f;
+		float midY = top + CARD_H / 2f;
 		d.push();
-		d.translate(x + w / 2f, top + CARD_H / 2f - liftBy);
+		d.translate(midX, midY - 3 * h);
 		d.scale(grow);
-		d.translate(-(x + w / 2f), -(top + CARD_H / 2f));
+		d.translate(-midX, -midY);
 
-		Widgets.card(d, x, top, x + w, top + CARD_H, Tokens.R_CARD, h, module.toggleable() ? lit : 0, state.chosen.get());
-		Widgets.tile(d, x + 18, top + (CARD_H - TILE) / 2f, TILE, module.icon(), lit, h);
+		if (h > 0.01f) Paint.shadow(d, x, top, x2, y2, CARD_R, 0, 12, 30, -10, Paint.fade(0xFF000000, 0.5f * h));
+		if (lit > 0.01f) Paint.shadow(d, x, top, x2, y2, CARD_R, 0, 0, 30, -8, Paint.fade(accent, 0.2f * lit));
+		Paint.rect(d, x, top, x2, y2, CARD_R, Grad.down(Widgets.mixColor(0x12FFFFFF, 0x1CFFFFFF, h), Widgets.mixColor(0x0BFFFFFF, 0x14FFFFFF, h)));
+		if (lit > 0.01f) Paint.rect(d, x, top, x2, y2, CARD_R, Grad.down(Paint.fade(accent, 0.16f * lit), Paint.fade(accent, 0.08f * lit)));
+		Paint.stroke(d, x, top, x2, y2, CARD_R, 1, Widgets.mixColor(0x0DFFFFFF, 0x1FFFFFFF, h));
+		if (lit > 0.01f) Paint.stroke(d, x, top, x2, y2, CARD_R, 1.5f, Paint.fade(Accent.lighten(accent, 0.1f), 0.8f * lit));
+		if (chosen > 0.01f) Paint.stroke(d, x - 3, top - 3, x2 + 3, y2 + 3, CARD_R + 3, 1.5f, Paint.fade(Accent.lighten(accent, 0.35f), 0.7f * chosen));
+		Widgets.shine(d, x, top, x2, CARD_R);
+
+		float tx = x + 20;
+		drawTile(d, tx, top + (CARD_H - TILE) / 2f, module.icon(), lit, h, accent);
 
 		boolean hasSettings = module == Modules.PROFILES || SettingsSheet.hasPage(module, sheet.extras());
-		float toggleX = x + w - 18 - 40;
-		Runnable openSettings = module == Modules.PROFILES ? () -> switchTab(indexOf(null)) : () -> {
+		Runnable openSettings = module == Modules.PROFILES ? () -> switchPlace(PROFILES) : () -> {
 			focused = null;
 			sheet.open(module);
 		};
+		float dotX = x2 - 30;
+		long since = now - state.toggledAt;
 		if (module.toggleable()) {
-			long since = now - state.toggledAt;
+			float pop = 0;
 			if (since < 560 && Anim.speed() > 0) {
 				float p = since / 560f;
-				float ring = 12 + 26 * Ease.OUT.apply(p);
-				int color = module.enabled() ? Accent.lighten(Accent.get(), 0.2f) : 0xFFFFFFFF;
-				Paint.ring(d, toggleX + 20, top + 29, ring, 2 * (1 - p) + 0.5f, Paint.fade(color, 0.55f * (1 - p)));
+				float ring = 8 + 30 * Ease.OUT.apply(p);
+				int color = on ? Accent.lighten(accent, 0.25f) : 0xFFFFFFFF;
+				Paint.ring(d, dotX, midY, ring, 2 * (1 - p) + 0.5f, Paint.fade(color, 0.6f * (1 - p)));
+				if (since < 300) pop = (float) Math.sin(Math.PI * since / 300.0) * 0.4f;
 			}
-			Widgets.toggle(d, toggleX, top + 18, 40, 22, state.knob.get(), state.lit.get());
+			drawDot(d, dotX, midY, lit, h, pop, accent);
+		} else {
+			Paint.icon(d, "chevron-right", dotX - 9, midY - 9, 18, Widgets.mixColor(Tokens.TEXT_3, Tokens.TEXT, h));
 		}
-		float sx2 = module.toggleable() ? toggleX - 8 : x + w - 18;
-		float sx1 = sx2 - 26;
-		float sy1 = top + 16;
-		if (hasSettings) {
-			boolean settingsHover = within(mx, my, sx1, sy1, sx2, sy1 + 26);
-			state.settings.set(settingsHover);
+		boolean gear = hasSettings && module.toggleable();
+		float gearX = dotX - 40;
+		if (gear) {
+			boolean gearHover = within(mx, my, gearX - 15, midY - 15, gearX + 15, midY + 15);
+			state.settings.set(gearHover);
 			float sh = state.settings.get();
-			boolean open = sheet.isOpen() && sheet.module() == module;
-			Widgets.iconButton(d, sx1, sy1, sx2, sy1 + 26, module.toggleable() ? "sliders-horizontal" : "chevron-right", Math.max(sh, h * 0.35f), open);
+			float show = Math.max(Math.max(h, open ? 1 : 0), chosen);
+			if (show > 0.01f) {
+				float faded = Paint.opacity(Paint.opacity() * show);
+				if (sh > 0.01f) Paint.circle(d, gearX, midY, 16, Paint.fade(0x17FFFFFF, sh));
+				Paint.icon(d, "settings", gearX - 9, midY - 9, 18, open ? Accent.text() : Widgets.mixColor(Tokens.TEXT_3, Tokens.TEXT, sh));
+				Paint.opacity(faded);
+			}
 		}
 
-		float nameX = x + 18 + TILE + 14;
-		float nameRight = (hasSettings ? sx1 : module.toggleable() ? toggleX : x + w - 18) - 10;
+		float nameX = tx + TILE + 18;
+		float nameRight = (gear ? gearX - 15 : dotX - 14) - 8;
 		String key = host.keyFor(module);
-		float keyW = key != null ? Widgets.kbdWidth(key, 7.5f) + 8 : 0;
-		String name = Type.fit(module.name, nameRight - nameX - keyW, 12.5f, Weight.SEMIBOLD);
-		Type.draw(d, name, nameX, top + 22, 12.5f, Weight.SEMIBOLD, Tokens.TEXT);
-		if (key != null) Widgets.kbd(d, nameX + Type.width(name, 12.5f, Weight.SEMIBOLD) + 8, top + 19, key, 7.5f);
-		List<String> lines = wrap(module.description, x + w - 18 - nameX, 9.5f);
-		for (int i = 0; i < lines.size(); i++) {
-			Type.draw(d, lines.get(i), nameX, top + 46 + i * 14, 9.5f, Weight.MEDIUM, Tokens.TEXT_2);
-		}
+		float keyCap = 8.5f;
+		float keyW = key != null ? Widgets.kbdWidth(key, keyCap) + 10 : 0;
+		float cap = 15.5f;
+		String name = Type.fit(module.name, nameRight - nameX - keyW, cap, Weight.MEDIUM);
+		Type.draw(d, name, nameX, top + 27, cap, Weight.MEDIUM, Tokens.TEXT);
+		if (key != null) Widgets.kbd(d, nameX + Type.width(name, cap, Weight.MEDIUM) + 10, top + 24.5f, key, keyCap);
+		Type.draw(d, Type.fit(module.description, nameRight - nameX, 12, Weight.MEDIUM), nameX, top + 56, 12, Weight.MEDIUM, Tokens.TEXT_2);
 		d.pop();
 		Paint.opacity(old);
 
 		if (reveal < 0.5f) return;
 		Runnable primary = module.toggleable() ? () -> toggle(module) : openSettings;
-		hits.add(x, top, x + w, top + CARD_H, primary, hasSettings ? openSettings : null);
-		if (module.toggleable()) hits.add(toggleX - 4, top + 12, toggleX + 44, top + 46, () -> toggle(module), hasSettings ? openSettings : null);
-		if (hasSettings) hits.add(sx1 - 2, sy1 - 2, sx2 + 2, sy1 + 28, openSettings, openSettings);
+		hits.add(x, top, x2, y2, primary, hasSettings ? openSettings : null);
+		if (gear) hits.add(gearX - 16, midY - 16, gearX + 16, midY + 16, openSettings, openSettings);
 	}
 
-	private List<String> wrap(String text, float width, float cap) {
-		String key = Math.round(width) + "|" + text;
-		List<String> cached = wraps.get(key);
-		if (cached != null) return cached;
-		List<String> lines = new ArrayList<>();
-		StringBuilder line = new StringBuilder();
-		String[] words = text.split(" ");
-		for (int i = 0; i < words.length; i++) {
-			String next = line.isEmpty() ? words[i] : line + " " + words[i];
-			if (Type.width(next, cap, Weight.MEDIUM) <= width || line.isEmpty()) {
-				line = new StringBuilder(next);
-				continue;
-			}
-			if (lines.size() == 1) {
-				StringBuilder rest = new StringBuilder(line);
-				for (int j = i; j < words.length; j++) rest.append(' ').append(words[j]);
-				lines.add(Type.fit(rest.toString(), width, cap, Weight.MEDIUM));
-				wraps.put(key, lines);
-				return lines;
-			}
-			lines.add(line.toString());
-			line = new StringBuilder(words[i]);
+	/** A card's icon tile: grey when off, filled with the theme colour (and glowing) when on. */
+	private static void drawTile(Draw d, float x, float y, String icon, float lit, float hover, int accent) {
+		float r = 14;
+		Paint.rect(d, x, y, x + TILE, y + TILE, r, Widgets.mixColor(0x12FFFFFF, 0x1CFFFFFF, hover));
+		if (lit > 0.01f) {
+			Paint.shadow(d, x, y, x + TILE, y + TILE, r, 0, 6, 20, -6, Paint.fade(accent, 0.55f * lit));
+			Paint.rect(d, x, y, x + TILE, y + TILE, r, Grad.down(Paint.fade(Accent.lighten(accent, 0.18f), lit), Paint.fade(accent, lit)));
+			Widgets.shine(d, x, y, x + TILE, r);
 		}
-		if (!line.isEmpty()) lines.add(line.toString());
-		wraps.put(key, lines);
-		return lines;
+		float size = 24;
+		int color = Widgets.mixColor(Widgets.mixColor(Tokens.TEXT_2, Tokens.TEXT, hover * 0.6f), 0xFFFFFFFF, lit);
+		Paint.icon(d, icon, x + (TILE - size) / 2f, y + (TILE - size) / 2f, size, color);
+	}
+
+	/** The dot at a card's right: dim when off, a lit bead with a soft halo when on; {@code pop} swells it as it switches. */
+	private static void drawDot(Draw d, float cx, float cy, float lit, float hover, float pop, int accent) {
+		float grow = 1 + pop;
+		if (lit < 0.99f) Paint.circle(d, cx, cy, 5 * grow, Paint.fade(Widgets.mixColor(0x3DFFFFFF, 0x5CFFFFFF, hover), 1 - lit));
+		if (lit > 0.01f) {
+			Paint.glow(d, cx, cy, 6 * grow, 14, Paint.fade(accent, 0.55f * lit));
+			Paint.circle(d, cx, cy, 9 * grow, Paint.fade(accent, 0.42f * lit));
+			Paint.circle(d, cx, cy, 5.5f * grow, Paint.fade(Accent.lighten(accent, 0.45f), lit));
+		}
 	}
 
 	private void toggle(Module module) {
@@ -724,13 +836,13 @@ public final class MenuView {
 
 	private void drawProfiles(Draw d, float x0, float mx, float my, long now) {
 		Config config = Config.get();
-		float reveal = Ease.OUT.apply((now - tabSince) / (double) REVEAL_TIME);
+		float reveal = Ease.OUT.apply((now - placeSince) / (double) REVEAL_TIME);
 		float old = Paint.opacity(Paint.opacity() * reveal);
 		float rise = (1 - reveal) * Tokens.REVEAL_RISE;
 		float right = gridRight.target();
 		int cols = Math.max(1, Math.min(3, (int) ((right - x0 + GAP) / (MIN_CARD_W + GAP))));
 		float cardW = (right - x0 - (cols - 1) * GAP) / cols;
-		float y = GRID_TOP + rise;
+		float y = gridTop() + rise;
 		float youH = 2 * CARD_H + GAP;
 		Widgets.card(d, x0, y, x0 + cardW, y + youH, Tokens.R_CARD, 0);
 		Paint.shadow(d, x0 + cardW / 2f - 40, y + 20, x0 + cardW / 2f + 40, y + 100, 16, 0, 0, 40, 0, Paint.fade(Accent.get(), 0.25f));
@@ -755,13 +867,13 @@ public final class MenuView {
 		for (String name : names) {
 			if (cols > 1 && slot % cols == 0) slot++;
 			float cx = x0 + (slot % cols) * (cardW + GAP);
-			float cy = GRID_TOP + (slot / cols) * (CARD_H + GAP) + rise;
+			float cy = gridTop() + (slot / cols) * (CARD_H + GAP) + rise;
 			drawProfileCard(d, config, name, cx, cy, cardW, mx, my);
 			slot++;
 		}
 		if (cols > 1 && slot % cols == 0) slot++;
 		float cx = x0 + (slot % cols) * (cardW + GAP);
-		float cy = GRID_TOP + (slot / cols) * (CARD_H + GAP) + rise;
+		float cy = gridTop() + (slot / cols) * (CARD_H + GAP) + rise;
 		drawNewProfile(d, cx, cy, cardW, mx, my, now);
 		Paint.opacity(old);
 	}
@@ -844,7 +956,7 @@ public final class MenuView {
 		float a = Math.min(in, out);
 		float cap = 10.5f;
 		float w = Type.width(notice, cap, Weight.SEMIBOLD) + 18 + 16 + 22;
-		float x = SIDE_W + (WIN_W - SIDE_W - w) / 2f;
+		float x = RAIL_W + (WIN_W - RAIL_W - w) / 2f;
 		float y = WIN_H - 70 + (1 - in) * 8;
 		float old = Paint.opacity(Paint.opacity() * a);
 		Widgets.glass(d, x, y, x + w, y + 38, 19);
@@ -858,10 +970,16 @@ public final class MenuView {
 		return x >= x1 && x < x2 && y >= y1 && y < y2;
 	}
 
-	private void switchTab(int index) {
-		if (index == tab && search.isEmpty()) return;
-		tab = index;
-		tabSince = System.currentTimeMillis();
+	private void switchSection(int index) {
+		Place first = SECTIONS.get(index);
+		switchPlace(first.pill() != null ? lastModsPlace : PLACES.indexOf(first));
+	}
+
+	private void switchPlace(int index) {
+		if (index == place && search.isEmpty()) return;
+		place = index;
+		if (PLACES.get(index).pill() != null) lastModsPlace = index;
+		placeSince = System.currentTimeMillis();
 		scroll = 0;
 		shownScroll = 0;
 		search = "";
@@ -879,7 +997,7 @@ public final class MenuView {
 
 	/** A click at (x, y) in the window's layout units; returns whether the menu used it. */
 	public boolean clickLayout(float mx, float my, int button) {
-		if (sheet.isOpen() && sheet.mouseClicked(mx, my, button)) return true;
+		if (sheet.isOpen() && sheet.mouseClicked(sheetX(mx), sheetY(my), button)) return true;
 		Runnable action = hits.at(mx, my, button);
 		searchFocused = false;
 		typingProfile = false;
@@ -897,7 +1015,7 @@ public final class MenuView {
 	}
 
 	public boolean dragLayout(float mx, float my) {
-		return sheet.isOpen() && sheet.mouseDragged(mx, my);
+		return sheet.isOpen() && sheet.mouseDragged(sheetX(mx), sheetY(my));
 	}
 
 	public boolean mouseReleased() {
@@ -909,7 +1027,7 @@ public final class MenuView {
 	}
 
 	public boolean scrollLayout(float mx, float my, double amount) {
-		if (sheet.isOpen() && sheet.over(mx, my)) return sheet.mouseScrolled(mx, my, amount);
+		if (sheet.isOpen() && sheet.over(sheetX(mx), sheetY(my))) return sheet.mouseScrolled(sheetX(mx), sheetY(my), amount);
 		scroll = Math.max(0, Math.min(maxScroll, scroll - amount * 70));
 		return true;
 	}
@@ -951,7 +1069,7 @@ public final class MenuView {
 			if (!search.isEmpty() || searchFocused) {
 				search = "";
 				searchFocused = false;
-				tabSince = System.currentTimeMillis();
+				placeSince = System.currentTimeMillis();
 				return true;
 			}
 			if (focused != null) {
@@ -967,7 +1085,7 @@ public final class MenuView {
 		}
 		if (key == Keys.TAB || key == Keys.PAGE_DOWN || key == Keys.PAGE_UP) {
 			boolean back = key == Keys.PAGE_UP || key == Keys.TAB && shift;
-			switchTab(Math.floorMod(tab + (back ? -1 : 1), TABS.size()));
+			switchPlace(Math.floorMod(place + (back ? -1 : 1), PLACES.size()));
 			return true;
 		}
 		if (searchFocused) {
@@ -1018,8 +1136,8 @@ public final class MenuView {
 			if (next >= 0 && next < shown.size()) focused = shown.get(next);
 		}
 		int index = shown.indexOf(focused);
-		float top = (index / columns) * (CARD_H + GAP);
-		float view = WIN_H - 18 - GRID_TOP;
+		float top = (index / columns) * (CARD_H + ROW_GAP);
+		float view = WIN_H - 22 - gridTop();
 		if (top < scroll) scroll = top;
 		else if (top + CARD_H > scroll + view) scroll = top + CARD_H - view;
 	}
@@ -1045,7 +1163,7 @@ public final class MenuView {
 			search += typed;
 			scroll = 0;
 			focused = null;
-			tabSince = System.currentTimeMillis();
+			placeSince = System.currentTimeMillis();
 		}
 		return true;
 	}
@@ -1069,17 +1187,15 @@ public final class MenuView {
 		final Anim x = new Anim(0, Tokens.T_SHEET, Ease.OUT);
 		final Anim y = new Anim(0, Tokens.T_SHEET, Ease.OUT);
 		final Anim w = new Anim(0, Tokens.T_SHEET, Ease.OUT);
-		final Anim knob;
 		final Anim lit;
 		boolean placed = false;
 		long drawnAt = -1;
-		/** When it was last switched, for the ripple off its switch. */
+		/** When it was last switched, for the ripple off its dot. */
 		long toggledAt = 0;
 		float cx;
 		float cy;
 
 		CardState(boolean on) {
-			knob = new Anim(on ? 1 : 0, Tokens.T_SWITCH_KNOB, Ease.SPRING);
 			lit = new Anim(on ? 1 : 0, Tokens.T_SWITCH_FILL, Ease.OUT);
 		}
 	}

@@ -35,7 +35,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 		super(Component.literal("Eventide"));
 		this.parent = parent;
 		this.extras = new SheetExtras(this);
-		this.view = new MenuView(this, start == null ? Category.RENDER : start);
+		this.view = new MenuView(this, start);
 	}
 
 	public MenuView view() {
@@ -47,7 +47,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 		return Modules.THEME_MENU_MODE.is("Floating") && Minecraft.getInstance().level != null && !FloatingMenu.failed();
 	}
 
-	/** Opens the menu at {@code start}: on screen, or floating in the world as Theme > Menu display says. */
+	/** Opens the menu at {@code start} (all mods for null): on screen, or floating in the world as Theme > Menu display says. */
 	public static void show(Screen parent, Category start) {
 		if (floatingNow()) FloatingMenu.open(parent, start);
 		else Minecraft.getInstance().setScreen(new MenuScreen(parent, start));
@@ -134,8 +134,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 			next = new MenuScreen(parent, view.category());
 			Minecraft.getInstance().setScreen(next);
 		}
-		if (view.category() == null) next.view.openProfiles();
-		if (view.sheetOpen()) next.view.openSettings(view.sheetModule());
+		next.view.follow(view);
 	}
 
 	@Override

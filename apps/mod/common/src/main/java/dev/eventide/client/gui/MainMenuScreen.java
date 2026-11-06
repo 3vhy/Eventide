@@ -6,7 +6,6 @@ import dev.eventide.client.EventideClient;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.compat.CompatTitleScreen;
 import dev.eventide.client.gui.menu.MenuHost;
-import dev.eventide.client.module.Module.Category;
 import dev.eventide.client.music.MusicArt;
 import dev.eventide.client.ui.Anim;
 import dev.eventide.client.ui.Ease;
@@ -365,7 +364,7 @@ public final class MainMenuScreen extends CompatTitleScreen {
 	private void dockAction(Minecraft mc, int which) {
 		switch (which) {
 			case 0 -> mc.setScreen(Compat.optionsScreen(this));
-			case 1 -> MenuHost.show(this, Category.RENDER);
+			case 1 -> MenuHost.show(this, null);
 			case 2 -> {
 				Screen mods = modMenu();
 				if (mods != null) mc.setScreen(mods);

@@ -321,8 +321,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 
 		context.getInput().pressKey(EventideClient.openSettingsKey);
 		context.waitTicks(30);
-		check(failed, "Right Shift on the main menu opens the menu", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
+		check(failed, "Right Shift on the main menu opens the menu at all mods", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().showingAll()));
 		shot(context, "eventide-menu-from-menu");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(5);
@@ -959,9 +959,20 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(4);
 		shot(context, "eventide-menu-opening");
 		context.waitTicks(26);
-		check(failed, "Right Shift opens the menu", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
+		check(failed, "Right Shift opens the menu at all mods", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().showingAll()));
 		shot(context, "eventide-menu");
+		float[] renderPill = context.computeOnClient(client -> ((MenuScreen) client.screen).view().pillCenter(Category.RENDER));
+		check(failed, "the menu shows the category pills", renderPill != null);
+		if (renderPill != null) {
+			context.getInput().setCursorPos(renderPill[0] * menuScale, renderPill[1] * menuScale);
+			context.waitTicks(2);
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(20);
+		}
+		check(failed, "clicking a pill shows its category", context.computeOnClient(client ->
+				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
+		shot(context, "eventide-menu-render");
 		boolean zoomBefore = context.computeOnClient(client -> Modules.ZOOM.enabled());
 		float[] zoomCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().cardCenter(Modules.ZOOM));
 		check(failed, "the menu lays out a card for each module", zoomCard != null);
@@ -1039,6 +1050,15 @@ public final class EventideGameTest implements FabricClientGameTest {
 				FloatingMenu.active() && client.screen == null));
 		check(failed, "the floating menu is drawn in the world (GameRenderer)", context.computeOnClient(client -> FloatingMenu.drawnFrames() > 0));
 		shot(context, "eventide-menu-floating");
+		float[] floatPill = context.computeOnClient(client -> FloatingMenu.host() == null ? null : FloatingMenu.host().view().pillCenter(Category.RENDER));
+		if (floatPill != null) {
+			context.runOnClient(client -> FloatingMenu.lookAt(floatPill[0], floatPill[1]));
+			context.waitTicks(3);
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(15);
+		}
+		check(failed, "clicking a floating pill with the crosshair shows its category", context.computeOnClient(client ->
+				FloatingMenu.host() != null && FloatingMenu.host().view().category() == Category.RENDER));
 		boolean floatZoom = context.computeOnClient(client -> Modules.ZOOM.enabled());
 		float[] floatCard = context.computeOnClient(client -> FloatingMenu.host() == null ? null : FloatingMenu.host().view().cardCenter(Modules.ZOOM));
 		check(failed, "the floating menu lays out its cards", floatCard != null);

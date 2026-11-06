@@ -87,7 +87,7 @@ public final class FloatingMenu {
 	 */
 	public static void open(Screen parent, Category start) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen != null) mc.setScreen(null);
+		if (Compat.screen() != null) Compat.setScreen(null);
 		FloatingMenuScreen next = new FloatingMenuScreen(parent, start);
 		next.init(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
 		host = next;
@@ -110,7 +110,7 @@ public final class FloatingMenu {
 
 	/** Whether the floating menu is up and taking your clicks (nothing's on screen over it). */
 	public static boolean active() {
-		return host != null && open && Minecraft.getInstance().screen == null;
+		return host != null && open && Compat.screen() == null;
 	}
 
 	/** Shows {@code menu} on a panel in front of where the camera looks. */
@@ -133,7 +133,7 @@ public final class FloatingMenu {
 
 	/** Puts the panel straight in front of where the camera looks now, hanging there in the world. */
 	public static void recenter() {
-		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Camera camera = Compat.camera();
 		yaw = camera.yRot();
 		pitch = Math.max(-25, Math.min(25, camera.xRot() * 0.6f));
 		Vec3 eye = camera.position();
@@ -193,7 +193,7 @@ public final class FloatingMenu {
 		Vector3f up = new Vector3f(r).cross(f).normalize();
 		float k = unit();
 		float bob = (float) Math.sin(System.currentTimeMillis() / 1000.0 * 1.3) * 0.008f;
-		Vec3 eye = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+		Vec3 eye = Compat.camera().position();
 		Vector3f centre = new Vector3f((float) (anchorX - eye.x), (float) (anchorY - eye.y), (float) (anchorZ - eye.z)).add(new Vector3f(up).mul(bob));
 		Vector3f corner = new Vector3f(centre).sub(new Vector3f(r).mul(MenuView.WIN_W * k / 2f)).add(new Vector3f(up).mul(MenuView.WIN_H * k / 2f));
 		return new Vector3f[] {corner, new Vector3f(r).mul(k), new Vector3f(up).mul(-k), f};
@@ -202,7 +202,7 @@ public final class FloatingMenu {
 	private static void projection(Matrix4f out) {
 		var window = Minecraft.getInstance().getWindow();
 		float aspect = window.getWidth() / (float) Math.max(1, window.getHeight());
-		out.setPerspective((float) Math.toRadians(FOV), aspect, NEAR, FAR);
+		Compat.perspective(out, (float) Math.toRadians(FOV), aspect, NEAR, FAR);
 	}
 
 	/** Draws the panel; called once a frame after the world is drawn. */
@@ -216,7 +216,7 @@ public final class FloatingMenu {
 		float t = reveal();
 		if (t <= 0.001f) return;
 		follow(mc);
-		Camera camera = mc.gameRenderer.getMainCamera();
+		Camera camera = Compat.camera();
 		ROTATION.set(camera.rotation()).conjugate();
 		VIEW.identity().rotation(ROTATION);
 		projection(PROJECTION);
@@ -431,7 +431,7 @@ public final class FloatingMenu {
 		float tan = (float) Math.tan(Math.toRadians(FOV / 2));
 		float aspect = window.getWidth() / (float) Math.max(1, window.getHeight());
 		Vector3f ray = new Vector3f(nx * tan * aspect, ny * tan, -1);
-		mc.gameRenderer.getMainCamera().rotation().transform(ray);
+		Compat.camera().rotation().transform(ray);
 		Vector3f[] f = frame();
 		Vector3f normal = new Vector3f(f[3]).negate();
 		float denom = ray.dot(normal);
@@ -450,7 +450,7 @@ public final class FloatingMenu {
 		Minecraft mc = Minecraft.getInstance();
 		Vector3f[] f = frame();
 		Vector3f world = new Vector3f(f[0]).add(new Vector3f(f[1]).mul(lx)).add(new Vector3f(f[2]).mul(ly));
-		Quaternionf inverse = new Quaternionf(mc.gameRenderer.getMainCamera().rotation()).conjugate();
+		Quaternionf inverse = new Quaternionf(Compat.camera().rotation()).conjugate();
 		inverse.transform(world);
 		if (world.z >= -1e-4f) return null;
 		var window = mc.getWindow();

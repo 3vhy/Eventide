@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * The few drawing calls Eventide needs. Minecraft renamed its GUI drawing class between
- * 1.21.11 (GuiGraphics) and 26.1 (GuiGraphicsExtractor), so each version has its own
+ * 1.21.11 (GuiGraphics) and 26.1 and later (GuiGraphicsExtractor), so each version has its own
  * DrawImpl in compat/ and everything else draws through this interface.
  */
 public interface Draw {

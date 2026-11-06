@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Hooks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -19,8 +20,8 @@ public final class StayOpen {
 	static void tick(Minecraft mc) {
 		if (!pending) return;
 		pending = false;
-		if (mc.screen != null || mc.player == null) return;
-		mc.setScreen(new ChatScreen("", false));
+		if (Compat.screen() != null || mc.player == null) return;
+		Compat.setScreen(new ChatScreen("", false));
 		Hooks.stayOpenRan = true;
 	}
 }

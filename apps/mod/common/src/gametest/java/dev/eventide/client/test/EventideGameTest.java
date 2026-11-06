@@ -213,7 +213,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 	/** How many of the chat's wrapped lines contain {@code text}. */
 	private static int chatLinesWith(net.minecraft.client.Minecraft client, String text) {
 		int count = 0;
-		for (String line : ((ChatTweaks.ShownLines) client.gui.getChat()).eventide$shownLines()) {
+		for (String line : ((ChatTweaks.ShownLines) Compat.chatBox()).eventide$shownLines()) {
 			if (line.contains(text)) count++;
 		}
 		return count;
@@ -274,7 +274,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		EventideClient.LOG.info("eventide-check: \"PANELS AND MUSIC\" is {} wide in the clean font, {} in Minecraft's bold", fontWidths[0],
 				fontWidths[1]);
 		check(failed, "clean font (Inter) loads from the mod's resources", fontWidths[0] > 20 && fontWidths[0] != fontWidths[1]);
-		check(failed, "the main menu is Eventide's", context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen));
+		check(failed, "the main menu is Eventide's", context.computeOnClient(client -> Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen));
 		List<String> unlisted = new ArrayList<>();
 		for (java.lang.reflect.Field field : Modules.class.getFields()) {
 			try {
@@ -287,7 +287,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "every mod is in the menu (Modules.ALL)", unlisted.isEmpty());
 		mainMenuHover(context);
 		check(failed, "main menu has Singleplayer, Multiplayer, Realms, Options, the Eventide menu and Quit", context.computeOnClient(client -> {
-			if (!(client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu)) return false;
+			if (!(Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen menu)) return false;
 			for (String id : List.of("singleplayer", "multiplayer", "realms", "options", "eventide", "quit")) {
 				if (menu.centre(id) == null) return false;
 			}
@@ -296,7 +296,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> Modules.MAIN_MENU.set(false));
 		context.waitTicks(5);
 		check(failed, "Main Menu off brings back Minecraft's own title screen", context.computeOnClient(client ->
-				client.screen != null && client.screen.getClass() == TitleScreen.class));
+				Compat.screen() != null && Compat.screen().getClass() == TitleScreen.class));
 		shot(context, "eventide-main-menu-vanilla");
 		context.runOnClient(client -> Modules.MAIN_MENU.set(true));
 		context.waitTicks(5);
@@ -304,8 +304,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 		boolean modMenuOpen = context.computeOnClient(client -> {
 			try {
 				Class<?> mods = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
-				client.setScreen((net.minecraft.client.gui.screens.Screen) mods.getConstructor(net.minecraft.client.gui.screens.Screen.class)
-						.newInstance(client.screen));
+				Compat.setScreen((net.minecraft.client.gui.screens.Screen) mods.getConstructor(net.minecraft.client.gui.screens.Screen.class)
+						.newInstance(Compat.screen()));
 				return true;
 			} catch (ReflectiveOperationException | RuntimeException e) {
 				EventideClient.LOG.info("eventide-check: Mod Menu isn't loaded, so its list isn't pictured");
@@ -322,16 +322,16 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.getInput().pressKey(EventideClient.openSettingsKey);
 		context.waitTicks(30);
 		check(failed, "Right Shift on the main menu opens the menu at all mods", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().showingAll()));
+				Compat.screen() instanceof MenuScreen menu && menu.view().showingAll()));
 		shot(context, "eventide-menu-from-menu");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(5);
-		check(failed, "Esc in the menu goes back to the main menu", context.computeOnClient(client -> client.screen instanceof TitleScreen));
+		check(failed, "Esc in the menu goes back to the main menu", context.computeOnClient(client -> Compat.screen() instanceof TitleScreen));
 		context.runOnClient(client -> Modules.THEME_MENU_MODE.set("Floating"));
 		context.getInput().pressKey(EventideClient.openSettingsKey);
 		context.waitTicks(5);
 		check(failed, "Right Shift on the main menu opens the menu on screen, even set to Floating (there's no world)",
-				context.computeOnClient(client -> client.screen instanceof MenuScreen));
+				context.computeOnClient(client -> Compat.screen() instanceof MenuScreen));
 		context.runOnClient(client -> Modules.THEME_MENU_MODE.reset());
 		context.setScreen(() -> new HudEditorScreen(new TitleScreen()));
 		context.waitTicks(10);
@@ -481,7 +481,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> Modules.MUSIC_COLOR.reset());
 			context.setScreen(() -> new MusicShowcase(HudWidgets.KEYSTROKES));
 			context.runOnClient(client -> {
-				client.getToastManager().clear();
+				Compat.toasts().clear();
 				Modules.KEYSTROKES.sliderSetting("background").reset();
 				client.options.keyAttack.setDown(true);
 			});
@@ -591,7 +591,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.setScreen(() -> null);
 			context.runOnClient(client -> {
 				Modules.HOTBAR.set(true);
-				client.getToastManager().clear();
+				Compat.toasts().clear();
 			});
 			context.waitTicks(5);
 			shot(context, "eventide-hotbar");
@@ -799,7 +799,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 				int[] pos = widget.position(client, Math.round(screenW / scale), Math.round(screenH / scale));
 				double x = (pos[0] + widget.width(client) / 2.0) * scale;
 				double y = (pos[1] + widget.height(client) / 2.0) * scale;
-				client.screen.mouseScrolled(x, y, 0, -1);
+				Compat.screen().mouseScrolled(x, y, 0, -1);
 			});
 			check(failed, "scrolling over the scoreboard in the HUD editor resizes it",
 					context.computeOnClient(client -> Modules.SCOREBOARD_SIZE.get() < sizeBefore));
@@ -850,7 +850,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 				AbstractWidget disconnect = null;
 				AbstractWidget modMenu = null;
 				int eventideButtons = 0;
-				for (AbstractWidget widget : Compat.widgets(client.screen)) {
+				for (AbstractWidget widget : Compat.widgets(Compat.screen())) {
 					if (!widget.visible) continue;
 					String label = widget.getMessage().getString();
 					if (label.equals(PauseMenuButton.LABEL)) ours = widget;
@@ -872,21 +872,21 @@ public final class EventideGameTest implements FabricClientGameTest {
 				context.waitTicks(2);
 				context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 				context.waitTicks(15);
-				check(failed, "the pause menu's Eventide button opens the menu", context.computeOnClient(client -> client.screen instanceof MenuScreen));
+				check(failed, "the pause menu's Eventide button opens the menu", context.computeOnClient(client -> Compat.screen() instanceof MenuScreen));
 				context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 				context.waitTicks(5);
 			}
 			context.getInput().pressKey(EventideClient.openSettingsKey);
 			context.waitTicks(15);
 			shot(context, "eventide-menu-from-pause");
-			check(failed, "Right Shift on the pause menu opens the menu", context.computeOnClient(client -> client.screen instanceof MenuScreen));
+			check(failed, "Right Shift on the pause menu opens the menu", context.computeOnClient(client -> Compat.screen() instanceof MenuScreen));
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(5);
-			check(failed, "closing the menu goes back to the pause menu", context.computeOnClient(client -> client.screen instanceof PauseScreen));
+			check(failed, "closing the menu goes back to the pause menu", context.computeOnClient(client -> Compat.screen() instanceof PauseScreen));
 			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
 
 			int[] quit = context.computeOnClient(client -> {
-				for (AbstractWidget widget : Compat.widgets(client.screen)) {
+				for (AbstractWidget widget : Compat.widgets(Compat.screen())) {
 					if (widget.getMessage().getContents() instanceof TranslatableContents key
 							&& (key.getKey().equals("menu.returnToMenu") || key.getKey().equals("menu.disconnect"))) {
 						return new int[] {widget.getX() + widget.getWidth() / 2, widget.getY() + widget.getHeight() / 2};
@@ -901,7 +901,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 				context.waitTicks(5);
 				shot(context, "eventide-confirm-disconnect");
 				check(failed, "disconnect needs a second click", context.computeOnClient(client ->
-						client.screen instanceof PauseScreen && client.level != null && ConfirmDisconnect.waiting()));
+						Compat.screen() instanceof PauseScreen && client.level != null && ConfirmDisconnect.waiting()));
 			} else {
 				check(failed, "found the pause menu's quit button", false);
 			}
@@ -911,11 +911,11 @@ public final class EventideGameTest implements FabricClientGameTest {
 
 		context.waitTicks(10);
 		check(failed, "Eventide main menu after leaving a world",
-				context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen));
+				context.computeOnClient(client -> Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen));
 		context.waitTicks(20);
 		shot(context, "eventide-main-menu-continue");
 		check(failed, "the main menu's Continue card offers the world you just left", context.computeOnClient(client ->
-				dev.eventide.client.gui.LastPlayed.get() != null && client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu
+				dev.eventide.client.gui.LastPlayed.get() != null && Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen menu
 						&& menu.centre("continue") != null));
 		int freezesBefore = FreezeWatch.freezes();
 		context.runOnClient(client -> {
@@ -960,9 +960,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 		shot(context, "eventide-menu-opening");
 		context.waitTicks(26);
 		check(failed, "Right Shift opens the menu at all mods", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().showingAll()));
+				Compat.screen() instanceof MenuScreen menu && menu.view().showingAll()));
 		shot(context, "eventide-menu");
-		float[] renderPill = context.computeOnClient(client -> ((MenuScreen) client.screen).view().pillCenter(Category.RENDER));
+		float[] renderPill = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().pillCenter(Category.RENDER));
 		check(failed, "the menu shows the category pills", renderPill != null);
 		if (renderPill != null) {
 			context.getInput().setCursorPos(renderPill[0] * menuScale, renderPill[1] * menuScale);
@@ -971,10 +971,10 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 		}
 		check(failed, "clicking a pill shows its category", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
+				Compat.screen() instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
 		shot(context, "eventide-menu-render");
 		boolean zoomBefore = context.computeOnClient(client -> Modules.ZOOM.enabled());
-		float[] zoomCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().cardCenter(Modules.ZOOM));
+		float[] zoomCard = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().cardCenter(Modules.ZOOM));
 		check(failed, "the menu lays out a card for each module", zoomCard != null);
 		if (zoomCard != null) {
 			context.getInput().setCursorPos(zoomCard[0] * menuScale, zoomCard[1] * menuScale);
@@ -990,21 +990,21 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
 			context.waitTicks(15);
 			check(failed, "right-clicking a card opens its settings", context.computeOnClient(client ->
-					client.screen instanceof MenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
+					Compat.screen() instanceof MenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
 			shot(context, "eventide-menu-zoom-settings");
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(10);
 		}
 		check(failed, "zoom is back the way it was", context.computeOnClient(client -> Modules.ZOOM.enabled() == zoomBefore));
 		check(failed, "the mouse leaves no keyboard focus behind", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().focused() == null));
+				Compat.screen() instanceof MenuScreen menu && menu.view().focused() == null));
 		context.getInput().pressKey(InputConstants.KEY_DOWN);
 		context.getInput().pressKey(InputConstants.KEY_RIGHT);
 		context.waitTicks(5);
 		check(failed, "the arrow keys move between cards", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().focused() != null));
+				Compat.screen() instanceof MenuScreen menu && menu.view().focused() != null));
 		shot(context, "eventide-menu-keyboard");
-		Module focusedCard = context.computeOnClient(client -> ((MenuScreen) client.screen).view().focused());
+		Module focusedCard = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().focused());
 		boolean focusedBefore = focusedCard != null && context.computeOnClient(client -> focusedCard.enabled());
 		context.getInput().pressKey(InputConstants.KEY_SPACE);
 		context.waitTicks(5);
@@ -1014,7 +1014,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.getInput().pressKey(InputConstants.KEY_RETURN);
 		context.waitTicks(15);
 		check(failed, "Enter opens the settings of the card the keyboard is on", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().sheetModule() == focusedCard));
+				Compat.screen() instanceof MenuScreen menu && menu.view().sheetModule() == focusedCard));
 		context.getInput().pressKey(InputConstants.KEY_DOWN);
 		context.waitTicks(5);
 		shot(context, "eventide-menu-settings-keyboard");
@@ -1024,15 +1024,15 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.getInput().pressKey(InputConstants.KEY_TAB);
 		context.waitTicks(10);
 		check(failed, "Tab moves to the next section", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().category() == Category.PLAYER));
+				Compat.screen() instanceof MenuScreen menu && menu.view().category() == Category.PLAYER));
 		context.getInput().typeChars("totem");
 		context.waitTicks(10);
 		check(failed, "typing in the menu searches", context.computeOnClient(client ->
-				client.screen instanceof MenuScreen menu && menu.view().searchText().equals("totem")));
+				Compat.screen() instanceof MenuScreen menu && menu.view().searchText().equals("totem")));
 		shot(context, "eventide-menu-search");
 		context.setScreen(() -> MenuScreen.settings(null, Modules.CROSSHAIR));
 		context.waitTicks(15);
-		float[] origin = context.computeOnClient(client -> ((MenuScreen) client.screen).view().sheetContent());
+		float[] origin = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().sheetContent());
 		shot(context, "eventide-menu-crosshair");
 		context.setScreen(() -> MenuScreen.settings(null, Modules.KNIVES));
 		context.waitTicks(15);
@@ -1047,7 +1047,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		shot(context, "eventide-menu-floating-popping");
 		context.waitTicks(30);
 		check(failed, "Floating opens the menu in the world with no screen over the game", context.computeOnClient(client ->
-				FloatingMenu.active() && client.screen == null));
+				FloatingMenu.active() && Compat.screen() == null));
 		check(failed, "the floating menu is drawn in the world (GameRenderer)", context.computeOnClient(client -> FloatingMenu.drawnFrames() > 0));
 		shot(context, "eventide-menu-floating");
 		float[] floatPill = context.computeOnClient(client -> FloatingMenu.host() == null ? null : FloatingMenu.host().view().pillCenter(Category.RENDER));
@@ -1116,7 +1116,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		shot(context, "eventide-menu-floating-recentred");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(10);
-		check(failed, "Esc closes the floating menu", context.computeOnClient(client -> !FloatingMenu.active() && client.screen == null));
+		check(failed, "Esc closes the floating menu", context.computeOnClient(client -> !FloatingMenu.active() && Compat.screen() == null));
 		context.runOnClient(client -> Modules.THEME_MENU_MODE.reset());
 		context.waitTicks(5);
 	}
@@ -1131,14 +1131,14 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> {
 			Modules.KILL_EFFECTS.set(true);
 			Modules.KILL_EFFECTS_MOBS.set(true);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		face(context, 0, 10);
 		server.runCommand("execute as @p at @s run summon zombie ^ ^ ^4 {NoAI:1b,Silent:1b,Tags:[\"eventide_kill\"]}");
 		context.waitTicks(10);
 		context.runOnClient(client -> {
 			for (var entity : client.level.entitiesForRendering()) {
-				if (entity.getType() == net.minecraft.world.entity.EntityType.ZOMBIE) dev.eventide.client.module.KillEffects.onAttack(entity);
+				if (net.minecraft.world.entity.EntityType.getKey(entity.getType()).getPath().equals("zombie")) dev.eventide.client.module.KillEffects.onAttack(entity);
 			}
 		});
 		server.runCommand("kill @e[tag=eventide_kill]");
@@ -1180,14 +1180,14 @@ public final class EventideGameTest implements FabricClientGameTest {
 			Modules.KILL_EFFECTS.set(true);
 			Modules.KILL_EFFECTS_MOBS.set(true);
 			Modules.KILL_EFFECTS_STYLE.set("Heaven");
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		face(context, 0, 5);
 		server.runCommand("execute as @p at @s run summon zombie ^ ^ ^4 {NoAI:1b,Silent:1b,Tags:[\"eventide_heaven\"]}");
 		context.waitTicks(10);
 		context.runOnClient(client -> {
 			for (var entity : client.level.entitiesForRendering()) {
-				if (entity.getType() == net.minecraft.world.entity.EntityType.ZOMBIE) {
+				if (net.minecraft.world.entity.EntityType.getKey(entity.getType()).getPath().equals("zombie")) {
 					dev.eventide.client.module.KillEffects.onAttack(entity);
 					dev.eventide.client.module.HitGlow.onAttack(entity);
 				}
@@ -1322,7 +1322,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> {
 			client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
 			for (Module module : hudOn) module.set(false);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		face(context, 0, 15);
 		context.getInput().pressKey(GLFW.GLFW_KEY_1);
@@ -1383,7 +1383,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		boolean was = context.computeOnClient(client -> Modules.MODEL_SKIN.enabled());
 		context.runOnClient(client -> {
 			Modules.MODEL_SKIN.set(true);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		for (String skin : dev.eventide.client.knife.ModelSkins.SKINS) {
 			context.runOnClient(client -> Modules.MODEL_SKIN_TYPE.set(skin));
@@ -1403,7 +1403,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		boolean knivesWere = context.computeOnClient(client -> Modules.KNIVES.enabled());
 		context.runOnClient(client -> {
 			client.options.setCameraType(CameraType.FIRST_PERSON);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 			Modules.KNIVES.set(false);
 			Modules.SWORD_MODELS.set(true);
 		});
@@ -1441,7 +1441,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
 		context.waitTicks(10);
 		double[] box = context.computeOnClient(client -> {
-			InventoryScreen screen = (InventoryScreen) client.screen;
+			InventoryScreen screen = (InventoryScreen) Compat.screen();
 			var at = (dev.eventide.client.mixin.AbstractContainerScreenAccessor) screen;
 			double scale = client.getWindow().getGuiScale();
 			for (net.minecraft.world.inventory.Slot slot : screen.getMenu().slots) {
@@ -1463,12 +1463,12 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new net.minecraft.client.gui.screens.ChatScreen("", false));
 		context.waitTicks(5);
 		context.runOnClient(client -> {
-			((net.minecraft.client.gui.screens.ChatScreen) client.screen).handleChatInput("Eventide says hi", true);
-			client.setScreen(null);
+			((net.minecraft.client.gui.screens.ChatScreen) Compat.screen()).handleChatInput("Eventide says hi", true);
+			Compat.setScreen(null);
 		});
 		context.waitTicks(4);
 		check(failed, "Stay Open opens the chat again after you send a message", context.computeOnClient(client ->
-				client.screen instanceof net.minecraft.client.gui.screens.ChatScreen) && Hooks.stayOpenRan);
+				Compat.screen() instanceof net.minecraft.client.gui.screens.ChatScreen) && Hooks.stayOpenRan);
 		context.setScreen(() -> null);
 		context.runOnClient(client -> {
 			Modules.STAY_OPEN.set(false);
@@ -1528,8 +1528,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 			Modules.SKIES.set(true);
 			dev.eventide.client.sky.LivingSky.select(dev.eventide.client.sky.SkyType.GALAXY);
 			Modules.KEYSTROKES.set(false);
-			client.getToastManager().clear();
-			client.gui.getChat().clearMessages(false);
+			Compat.toasts().clear();
+			Compat.chatBox().clearMessages(false);
 		});
 		face(context, 30, -25);
 		context.waitTicks(30);
@@ -1624,7 +1624,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 	/** The main menu with the mouse over Singleplayer, Multiplayer and a dock button: each grows and glows. */
 	private static void mainMenuHover(ClientGameTestContext context) {
 		for (String id : List.of("singleplayer", "multiplayer", "options")) {
-			float[] at = context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu ? menu.centre(id) : null);
+			float[] at = context.computeOnClient(client -> Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen menu ? menu.centre(id) : null);
 			if (at == null) continue;
 			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
 			context.getInput().setCursorPos(at[0] * scale, at[1] * scale);
@@ -1752,7 +1752,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			client.options.renderDistance().set(8);
 			client.options.fov().set(70);
 			client.options.cloudStatus().set(net.minecraft.client.CloudStatus.FANCY);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		face(context, 30, 5);
 		context.waitTicks(200);
@@ -1849,13 +1849,13 @@ public final class EventideGameTest implements FabricClientGameTest {
 		server.runCommand("item replace entity @p weapon.mainhand with air");
 		server.runCommand("item replace entity @p weapon.offhand with air");
 		context.runOnClient(client -> {
-			client.gui.getChat().clearMessages(false);
+			Compat.chatBox().clearMessages(false);
 			Modules.MUSIC.set(false);
 			Modules.TOTEM_WARNING.set(false);
 			Modules.LYRICS.set(true);
 			Modules.LYRICS_PLACE.set("Sky");
 			client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 			MusicBridge.simulate(song);
 			Lyrics.simulate(MusicBridge.current(), lrc);
 		});
@@ -1976,8 +1976,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 			Modules.KNIVES.set(true);
 			Modules.KNIVES_SLOTS.reset();
 			for (int i = 0; i < KNIFE_SLOTS.length; i++) Knives.setSlot(i, KNIFE_SLOTS[i]);
-			client.getToastManager().clear();
-			client.gui.getChat().clearMessages(false);
+			Compat.toasts().clear();
+			Compat.chatBox().clearMessages(false);
 		});
 		face(context, 0, every ? -8 : 10);
 		check(failed, "hotbar slots marked as knives keep their knife", context.computeOnClient(client ->
@@ -2083,14 +2083,14 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> MenuScreen.settings(null, Modules.KNIVES));
 		context.waitTicks(20);
 		shot(context, "eventide-menu-knives");
-		float[] slot9 = context.computeOnClient(client -> ((MenuScreen) client.screen).view().knifeSlot(8));
+		float[] slot9 = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().knifeSlot(8));
 		context.getInput().setCursorPos(slot9[0] * scale, slot9[1] * scale);
 		context.waitTicks(2);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 		context.waitTicks(5);
 		check(failed, "clicking a slot in the Knives settings marks it", context.computeOnClient(client -> Knives.slot(8) != null));
 		context.waitTicks(3);
-		float[] picker = context.computeOnClient(client -> ((MenuScreen) client.screen).view().knifePicker());
+		float[] picker = context.computeOnClient(client -> ((MenuScreen) Compat.screen()).view().knifePicker());
 		context.getInput().setCursorPos(picker[0] * scale, picker[1] * scale);
 		context.waitTicks(2);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
@@ -2150,9 +2150,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 		server.runCommand("time set 18000");
 		server.runCommand("weather clear");
 		context.runOnClient(client -> {
-			client.options.hideGui = true;
+			Compat.setHudHidden(true);
 			client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
-			client.getToastManager().clear();
+			Compat.toasts().clear();
 		});
 		face(context, 0, -16);
 		context.waitTicks(30);
@@ -2213,7 +2213,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		face(context, 0, -2);
 		context.waitTicks(30);
 		shot(context, "eventide-sky-horizon");
-		context.runOnClient(client -> client.options.hideGui = false);
+		context.runOnClient(client -> Compat.setHudHidden(false));
 		context.setScreen(() -> MenuScreen.settings(null, Modules.SKIES));
 		context.waitTicks(30);
 		shot(context, "eventide-menu-skies");
@@ -2380,8 +2380,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 			}
 			Modules.KNIVES.set(true);
 			Modules.KNIVES_SLOTS.reset();
-			client.getToastManager().clear();
-			client.gui.getChat().clearMessages(false);
+			Compat.toasts().clear();
+			Compat.chatBox().clearMessages(false);
 		});
 		face(context, 0, -8);
 		String focus = System.getProperty("eventide.testFocus", "");
@@ -2446,7 +2446,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 	private static Path shotPath(ClientGameTestContext context, String name) {
 		boolean sodiumOn26 = FabricLoader.getInstance().isModLoaded("sodium") && EventideClient.minecraftVersion().startsWith("26.");
 		if (sodiumOn26 && context.computeOnClient(client -> client.level != null)) {
-			EventideClient.LOG.info("eventide-check: screenshot {} skipped (Sodium on 26.1)", name);
+			EventideClient.LOG.info("eventide-check: screenshot {} skipped (Sodium on 26.x)", name);
 			return null;
 		}
 		return context.takeScreenshot(name);
@@ -2485,14 +2485,14 @@ public final class EventideGameTest implements FabricClientGameTest {
 	}
 
 	/**
-	 * Sodium on 26.1 can't draw the world in the extra frame a test screenshot renders, so
+	 * Sodium on 26.x can't draw the world in the extra frame a test screenshot renders, so
 	 * in-world screenshots are skipped there; everything else still runs.
 	 */
 	private static void shot(ClientGameTestContext context, String name) {
 		boolean sodiumOn26 = FabricLoader.getInstance().isModLoaded("sodium")
 				&& EventideClient.minecraftVersion().startsWith("26.");
 		if (sodiumOn26 && context.computeOnClient(client -> client.level != null)) {
-			EventideClient.LOG.info("eventide-check: screenshot {} skipped (Sodium on 26.1)", name);
+			EventideClient.LOG.info("eventide-check: screenshot {} skipped (Sodium on 26.x)", name);
 			return;
 		}
 		context.takeScreenshot(name);
@@ -2500,10 +2500,10 @@ public final class EventideGameTest implements FabricClientGameTest {
 
 	/** The visible widget on the current screen with this label, or null. */
 	private static AbstractWidget find(Minecraft client, String label) {
-		for (AbstractWidget widget : Compat.widgets(client.screen)) {
+		for (AbstractWidget widget : Compat.widgets(Compat.screen())) {
 			if (widget.visible && widget.getMessage().getString().equals(label)) return widget;
 		}
-		return client.screen == null ? null : findIn(client.screen.children(), label, 0);
+		return Compat.screen() == null ? null : findIn(Compat.screen().children(), label, 0);
 	}
 
 	/** Looks through lists and other containers on a screen for a widget with this label. */

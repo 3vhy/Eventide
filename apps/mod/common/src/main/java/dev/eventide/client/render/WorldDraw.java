@@ -1,10 +1,8 @@
 package dev.eventide.client.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -13,19 +11,15 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.EventideClient;
 import dev.eventide.client.compat.Compat;
 import dev.eventide.client.gui.Smooth;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.font.TextRenderable;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -106,7 +100,7 @@ public final class WorldDraw implements Draw {
 		quads = 0;
 		segments.clear();
 		segTexture = null;
-		builder = new BufferBuilder(memory, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+		builder = Compat.quads(memory, DefaultVertexFormat.POSITION_TEX_COLOR);
 	}
 
 	/** Draws what was gathered with {@code view} (the camera's rotation), faded by {@code alpha}. */
@@ -121,26 +115,19 @@ public final class WorldDraw implements Draw {
 			GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(view, new Vector4f(1, 1, 1, alpha), new Vector3f(), new Matrix4f());
 			RenderPipeline plain = SkyMesh.text();
 			RenderPipeline intensity = SkyMesh.textIntensity();
-			GpuBuffer vertices = plain.getVertexFormat().uploadImmediateVertexBuffer(mesh.vertexBuffer());
-			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-			GpuBuffer indexBuffer = indices.getBuffer(quads * 6);
-			RenderTarget target = Minecraft.getInstance().getMainRenderTarget();
-			try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Eventide floating menu",
-					target.getColorTextureView(), OptionalInt.empty(), target.getDepthTextureView(), OptionalDouble.empty())) {
+			RenderTarget target = Compat.mainTarget();
+			try (Compat.QuadPass pass = new Compat.QuadPass("Eventide floating menu", mesh, target.getColorTextureView(),
+					target.getDepthTextureView())) {
 				RenderPipeline current = null;
 				for (Segment segment : segments) {
 					RenderPipeline pipeline = segment.intensity() ? intensity : plain;
 					if (pipeline != current) {
-						pass.setPipeline(pipeline);
-						RenderSystem.bindDefaultUniforms(pass);
-						pass.setUniform("DynamicTransforms", transforms);
-						pass.setVertexBuffer(0, vertices);
-						pass.setIndexBuffer(indexBuffer, indices.type());
+						pass.pipeline(pipeline, transforms);
 						current = pipeline;
 					}
-					pass.bindTexture("Sampler0", segment.texture(),
+					pass.texture("Sampler0", segment.texture(),
 							RenderSystem.getSamplerCache().getClampToEdge(segment.smooth() ? FilterMode.LINEAR : FilterMode.NEAREST));
-					pass.drawIndexed(0, segment.first() * 6, segment.count() * 6, 1);
+					pass.draw(segment.first(), segment.count());
 				}
 			}
 		} finally {
@@ -469,7 +456,7 @@ public final class WorldDraw implements Draw {
 		public void acceptGlyph(TextRenderable.Styled glyph) {
 			GpuTextureView texture = glyph.textureView();
 			if (texture == null || builder == null) return;
-			use(texture, glyph.guiPipeline() == RenderPipelines.GUI_TEXT_INTENSITY, true);
+			use(texture, Compat.grayscaleGlyph(glyph.guiPipeline()), true);
 			pending = 0;
 			glyph.render(identity, this, SkyMesh.FULL_BRIGHT, false);
 			if (pending == 4) polygon(4, true);
@@ -480,7 +467,7 @@ public final class WorldDraw implements Draw {
 		public void acceptEffect(TextRenderable effect) {
 			GpuTextureView texture = effect.textureView();
 			if (texture == null || builder == null) return;
-			use(texture, effect.guiPipeline() == RenderPipelines.GUI_TEXT_INTENSITY, true);
+			use(texture, Compat.grayscaleGlyph(effect.guiPipeline()), true);
 			pending = 0;
 			effect.render(identity, this, SkyMesh.FULL_BRIGHT, false);
 			if (pending == 4) polygon(4, true);

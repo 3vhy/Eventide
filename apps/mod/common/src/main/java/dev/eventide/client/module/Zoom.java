@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.EventideClient;
 import dev.eventide.client.mixin.OptionInstanceAccessor;
 import net.minecraft.client.Minecraft;
@@ -24,7 +25,7 @@ public final class Zoom {
 	}
 
 	static void tick(Minecraft mc) {
-		boolean want = Modules.ZOOM.enabled() && mc.screen == null && mc.player != null
+		boolean want = Modules.ZOOM.enabled() && Compat.screen() == null && mc.player != null
 				&& EventideClient.zoomKey != null && EventideClient.zoomKey.isDown();
 		if (want && !held) {
 			held = true;
@@ -37,7 +38,7 @@ public final class Zoom {
 			mc.options.smoothCamera = savedSmoothCamera;
 		}
 		// A screen opening or leaving the world ends the zoom straight away
-		if (savedFov != null && (mc.screen != null || mc.player == null)) {
+		if (savedFov != null && (Compat.screen() != null || mc.player == null)) {
 			current = 1.0;
 		}
 		update(mc);

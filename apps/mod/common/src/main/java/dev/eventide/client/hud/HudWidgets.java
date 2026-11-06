@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.gui.Accent;
 import dev.eventide.client.gui.MenuNameTag;
@@ -1091,7 +1092,7 @@ public final class HudWidgets {
 				float left = effect.isInfiniteDuration() ? 1 : most <= 0 ? 0 : duration / (float) most;
 				int sx = Math.round(x + Hud.PAD_X);
 				int sy = Math.round(ry + (ROW - 9) / 2f);
-				d.sprite(Gui.getMobEffectSprite(holder), sx, sy, 9, 9);
+				d.sprite(Compat.mobEffectSprite(holder), sx, sy, 9, 9);
 				String name = holder.value().getDisplayName().getString() + roman(effect.getAmplifier());
 				String time = effect.isInfiniteDuration() ? "∞" : time(duration);
 				row(d, x, ry, name, time, left, holder.value().getColor() | 0xFF000000, shadow, duration < 200 && !effect.isInfiniteDuration());

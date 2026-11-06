@@ -1,13 +1,8 @@
 package dev.eventide.client.sky;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.GpuQuery;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.systems.TimerQuery;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -22,7 +17,6 @@ import dev.eventide.client.render.SkyMesh;
 import dev.eventide.client.ui.Ease;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.OptionalInt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
@@ -58,10 +52,7 @@ public final class LivingSky {
 	private static float sunAngle = 0;
 	private static float rainBrightness = 1;
 	private static boolean failed = false;
-	private static final GpuQuery[] QUERIES = new GpuQuery[4];
-	private static int query = 0;
-	private static double gpuMillis = -1;
-	private static boolean timing = true;
+	private static final Compat.GpuTimer TIMER = new Compat.GpuTimer();
 
 	private LivingSky() {
 	}
@@ -181,17 +172,10 @@ public final class LivingSky {
 		try {
 			GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(view, texture == null ? atmosphere() : new Vector4f(1, 1, 1, 1),
 					new Vector3f(), params);
-			GpuBuffer vertices = pipeline.getVertexFormat().uploadImmediateVertexBuffer(mesh.vertexBuffer());
-			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(mesh.drawState().mode());
-			GpuBuffer indexBuffer = indices.getBuffer(mesh.drawState().indexCount());
-			try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Eventide sky", target, OptionalInt.empty())) {
-				pass.setPipeline(pipeline);
-				RenderSystem.bindDefaultUniforms(pass);
-				pass.setUniform("DynamicTransforms", transforms);
-				if (texture != null) pass.bindTexture("Sampler0", texture, sampled.getSampler());
-				pass.setVertexBuffer(0, vertices);
-				pass.setIndexBuffer(indexBuffer, indices.type());
-				pass.drawIndexed(0, 0, mesh.drawState().indexCount(), 1);
+			try (Compat.QuadPass pass = new Compat.QuadPass("Eventide sky", mesh, target, null)) {
+				pass.pipeline(pipeline, transforms);
+				if (texture != null) pass.texture("Sampler0", texture, sampled.getSampler());
+				pass.drawAll();
 			}
 		} finally {
 			mesh.close();
@@ -211,57 +195,27 @@ public final class LivingSky {
 
 	/** Draws the sky over the world's sky (from the sky pass); Minecraft's own sky colour isn't drawn. */
 	public static void drawWorld() {
-		GpuQuery timer = startTimer();
+		TIMER.begin();
 		try {
 			drawWorldTimed();
 		} finally {
-			stopTimer(timer);
+			TIMER.end();
 		}
 	}
 
 	/** How long the sky takes the graphics card a frame, in milliseconds (smoothed), or -1 if unknown. */
 	public static double gpuMillis() {
-		return gpuMillis;
-	}
-
-	private static GpuQuery startTimer() {
-		if (!timing || TimerQuery.getInstance().isRecording()) return null;
-		for (int i = 0; i < QUERIES.length; i++) {
-			GpuQuery done = QUERIES[i];
-			if (done == null) continue;
-			java.util.OptionalLong value = done.getValue();
-			if (value.isPresent()) {
-				double ms = value.getAsLong() / 1e6;
-				gpuMillis = gpuMillis < 0 ? ms : gpuMillis + (ms - gpuMillis) * 0.1;
-				done.close();
-				QUERIES[i] = null;
-			}
-		}
-		if (QUERIES[query] != null) return null;
-		try {
-			return RenderSystem.getDevice().createCommandEncoder().timerQueryBegin();
-		} catch (RuntimeException e) {
-			timing = false;
-			return null;
-		}
-	}
-
-	private static void stopTimer(GpuQuery timer) {
-		if (timer == null) return;
-		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-		encoder.timerQueryEnd(timer);
-		QUERIES[query] = timer;
-		query = (query + 1) % QUERIES.length;
+		return TIMER.millis();
 	}
 
 	private static void drawWorldTimed() {
 		try {
 			advance();
 			Hooks.skyDrawn = true;
-			Matrix4f view = new Matrix4f(RenderSystem.getModelViewMatrix());
+			Matrix4f view = Compat.modelView();
 			Vector3f sun = sun(sunAngleNow());
 			float day = daylight(sun);
-			RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+			RenderTarget main = Compat.mainTarget();
 			int divisor = switch (Modules.SKIES_RESOLUTION.get()) {
 				case "Half" -> 2;
 				case "Quarter" -> 4;

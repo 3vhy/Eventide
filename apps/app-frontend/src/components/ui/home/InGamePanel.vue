@@ -25,7 +25,7 @@ const messages = defineMessages({
 	unsupported: {
 		id: 'app.Eventide.ingame.unsupported',
 		defaultMessage:
-			"This instance doesn't get the Eventide in-game client. Pick a Fabric 1.21.11 or 26.1 instance, or set one up from the instance picker.",
+			"This instance doesn't get the Eventide in-game client. Pick a Fabric 1.21.11, 26.1 or 26.2 instance, or set one up from the instance picker.",
 	},
 	rightShift: { id: 'app.Eventide.ingame.key.right-shift', defaultMessage: 'Right Shift' },
 	leftAlt: { id: 'app.Eventide.ingame.key.left-alt', defaultMessage: 'Left Alt' },

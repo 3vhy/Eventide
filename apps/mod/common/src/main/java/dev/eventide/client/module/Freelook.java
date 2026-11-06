@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.EventideClient;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -39,7 +40,7 @@ public final class Freelook {
 		boolean held = EventideClient.freelookKey != null && EventideClient.freelookKey.isDown();
 		boolean allowed = Modules.FREELOOK.enabled() && mc.player != null;
 		if (!allowed || !toggleMode) toggled = false;
-		boolean want = allowed && (toggleMode ? toggled : held && mc.screen == null);
+		boolean want = allowed && (toggleMode ? toggled : held && Compat.screen() == null);
 
 		if (want && !active) {
 			start(mc);

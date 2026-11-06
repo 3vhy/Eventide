@@ -1,5 +1,6 @@
 package dev.eventide.client.gui.menu;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.module.Module.Category;
 import net.minecraft.client.Minecraft;
@@ -122,13 +123,13 @@ public final class FloatingMenuScreen extends MenuHost {
 	@Override
 	public void onClose() {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen == this) mc.setScreen(null);
+		if (Compat.screen() == this) Compat.setScreen(null);
 		FloatingMenu.close();
 	}
 
 	@Override
 	public void openHudEditor() {
 		FloatingMenu.close();
-		Minecraft.getInstance().setScreen(new dev.eventide.client.gui.HudEditorScreen(null));
+		Compat.setScreen(new dev.eventide.client.gui.HudEditorScreen(null));
 	}
 }

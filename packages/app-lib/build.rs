@@ -22,7 +22,7 @@ fn main() {
 fn embed_eventide_mods() {
     println!("cargo::rerun-if-changed=eventide-mod");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    for version in ["1.21.11", "26.1"] {
+    for version in ["1.21.11", "26.1", "26.2"] {
         let name = format!("eventide-{version}.jar");
         let source = PathBuf::from("eventide-mod").join(&name);
         let target = out_dir.join(&name);

@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.gui.HudEditorScreen;
 import dev.eventide.client.module.Modules;
@@ -16,9 +17,9 @@ public final class HudRenderer {
 		Minecraft mc = Minecraft.getInstance();
 		CpsTracker.poll(mc);
 		Zoom.update(mc);
-		if (mc.options.hideGui || mc.player == null) return;
+		if (Compat.hudHidden() || mc.player == null) return;
 		Waypoints.drawOnScreen(d, mc);
-		if (mc.screen instanceof HudEditorScreen || dev.eventide.client.gui.menu.FloatingMenu.visible()) return;
+		if (Compat.screen() instanceof HudEditorScreen || dev.eventide.client.gui.menu.FloatingMenu.visible()) return;
 		drawAll(d, mc);
 	}
 

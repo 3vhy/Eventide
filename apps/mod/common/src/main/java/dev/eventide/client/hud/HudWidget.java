@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.Draw;
 import dev.eventide.client.gui.HudEditorScreen;
@@ -138,7 +139,7 @@ public abstract class HudWidget {
 	 * centred under the top-centre column and clear of the Music Player.
 	 */
 	private int[] barPosition(Minecraft mc, int w, int h, int screenWidth, int screenHeight) {
-		boolean editing = mc.screen instanceof HudEditorScreen;
+		boolean editing = Compat.screen() instanceof HudEditorScreen;
 		int total = 0;
 		int before = 0;
 		boolean seen = false;
@@ -193,7 +194,7 @@ public abstract class HudWidget {
 	/** Where the server's boss bars end at the top of the screen (0 when there are none). */
 	private static int bossBarsBottom(Minecraft mc) {
 		try {
-			int bars = ((BossHealthOverlayAccessor) mc.gui.getBossOverlay()).eventide$events().size();
+			int bars = ((BossHealthOverlayAccessor) Compat.bossOverlay()).eventide$events().size();
 			return bars == 0 ? 0 : 12 + (bars - 1) * 19 + 5;
 		} catch (RuntimeException | LinkageError e) {
 			return 0;
@@ -203,7 +204,7 @@ public abstract class HudWidget {
 	/** Height taken by the earlier widgets stacked at the same anchor. */
 	private int stackedBefore(Minecraft mc) {
 		int total = 0;
-		boolean editing = mc.screen instanceof HudEditorScreen;
+		boolean editing = Compat.screen() instanceof HudEditorScreen;
 		for (HudWidget other : HudWidgets.ALL) {
 			if (other == this) break;
 			if (other.anchor == anchor && other.shown() && other.storedPosition() == null

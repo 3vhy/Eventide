@@ -1,5 +1,6 @@
 package dev.eventide.client.gui;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.Draw;
 import dev.eventide.client.EventideClient;
@@ -131,7 +132,7 @@ public final class HudEditorScreen extends CompatScreen {
 		toolbarBox[3] = Math.max(y + size + 3, box[1]);
 		Widgets.glass(d, x, y - 3, x + w, y + size + 3, (size + 6) / 2f);
 		toolButton(d, x + 3, y, size, "sliders-horizontal", false, mouseX, mouseY,
-				() -> mc.setScreen(MenuScreen.settings(this, widget.module)));
+				() -> Compat.setScreen(MenuScreen.settings(this, widget.module)));
 		toolButton(d, x + 3 + size + gap, y, size, "eye-off", true, mouseX, mouseY, () -> widget.module.set(false));
 	}
 
@@ -284,7 +285,7 @@ public final class HudEditorScreen extends CompatScreen {
 	public boolean keyPressed(KeyEvent event) {
 		if (EventideClient.openSettingsKey != null && EventideClient.openSettingsKey.matches(event)) {
 			Config.save();
-			Minecraft.getInstance().setScreen(null);
+			Compat.setScreen(null);
 			return true;
 		}
 		return super.keyPressed(event);
@@ -293,6 +294,6 @@ public final class HudEditorScreen extends CompatScreen {
 	@Override
 	public void onClose() {
 		Config.save();
-		Minecraft.getInstance().setScreen(parent);
+		Compat.setScreen(parent);
 	}
 }

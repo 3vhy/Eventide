@@ -135,13 +135,13 @@ public final class MainMenuScreen extends CompatTitleScreen {
 		widths[2] = column - widths[0] - widths[1] - 2 * gap;
 		float x = left;
 		button(d, "singleplayer", "Singleplayer", "play", true, x, row, widths[0], bh, u, mouseX, mouseY,
-				() -> mc.setScreen(new SelectWorldScreen(this)));
+				() -> Compat.setScreen(new SelectWorldScreen(this)));
 		x += widths[0] + gap;
 		button(d, "multiplayer", "Multiplayer", "server", false, x, row, widths[1], bh, u, mouseX, mouseY,
-				() -> mc.setScreen(mc.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this)));
+				() -> Compat.setScreen(mc.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this)));
 		x += widths[1] + gap;
 		button(d, "realms", "Realms", "cloud", false, x, row, widths[2], bh, u, mouseX, mouseY,
-				() -> mc.setScreen(new com.mojang.realmsclient.RealmsMainScreen(this)));
+				() -> Compat.setScreen(new com.mojang.realmsclient.RealmsMainScreen(this)));
 		Paint.opacity(old);
 
 		in = intro(now, 150);
@@ -363,13 +363,13 @@ public final class MainMenuScreen extends CompatTitleScreen {
 
 	private void dockAction(Minecraft mc, int which) {
 		switch (which) {
-			case 0 -> mc.setScreen(Compat.optionsScreen(this));
+			case 0 -> Compat.setScreen(Compat.optionsScreen(this));
 			case 1 -> MenuHost.show(this, null);
 			case 2 -> {
 				Screen mods = modMenu();
-				if (mods != null) mc.setScreen(mods);
+				if (mods != null) Compat.setScreen(mods);
 			}
-			case 3 -> mc.setScreen(new LanguageSelectScreen(this, mc.options, mc.getLanguageManager()));
+			case 3 -> Compat.setScreen(new LanguageSelectScreen(this, mc.options, mc.getLanguageManager()));
 			default -> mc.stop();
 		}
 	}

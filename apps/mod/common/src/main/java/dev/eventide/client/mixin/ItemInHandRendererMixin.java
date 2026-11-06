@@ -29,7 +29,7 @@ public abstract class ItemInHandRendererMixin {
 		return SwingSpeed.equipStep(step);
 	}
 
-	@Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
+	@Inject(method = {"renderArmWithItem", "submitArmWithItem"}, at = @At("HEAD"), cancellable = true)
 	private void eventide$knife(AbstractClientPlayer player, float partialTick, float pitch, InteractionHand hand, float swing, ItemStack stack,
 			float equip, PoseStack pose, SubmitNodeCollector collector, int light, CallbackInfo ci) {
 		if (hand != InteractionHand.MAIN_HAND) return;

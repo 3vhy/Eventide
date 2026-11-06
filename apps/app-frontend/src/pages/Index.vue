@@ -62,7 +62,7 @@ const messages = defineMessages({
 	lede: {
 		id: 'app.Eventide.home.lede',
 		defaultMessage:
-			'A Minecraft client with 80+ built-in mods, a clean HUD, knives, skies and smooth performance. Built for 1.21.11 and 26.1.',
+			'A Minecraft client with 80+ built-in mods, a clean HUD, knives, skies and smooth performance. Built for 1.21.11, 26.1 and 26.2.',
 	},
 	version: { id: 'app.Eventide.home.version', defaultMessage: 'Version' },
 	nickname: { id: 'app.Eventide.home.nickname', defaultMessage: 'In-game nickname' },

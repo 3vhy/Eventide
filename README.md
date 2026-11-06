@@ -4,7 +4,7 @@
 <a href="https://github.com/3vhy/Eventide/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/3vhy/Eventide?label=release&color=A855F7"></a>
 <a href="https://github.com/3vhy/Eventide/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/3vhy/Eventide/total?color=A855F7"></a>
 <img alt="Windows" src="https://img.shields.io/badge/platform-Windows-120D1C">
-<img alt="Minecraft 1.21.11 and 26.1" src="https://img.shields.io/badge/Minecraft-1.21.11%20%C2%B7%2026.1-120D1C">
+<img alt="Minecraft 1.21.11, 26.1 and 26.2" src="https://img.shields.io/badge/Minecraft-1.21.11%20%C2%B7%2026.1%20%C2%B7%2026.2-120D1C">
 <a href="LICENSE"><img alt="GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-120D1C"></a>
 </p>
 

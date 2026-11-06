@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.Minecraft;
@@ -15,7 +16,7 @@ public final class Crosshair {
 
 	public static void draw(Draw d, Runnable original) {
 		Minecraft mc = Minecraft.getInstance();
-		if (!Modules.CROSSHAIR.enabled() || mc.player == null || mc.options.hideGui
+		if (!Modules.CROSSHAIR.enabled() || mc.player == null || Compat.hudHidden()
 				|| !mc.options.getCameraType().isFirstPerson() || mc.player.isSpectator()) {
 			original.run();
 			return;

@@ -84,6 +84,7 @@ jobs:
           ls -la packages/app-lib/eventide-mod
           test -s packages/app-lib/eventide-mod/eventide-1.21.11.jar
           test -s packages/app-lib/eventide-mod/eventide-26.1.jar
+          test -s packages/app-lib/eventide-mod/eventide-26.2.jar
 
       - name: Install dependencies
         run: pnpm install
@@ -119,6 +120,7 @@ jobs:
           mkdir -p dist-mod
           cp packages/app-lib/eventide-mod/eventide-1.21.11.jar "dist-mod/eventide-1.21.11-${APP_VERSION}.jar"
           cp packages/app-lib/eventide-mod/eventide-26.1.jar "dist-mod/eventide-26.1-${APP_VERSION}.jar"
+          cp packages/app-lib/eventide-mod/eventide-26.2.jar "dist-mod/eventide-26.2-${APP_VERSION}.jar"
           ls -la dist-mod
 
       - name: Upload installers

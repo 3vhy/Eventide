@@ -32,12 +32,15 @@ static MOD_1_21_11: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/eventide-1.21.11.jar"));
 static MOD_26_1: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/eventide-26.1.jar"));
+static MOD_26_2: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/eventide-26.2.jar"));
 
 /// The Eventide mod jar built for this Minecraft version, if Eventide supports it.
 pub fn mod_jar_for(game_version: &str) -> Option<&'static [u8]> {
     let jar = match game_version {
         "1.21.11" => MOD_1_21_11,
         "26.1" | "26.1.1" | "26.1.2" => MOD_26_1,
+        "26.2" => MOD_26_2,
         _ => return None,
     };
     (!jar.is_empty()).then_some(jar)

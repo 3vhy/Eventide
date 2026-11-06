@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -23,7 +24,6 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.font.TextRenderable;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.joml.Matrix4f;
@@ -110,8 +110,8 @@ public final class SkyLyrics {
 	/** Draws the lyrics into the sky. Called from the sky pass, after the sun, moon and stars. */
 	public static void draw(float rainBrightness) {
 		Minecraft mc = Minecraft.getInstance();
-		if (!wanted() || mc.player == null || mc.level == null || mc.options.hideGui || blocked()) return;
-		if (mc.getOverlay() != null) {
+		if (!wanted() || mc.player == null || mc.level == null || Compat.hudHidden() || blocked()) return;
+		if (Compat.overlayShown()) {
 			ROWS.clear();
 			WRAPS.clear();
 			return;
@@ -129,7 +129,7 @@ public final class SkyLyrics {
 		long now = System.nanoTime();
 		float dt = lastFrame == 0 ? 0 : Math.min(0.1f, (now - lastFrame) / 1e9f);
 		lastFrame = now;
-		float cameraYaw = mc.gameRenderer.getMainCamera().yRot();
+		float cameraYaw = Compat.camera().yRot();
 		follow(changed, cameraYaw, oldYaw, dt);
 		if (LYRICS.current().isEmpty() && LYRICS.previous().isEmpty()) return;
 
@@ -465,7 +465,7 @@ public final class SkyLyrics {
 
 	/** The builder for glyphs on {@code glyph}'s texture, started the first time it's needed this frame. */
 	private static BufferBuilder builderFor(TextRenderable glyph) {
-		return builderFor(glyph.textureView(), glyph.guiPipeline() == RenderPipelines.GUI_TEXT_INTENSITY ? SkyMesh.textIntensity() : SkyMesh.text());
+		return builderFor(glyph.textureView(), Compat.grayscaleGlyph(glyph.guiPipeline()) ? SkyMesh.textIntensity() : SkyMesh.text());
 	}
 
 	private static BufferBuilder builderFor(GpuTextureView texture, RenderPipeline pipeline) {

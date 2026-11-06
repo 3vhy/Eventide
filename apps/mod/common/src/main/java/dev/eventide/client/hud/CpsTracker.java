@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import net.minecraft.client.Minecraft;
@@ -19,7 +20,7 @@ public final class CpsTracker {
 
 	/** Called for every mouse button press Minecraft handles. */
 	public static synchronized void onPress(int button) {
-		if (Minecraft.getInstance().screen != null) return;
+		if (Compat.screen() != null) return;
 		long now = System.currentTimeMillis();
 		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) LEFT.addLast(now);
 		else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) RIGHT.addLast(now);

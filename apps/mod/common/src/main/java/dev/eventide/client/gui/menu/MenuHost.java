@@ -1,5 +1,6 @@
 package dev.eventide.client.gui.menu;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.Draw;
 import dev.eventide.client.EventideClient;
@@ -50,7 +51,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 	/** Opens the menu at {@code start} (all mods for null): on screen, or floating in the world as Theme > Menu display says. */
 	public static void show(Screen parent, Category start) {
 		if (floatingNow()) FloatingMenu.open(parent, start);
-		else Minecraft.getInstance().setScreen(new MenuScreen(parent, start));
+		else Compat.setScreen(new MenuScreen(parent, start));
 	}
 
 	@Override
@@ -100,7 +101,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 
 	@Override
 	public void openHudEditor() {
-		Minecraft.getInstance().setScreen(new HudEditorScreen(this));
+		Compat.setScreen(new HudEditorScreen(this));
 	}
 
 	@Override
@@ -132,7 +133,7 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 		} else {
 			FloatingMenu.close();
 			next = new MenuScreen(parent, view.category());
-			Minecraft.getInstance().setScreen(next);
+			Compat.setScreen(next);
 		}
 		next.view.follow(view);
 	}
@@ -166,6 +167,6 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 	@Override
 	public void onClose() {
 		Config.save();
-		Minecraft.getInstance().setScreen(parent);
+		Compat.setScreen(parent);
 	}
 }

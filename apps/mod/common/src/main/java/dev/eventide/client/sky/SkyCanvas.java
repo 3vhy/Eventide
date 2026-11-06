@@ -3,8 +3,7 @@ package dev.eventide.client.sky;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.textures.TextureFormat;
+import dev.eventide.client.compat.Compat;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 
 /**
@@ -30,8 +29,7 @@ final class SkyCanvas extends AbstractTexture {
 		close();
 		this.width = width;
 		this.height = height;
-		texture = RenderSystem.getDevice().createTexture(() -> label, GpuTexture.USAGE_RENDER_ATTACHMENT | GpuTexture.USAGE_TEXTURE_BINDING,
-				TextureFormat.RGBA8, width, height, 1, 1);
+		texture = Compat.colorTarget(label, width, height);
 		textureView = RenderSystem.getDevice().createTextureView(texture);
 	}
 

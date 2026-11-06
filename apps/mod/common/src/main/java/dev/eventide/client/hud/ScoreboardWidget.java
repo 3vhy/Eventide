@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.ui.Paint;
 import dev.eventide.client.Hooks;
@@ -57,7 +58,7 @@ public final class ScoreboardWidget extends HudWidget {
 		Objective objective = null;
 		PlayerTeam team = scoreboard.getPlayersTeam(mc.player.getScoreboardName());
 		if (team != null) {
-			DisplaySlot slot = DisplaySlot.teamColorToSlot(team.getColor());
+			DisplaySlot slot = Compat.teamSidebar(team);
 			if (slot != null) objective = scoreboard.getDisplayObjective(slot);
 		}
 		return objective != null ? objective : scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
@@ -145,7 +146,7 @@ public final class ScoreboardWidget extends HudWidget {
 	/** Called in place of Minecraft's own scoreboard, so it stays in the same layer of the HUD. */
 	public void drawInPlace(Draw d) {
 		Minecraft mc = Minecraft.getInstance();
-		if (!module.enabled() || mc.screen instanceof HudEditorScreen) return;
+		if (!module.enabled() || Compat.screen() instanceof HudEditorScreen) return;
 		Board board = board(mc);
 		if (board == null) return;
 		Hooks.scoreboardRan = true;

@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.hud.ScoreboardWidget;
 import dev.eventide.client.mixin.PlayerTabOverlayAccessor;
@@ -136,7 +137,7 @@ public final class NameDetect {
 				}
 			}
 		}
-		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) mc.gui.getTabList();
+		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) Compat.tabList();
 		h = 31 * h + System.identityHashCode(tab.eventide$header());
 		h = 31 * h + System.identityHashCode(tab.eventide$footer());
 		ClientPacketListener connection = mc.getConnection();
@@ -171,7 +172,7 @@ public final class NameDetect {
 				lookAt(out, excluded, line.getString(), "Scoreboard", own);
 			}
 		}
-		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) mc.gui.getTabList();
+		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) Compat.tabList();
 		for (Component part : new Component[] {tab.eventide$header(), tab.eventide$footer()}) {
 			if (part == null) continue;
 			for (String line : part.getString().split("\n")) lookAt(out, excluded, line, "Tab list", own);

@@ -11,6 +11,7 @@ pluginManagement {
 
 rootProject.name = 'eventide-client-mod'
 
-// One build per Minecraft line; both compile the shared code in common/
+// One build per Minecraft line; each compiles the shared code in common/
 include 'mc1_21_11'
 include 'mc26_1'
+include 'mc26_2'

@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.knife.KnifeModel;
 import dev.eventide.client.knife.KnifeRenderer;
 import java.util.Locale;
@@ -142,12 +143,12 @@ public final class Knives {
 	/** The inspect key: a long, showy look at the knife. */
 	public static void inspect(Minecraft mc) {
 		KnifeModel model = held(mc);
-		if (model != null && animated() && mc.screen == null) KnifeRenderer.inspect(model);
+		if (model != null && animated() && Compat.screen() == null) KnifeRenderer.inspect(model);
 	}
 
 	/** Watches the use key, for the knife's heavy stab on right click. */
 	public static void tick(Minecraft mc) {
-		boolean down = mc.options.keyUse.isDown() && mc.screen == null;
+		boolean down = mc.options.keyUse.isDown() && Compat.screen() == null;
 		if (down && !useWasDown) {
 			KnifeModel model = held(mc);
 			if (model != null && animated()) KnifeRenderer.use(model);

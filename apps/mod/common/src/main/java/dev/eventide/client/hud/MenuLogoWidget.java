@@ -1,5 +1,6 @@
 package dev.eventide.client.hud;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Draw;
 import dev.eventide.client.gui.MenuNameTag;
 import dev.eventide.client.module.Modules;
@@ -23,7 +24,7 @@ final class MenuLogoWidget extends HudWidget {
 	/** Not under a menu that shows the logo in its corner already. */
 	@Override
 	public boolean visible(Minecraft mc) {
-		return mc.screen == null || !MenuNameTag.shows(mc.screen);
+		return Compat.screen() == null || !MenuNameTag.shows(Compat.screen());
 	}
 
 	@Override

@@ -101,7 +101,7 @@ public final class GroundFx {
 	private static void draw(PoseStack pose, SubmitNodeCollector collector) {
 		if (RINGS.isEmpty()) return;
 		Minecraft mc = Minecraft.getInstance();
-		Vec3 camera = mc.gameRenderer.getMainCamera().position();
+		Vec3 camera = Compat.camera().position();
 		long now = System.nanoTime();
 		List<Ring> rings = List.copyOf(RINGS);
 		collector.submitCustomGeometry(pose, Compat.worldFx(), (last, out) -> {

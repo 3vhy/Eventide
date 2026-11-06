@@ -1,5 +1,6 @@
 package dev.eventide.client.gui;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.EventideClient;
 import java.nio.file.Files;
@@ -93,7 +94,7 @@ public final class LastPlayed {
 			ServerData server = new ServerData(last.name, last.target, ServerData.Type.OTHER);
 			ConnectScreen.startConnecting(from, mc, ServerAddress.parseString(last.target), server, false, null);
 		} else {
-			mc.createWorldOpenFlows().openWorld(last.target, () -> mc.setScreen(from));
+			mc.createWorldOpenFlows().openWorld(last.target, () -> Compat.setScreen(from));
 		}
 	}
 }

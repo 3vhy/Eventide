@@ -274,7 +274,7 @@ public final class KnifeRenderer {
 		lastSlot = slot;
 		lastModel = model;
 		if (player.isScoping()) return true;
-		var camera = mc.gameRenderer.getMainCamera();
+		var camera = Compat.camera();
 		var motion = player.getDeltaMovement();
 		double yaw = Math.toRadians(player.getYRot());
 		double forward = -Math.sin(yaw) * motion.x + Math.cos(yaw) * motion.z;

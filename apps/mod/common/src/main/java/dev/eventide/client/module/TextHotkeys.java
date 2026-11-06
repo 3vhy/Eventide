@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.eventide.client.Config;
 import dev.eventide.client.Config.TextHotkey;
@@ -37,7 +38,7 @@ public final class TextHotkeys {
 			held.clear();
 			return;
 		}
-		boolean active = Modules.TEXT_HOTKEYS.enabled() && mc.player != null && mc.screen == null;
+		boolean active = Modules.TEXT_HOTKEYS.enabled() && mc.player != null && Compat.screen() == null;
 		Map<TextHotkey, Boolean> now = new IdentityHashMap<>();
 		for (TextHotkey hotkey : List.copyOf(hotkeys)) {
 			boolean down = isDown.test(hotkey);

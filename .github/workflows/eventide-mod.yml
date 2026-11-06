@@ -1,6 +1,6 @@
 name: Build Eventide mod
 
-# Builds the in-game Eventide mod for Minecraft 1.21.11 and 26.1.x, and plays a short
+# Builds the in-game Eventide mod for Minecraft 1.21.11, 26.1.x and 26.2, and plays a short
 # scripted session in the real game for each version to check it works and take screenshots.
 # Also used by the Windows build, which bundles the jars into the launcher.
 on:
@@ -66,6 +66,7 @@ jobs:
           mkdir -p mod-jars
           cp apps/mod/mc1_21_11/build/libs/eventide-*+1.21.11.jar mod-jars/eventide-1.21.11.jar
           cp apps/mod/mc26_1/build/libs/eventide-*+26.1.jar mod-jars/eventide-26.1.jar
+          cp apps/mod/mc26_2/build/libs/eventide-*+26.2.jar mod-jars/eventide-26.2.jar
           ls -la mod-jars
 
       - name: Upload jars
@@ -177,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [mc1_21_11, mc26_1]
+        project: [mc1_21_11, mc26_1, mc26_2]
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -211,6 +212,7 @@ jobs:
           case "${{ matrix.project }}" in
             mc1_21_11) mc=1.21.11 ;;
             mc26_1) mc=26.1.2 ;;
+            mc26_2) mc=26.2 ;;
           esac
           dir="test-mods/${{ matrix.project }}"
           mkdir -p "$dir"

@@ -1,10 +1,8 @@
 package dev.eventide.client.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -15,8 +13,6 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.eventide.client.EventideClient;
 import dev.eventide.client.compat.Compat;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
@@ -71,7 +67,7 @@ public final class SkyMesh {
 			memory = new ByteBufferBuilder(16384);
 			POOL[slot] = memory;
 		}
-		return new BufferBuilder(memory, VertexFormat.Mode.QUADS, format);
+		return Compat.quads(memory, format);
 	}
 
 	/** Draws what {@code builder} holds (if anything) with {@code pipeline}, sampling {@code texture} when given. */
@@ -80,20 +76,12 @@ public final class SkyMesh {
 		if (mesh == null) return;
 		try {
 			GpuBufferSlice transforms = RenderSystem.getDynamicUniforms()
-					.writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1, 1, 1, 1), new Vector3f(), new Matrix4f());
-			GpuBuffer vertices = pipeline.getVertexFormat().uploadImmediateVertexBuffer(mesh.vertexBuffer());
-			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(mesh.drawState().mode());
-			GpuBuffer indexBuffer = indices.getBuffer(mesh.drawState().indexCount());
-			RenderTarget target = Minecraft.getInstance().getMainRenderTarget();
-			try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Eventide sky mesh",
-					target.getColorTextureView(), OptionalInt.empty(), target.getDepthTextureView(), OptionalDouble.empty())) {
-				pass.setPipeline(pipeline);
-				RenderSystem.bindDefaultUniforms(pass);
-				pass.setUniform("DynamicTransforms", transforms);
-				if (texture != null) pass.bindTexture("Sampler0", texture, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-				pass.setVertexBuffer(0, vertices);
-				pass.setIndexBuffer(indexBuffer, indices.type());
-				pass.drawIndexed(0, 0, mesh.drawState().indexCount(), 1);
+					.writeTransform(Compat.modelView(), new Vector4f(1, 1, 1, 1), new Vector3f(), new Matrix4f());
+			RenderTarget target = Compat.mainTarget();
+			try (Compat.QuadPass pass = new Compat.QuadPass("Eventide sky mesh", mesh, target.getColorTextureView(), target.getDepthTextureView())) {
+				pass.pipeline(pipeline, transforms);
+				if (texture != null) pass.texture("Sampler0", texture, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+				pass.drawAll();
 			}
 		} finally {
 			mesh.close();

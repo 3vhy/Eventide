@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.Config;
 import dev.eventide.client.module.Module.Category;
 import dev.eventide.client.module.Setting.Choice;
@@ -600,10 +601,10 @@ public final class Modules {
 		Zoom.tick(mc);
 		Freelook.tick(mc);
 		StayOpen.tick(mc);
-		if (mc.screen instanceof dev.eventide.client.gui.MainMenuScreen && !MAIN_MENU.enabled()) {
-			mc.setScreen(new net.minecraft.client.gui.screens.TitleScreen());
-		} else if (mc.screen != null && mc.screen.getClass() == net.minecraft.client.gui.screens.TitleScreen.class && MAIN_MENU.enabled()) {
-			mc.setScreen(new dev.eventide.client.gui.MainMenuScreen());
+		if (Compat.screen() instanceof dev.eventide.client.gui.MainMenuScreen && !MAIN_MENU.enabled()) {
+			Compat.setScreen(new net.minecraft.client.gui.screens.TitleScreen());
+		} else if (Compat.screen() != null && Compat.screen().getClass() == net.minecraft.client.gui.screens.TitleScreen.class && MAIN_MENU.enabled()) {
+			Compat.setScreen(new dev.eventide.client.gui.MainMenuScreen());
 		}
 		Target.tick(mc);
 		Combo.tick(mc);

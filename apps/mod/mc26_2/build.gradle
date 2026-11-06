@@ -1,0 +1,71 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+}
+
+def minecraftVersion = '26.2'
+def fabricApiVersion = '0.161.0+26.2'
+ext.fabricApiVersion = fabricApiVersion
+
+version = "${mod_version}+26.2"
+group = 'dev.eventide'
+base { archivesName = 'eventide' }
+
+sourceSets {
+	main {
+		java { srcDir '../common/src/main/java' }
+		resources { srcDir '../common/src/main/resources' }
+	}
+	test {
+		java { srcDir '../common/src/test/java' }
+	}
+}
+
+dependencies {
+	testImplementation platform('org.junit:junit-bom:5.11.4')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	minecraft "com.mojang:minecraft:${minecraftVersion}"
+	implementation "net.fabricmc:fabric-loader:${loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
+}
+
+processResources {
+	def props = [
+		version        : project.version,
+		minecraft_range: '>=26.2 <26.3',
+		java_version   : '25',
+		discord_app_id : (System.getenv('EVENTIDE_DISCORD_APP_ID') ?: project.findProperty('discord_app_id') ?: ''),
+		gametest_entrypoint: providers.gradleProperty('gametest').isPresent()
+				? ',\n\t\t"fabric-client-gametest": ["dev.eventide.client.test.EventideGameTest"]' : ''
+	]
+	inputs.properties props
+	filesMatching(['fabric.mod.json', 'eventide-build.properties']) {
+		expand props
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+apply from: '../testing.gradle'
+
+// Starts the real game with the mod (and its in-game test, with -Pgametest) under a virtual display
+tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+	jvmArgs.add('-Dfabric.client.gametest')
+	jvmArgs.add('-Dfabric.client.gametest.disableNetworkSynchronizer=true')
+	// -PtestFocus=lyrics runs just that part of the in-game test, for quicker local checks
+	def focus = providers.gradleProperty('testFocus').getOrElse('')
+	if (!focus.isEmpty()) jvmArgs.add("-Deventide.testFocus=${focus}")
+	useXVFB = System.getenv('CI') != null
+}

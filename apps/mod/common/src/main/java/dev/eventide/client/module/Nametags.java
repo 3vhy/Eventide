@@ -1,5 +1,6 @@
 package dev.eventide.client.module;
 
+import dev.eventide.client.compat.Compat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.eventide.client.ui.Tokens;
@@ -36,7 +37,7 @@ public final class Nametags {
 	public static boolean showOwn(Entity entity) {
 		Minecraft mc = Minecraft.getInstance();
 		boolean wanted = Modules.OWN_NAMETAG.enabled() || Modules.NAMETAGS.enabled() && Modules.NAMETAGS_OWN.get();
-		return wanted && entity == mc.player && !mc.options.getCameraType().isFirstPerson() && !mc.options.hideGui;
+		return wanted && entity == mc.player && !mc.options.getCameraType().isFirstPerson() && !Compat.hudHidden();
 	}
 
 	/** Whether this player's tag is drawn in Eventide's style instead of Minecraft's. */

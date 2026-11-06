@@ -285,6 +285,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		}
 		EventideClient.LOG.info("eventide-check: modules missing from the menu: {}", unlisted);
 		check(failed, "every mod is in the menu (Modules.ALL)", unlisted.isEmpty());
+		mainMenuHover(context);
 		check(failed, "main menu has Singleplayer, Multiplayer, Realms, Options, the Eventide menu and Quit", context.computeOnClient(client -> {
 			if (!(client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu)) return false;
 			for (String id : List.of("singleplayer", "multiplayer", "realms", "options", "eventide", "quit")) {
@@ -1595,6 +1596,20 @@ public final class EventideGameTest implements FabricClientGameTest {
 		server.runCommand("time set noon");
 	}
 
+	/** The main menu with the mouse over Singleplayer, Multiplayer and a dock button: each grows and glows. */
+	private static void mainMenuHover(ClientGameTestContext context) {
+		for (String id : List.of("singleplayer", "multiplayer", "options")) {
+			float[] at = context.computeOnClient(client -> client.screen instanceof dev.eventide.client.gui.MainMenuScreen menu ? menu.centre(id) : null);
+			if (at == null) continue;
+			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+			context.getInput().setCursorPos(at[0] * scale, at[1] * scale);
+			context.waitTicks(8);
+			shot(context, "eventide-main-menu-hover-" + id);
+		}
+		context.getInput().setCursorPos(2, 2);
+		context.waitTicks(4);
+	}
+
 	/** Runs one part of the test on its own (-PtestFocus=...), for quicker checks while working on it. */
 	private static void runFocused(ClientGameTestContext context, String focus, List<String> failed) {
 		EventideClient.LOG.info("eventide-check: running only the {} part of the test", focus);
@@ -1602,6 +1617,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		if (focus.contains("title")) {
 			context.waitTicks(40);
 			shot(context, "eventide-main-menu");
+			mainMenuHover(context);
 			context.getInput().pressKey(EventideClient.openSettingsKey);
 			context.waitTicks(30);
 			shot(context, "eventide-menu-from-menu");

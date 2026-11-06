@@ -46,6 +46,7 @@ public final class MainMenuScreen extends CompatTitleScreen {
 
 	private final long openedAt = System.currentTimeMillis();
 	private final Map<String, Anim> hover = new HashMap<>();
+	private final Map<String, Anim> pops = new HashMap<>();
 	private final List<Hit> hits = new ArrayList<>();
 	private final Map<String, float[]> centres = new HashMap<>();
 
@@ -173,6 +174,11 @@ public final class MainMenuScreen extends CompatTitleScreen {
 		return hover.computeIfAbsent(id, k -> new Anim(0, Tokens.T_HOVER, Ease.OUT));
 	}
 
+	/** How far {@code id} has grown for the hover: springs a touch past and settles, under a quarter second. */
+	private Anim pop(String id) {
+		return pops.computeIfAbsent(id, k -> new Anim(0, 240, Ease.SPRING));
+	}
+
 	private static String greetingWord() {
 		int hour = LocalTime.now().getHour();
 		if (hour < 5) return "Good night";
@@ -214,43 +220,65 @@ public final class MainMenuScreen extends CompatTitleScreen {
 	private void button(Draw d, String id, String label, String icon, boolean primary, float x, float y, float w, float h, float u, int mx, int my,
 			Runnable action) {
 		boolean over = mx >= x && mx < x + w && my >= y && my < y + h;
+		hits.add(new Hit(id, x, y, x + w, y + h, action));
+		centres.put(id, new float[] {x + w / 2f, y + h / 2f});
 		Anim lit = hover(id);
 		lit.set(over);
 		float t = lit.get();
+		Anim grow = pop(id);
+		grow.set(over);
+		float k = 1 + 0.07f * grow.get();
+		float mid = x + w / 2f;
+		float cy = y + h / 2f;
+		w *= k;
+		h *= k;
+		x = mid - w / 2f;
+		y = cy - h / 2f;
 		float r = h / 2f;
 		int accent = Accent.get();
+		int lavender = Accent.lighten(accent, 0.35f);
 		if (primary) {
-			int fill = Accent.lighten(accent, 0.2f + 0.08f * t);
-			Paint.shadow(d, x, y, x + w, y + h, r, 0, 3 * u, 46 * u, 0, Paint.fade(fill, 0.42f + 0.18f * t));
+			int fill = Accent.lighten(accent, 0.2f + 0.1f * t);
+			Paint.shadow(d, x, y, x + w, y + h, r, 0, 3 * u, (46 + 34 * t) * u, 4 * u * t, Paint.fade(fill, 0.42f + 0.38f * t));
 			Paint.rect(d, x, y, x + w, y + h, r, fill);
-			Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Paint.fade(Accent.lighten(accent, 0.6f), 0.55f));
+			Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Paint.fade(Accent.lighten(accent, 0.6f), 0.55f + 0.35f * t));
 		} else {
 			Paint.shadow(d, x, y, x + w, y + h, r, 0, 2 * u, 26 * u, 0, 0x40000000);
-			Paint.rect(d, x, y, x + w, y + h, r, Widgets.mixColor(0xEC100D21, 0xF21C1838, t));
-			Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Widgets.mixColor(0x1FFFFFFF, Paint.fade(Accent.lighten(accent, 0.4f), 0.55f), t));
+			if (t > 0.01f) Paint.shadow(d, x, y, x + w, y + h, r, 0, 0, 50 * u, 3 * u, Paint.fade(lavender, 0.65f * t));
+			Paint.rect(d, x, y, x + w, y + h, r, Widgets.mixColor(0xEC100D21, 0xF2221C42, t));
+			Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Widgets.mixColor(0x1FFFFFFF, Paint.fade(Accent.lighten(accent, 0.5f), 0.8f), t));
 		}
-		float cap = 30 * u;
-		float iconSize = 34 * u;
-		float gap = 24 * u;
+		float cap = 30 * u * k;
+		float iconSize = 34 * u * k;
+		float gap = 24 * u * k;
 		float content = iconSize + gap + Type.width(label, cap, Weight.BOLD);
 		float cx = x + (w - content) / 2f;
-		float cy = y + h / 2f;
 		Paint.icon(d, icon, cx, cy - iconSize / 2f, iconSize, 1.3f, icon.equals("play") || icon.equals("cloud"), 0xFFFFFFFF, null);
 		Type.draw(d, label, cx + iconSize + gap, cy - cap / 2f, cap, Weight.BOLD, 0xFFFFFFFF);
-		hits.add(new Hit(id, x, y, x + w, y + h, action));
-		centres.put(id, new float[] {x + w / 2f, y + h / 2f});
 	}
 
 	/** Continue: the world or server you last played on, its icon, how long ago, and a round play button. */
 	private void continueCard(Draw d, Config.LastPlayed last, float x, float y, float w, float h, float u, int mx, int my) {
 		boolean over = mx >= x && mx < x + w && my >= y && my < y + h;
+		hits.add(new Hit("continue", x, y, x + w, y + h, () -> LastPlayed.resume(this)));
 		Anim lit = hover("continue");
 		lit.set(over);
 		float t = lit.get();
+		Anim grow = pop("continue");
+		grow.set(over);
+		float k = 1 + 0.025f * grow.get();
+		float midX = x + w / 2f;
+		float midY = y + h / 2f;
+		w *= k;
+		h *= k;
+		x = midX - w / 2f;
+		y = midY - h / 2f;
+		u *= k;
 		float r = 46 * u;
 		Paint.shadow(d, x, y, x + w, y + h, r, 0, 2 * u, 30 * u, 0, 0x44000000);
-		Paint.rect(d, x, y, x + w, y + h, r, Widgets.mixColor(0xE6110E22, 0xEE18142F, t));
-		Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Widgets.mixColor(0x1AFFFFFF, Paint.fade(Accent.lighten(Accent.get(), 0.4f), 0.45f), t));
+		if (t > 0.01f) Paint.shadow(d, x, y, x + w, y + h, r, 0, 0, 48 * u, 2 * u, Paint.fade(Accent.lighten(Accent.get(), 0.35f), 0.4f * t));
+		Paint.rect(d, x, y, x + w, y + h, r, Widgets.mixColor(0xE6110E22, 0xF01C1736, t));
+		Paint.stroke(d, x, y, x + w, y + h, r, hair(d), Widgets.mixColor(0x1AFFFFFF, Paint.fade(Accent.lighten(Accent.get(), 0.5f), 0.75f), t));
 		float icon = 96 * u;
 		float ix = x + 30 * u;
 		float iy = y + (h - icon) / 2f;
@@ -270,11 +298,11 @@ public final class MainMenuScreen extends CompatTitleScreen {
 		Type.draw(d, Type.fit(last.name, maxW, nameCap, Weight.BOLD), tx, y + h / 2f + 6 * u, nameCap, Weight.BOLD, 0xFFFFFFFF);
 		int fill = Accent.lighten(Accent.get(), 0.2f + 0.08f * t);
 		float pcy = y + h / 2f;
-		Paint.shadow(d, pcx - playR, pcy - playR, pcx + playR, pcy + playR, playR, 0, 2 * u, 28 * u, 0, Paint.fade(fill, 0.4f));
-		Paint.circle(d, pcx, pcy, playR * (1 + 0.05f * t), fill);
+		float pr = playR * (1 + 0.1f * grow.get());
+		Paint.shadow(d, pcx - pr, pcy - pr, pcx + pr, pcy + pr, pr, 0, 2 * u, (28 + 24 * t) * u, 0, Paint.fade(fill, 0.4f + 0.35f * t));
+		Paint.circle(d, pcx, pcy, pr, fill);
 		float glyph = 30 * u;
 		Paint.icon(d, "play", pcx - glyph / 2f + 2 * u, pcy - glyph / 2f, glyph, 1.2f, true, 0xFFFFFFFF, null);
-		hits.add(new Hit("continue", x, y, x + w, y + h, () -> LastPlayed.resume(this)));
 		centres.put("continue", new float[] {pcx, pcy});
 	}
 
@@ -309,10 +337,16 @@ public final class MainMenuScreen extends CompatTitleScreen {
 			Anim lit = hover(id);
 			lit.set(over);
 			float t = lit.get();
-			if (t > 0.01f) Paint.circle(d, ix, cy, 40 * u, Paint.fade(0xFFFFFFFF, 0.08f * t));
+			Anim grow = pop(id);
+			grow.set(over);
+			float g = size * (1 + 0.22f * grow.get());
+			if (t > 0.01f) {
+				Paint.glow(d, ix, cy, 14 * u, 46 * u, Paint.fade(Accent.lighten(Accent.get(), 0.35f), 0.4f * t));
+				Paint.circle(d, ix, cy, 42 * u * (1 + 0.1f * grow.get()), Paint.fade(0xFFFFFFFF, 0.09f * t));
+			}
 			int color = Widgets.mixColor(0xFFCFCBDF, 0xFFFFFFFF, t);
-			if (i == 1) Logo.mark(d, ix - size / 2f, cy - size / 2f, size, 1, System.currentTimeMillis());
-			else Paint.icon(d, DOCK_ICONS[i], ix - size / 2f, cy - size / 2f, size, color);
+			if (i == 1) Logo.mark(d, ix - g / 2f, cy - g / 2f, g, 1, System.currentTimeMillis());
+			else Paint.icon(d, DOCK_ICONS[i], ix - g / 2f, cy - g / 2f, g, color);
 			final int which = i;
 			hits.add(new Hit(id, ix - step / 2f, y, ix + step / 2f, y + h, () -> dockAction(mc, which)));
 			centres.put(id, new float[] {ix, cy});

@@ -33,9 +33,9 @@ public final class Widgets {
 	public static void toggle(Draw d, float x, float y, float w, float h, float knob, float lit) {
 		float r = h / 2f;
 		int accent = Accent.get();
-		if (lit > 0.01f) Paint.shadow(d, x, y, x + w, y + h, r, 0, 0, h * 0.9f, -h * 0.1f, Paint.fade(accent, 0.38f * lit));
-		Paint.rect(d, x, y, x + w, y + h, r, mixColor(Tokens.SWITCH_OFF, accent, lit));
-		Paint.stroke(d, x, y, x + w, y + h, r, 1, mixColor(0x24FFFFFF, 0x40FFFFFF, lit));
+		if (lit > 0.01f) Paint.shadow(d, x, y, x + w, y + h, r, 0, 0, h * 1.1f, -h * 0.1f, Paint.fade(accent, 0.5f * lit));
+		Paint.rect(d, x, y, x + w, y + h, r, Grad.down(mixColor(0x26FFFFFF, Accent.lighten(accent, 0.15f), lit), mixColor(0x14FFFFFF, accent, lit)));
+		Paint.stroke(d, x, y, x + w, y + h, r, 1, mixColor(0x2EFFFFFF, 0x59FFFFFF, lit));
 		float inset = h * 0.14f;
 		float size = h - 2 * inset;
 		float k = Math.max(0, Math.min(1, knob));
@@ -57,8 +57,9 @@ public final class Widgets {
 	public static void tile(Draw d, float x, float y, float size, String icon, float on, float hover) {
 		float r = size * 0.3f;
 		int accent = Accent.get();
-		if (on > 0.01f) Paint.shadow(d, x, y, x + size, y + size, r, 0, size * 0.1f, size * 0.7f, -size * 0.12f, Paint.fade(accent, 0.45f * on));
-		Paint.rect(d, x, y, x + size, y + size, r, mixColor(mixColor(0x0FFFFFFF, 0x18FFFFFF, hover), Paint.fade(accent, 0.24f), on));
+		if (on > 0.01f) Paint.shadow(d, x, y, x + size, y + size, r, 0, size * 0.1f, size * 0.8f, -size * 0.12f, Paint.fade(accent, 0.55f * on));
+		Paint.rect(d, x, y, x + size, y + size, r, Grad.down(mixColor(mixColor(0x1AFFFFFF, 0x26FFFFFF, hover), Paint.fade(Accent.lighten(accent, 0.1f), 0.5f), on),
+				mixColor(mixColor(0x0AFFFFFF, 0x12FFFFFF, hover), Paint.fade(accent, 0.22f), on)));
 		Paint.stroke(d, x, y, x + size, y + size, r, 1, mixColor(0x14FFFFFF, Paint.fade(Accent.lighten(accent, 0.2f), 0.55f), on));
 		float s = size * 0.5f;
 		int color = mixColor(mixColor(Tokens.TEXT_2, Tokens.TEXT, hover), 0xFFFFFFFF, on);
@@ -298,9 +299,19 @@ public final class Widgets {
 
 	/** A floating panel (a settings panel, a toolbar): near-opaque midnight, a 1px edge, and the one shadow it earns by floating. */
 	public static void glass(Draw d, float x1, float y1, float x2, float y2, float r) {
-		Paint.shadow(d, x1, y1, x2, y2, r, 0, 14, 40, -10, 0x99000000);
-		Paint.rect(d, x1, y1, x2, y2, r, PANEL);
-		Paint.stroke(d, x1, y1, x2, y2, r, 1, PANEL_EDGE);
+		Paint.shadow(d, x1, y1, x2, y2, r, 0, 14, 40, -10, 0x80000000);
+		Paint.rect(d, x1, y1, x2, y2, r, Grad.down(0xD81C1640, 0xE60E0A22));
+		Paint.rect(d, x1, y1, x2, y2, r, Grad.down(Paint.fade(Accent.get(), 0.1f), 0x00000000));
+		Paint.stroke(d, x1, y1, x2, y2, r, 1, 0x2EFFFFFF);
+		shine(d, x1, y1, x2, r);
+	}
+
+	/** The lit top rim of a glass surface: a hairline of light that fades out towards both sides. */
+	public static void shine(Draw d, float x1, float y1, float x2, float r) {
+		float mid = (x1 + x2) / 2f;
+		float inset = Math.min(r, (x2 - x1) * 0.25f);
+		Paint.rect(d, x1 + inset, y1 + 0.5f, mid, y1 + 1.5f, 0, Grad.across(0x00FFFFFF, 0x47FFFFFF));
+		Paint.rect(d, mid, y1 + 0.5f, x2 - inset, y1 + 1.5f, 0, Grad.across(0x47FFFFFF, 0x00FFFFFF));
 	}
 
 	/** A module card's body: one tone step off the window with a 1px edge; {@code hover} lightens it a step. */
@@ -314,10 +325,16 @@ public final class Widgets {
 	 */
 	public static void card(Draw d, float x1, float y1, float x2, float y2, float r, float hover, float on, float chosen) {
 		int accent = Accent.get();
-		if (chosen > 0.01f) Paint.shadow(d, x1, y1, x2, y2, r, 0, 0, 18, -4, Paint.fade(accent, 0.28f * chosen));
-		Paint.rect(d, x1, y1, x2, y2, r, mixColor(mixColor(CARD, CARD_HOVER, hover), Paint.fade(accent, 0.09f), on * 0.85f));
-		int edge = mixColor(CARD_EDGE, CARD_EDGE_HOVER, hover);
-		Paint.stroke(d, x1, y1, x2, y2, r, 1, mixColor(edge, Paint.fade(Accent.lighten(accent, 0.15f), 0.75f), chosen));
+		int lilac = Accent.lighten(accent, 0.35f);
+		float glow = Math.max(hover * 0.55f, Math.max(on * 0.35f, chosen));
+		if (glow > 0.01f) Paint.shadow(d, x1, y1, x2, y2, r, 0, 4 * hover, 26, -6, Paint.fade(on > 0.5f || chosen > 0.01f ? accent : lilac, 0.32f * glow));
+		Paint.shadow(d, x1, y1, x2, y2, r, 0, 6 + 4 * hover, 18, -8, Paint.fade(0xFF000000, 0.35f));
+		int top = mixColor(mixColor(0x16FFFFFF, 0x24FFFFFF, hover), Paint.fade(accent, 0.24f + 0.06f * hover), on * 0.9f);
+		int bottom = mixColor(mixColor(0x08FFFFFF, 0x10FFFFFF, hover), Paint.fade(accent, 0.07f), on * 0.9f);
+		Paint.rect(d, x1, y1, x2, y2, r, Grad.down(top, bottom));
+		int edge = mixColor(mixColor(0x1CFFFFFF, 0x3DFFFFFF, hover), Paint.fade(lilac, 0.45f), on * 0.8f);
+		Paint.stroke(d, x1, y1, x2, y2, r, 1, mixColor(edge, Paint.fade(Accent.lighten(accent, 0.25f), 0.85f), chosen));
+		shine(d, x1, y1, x2, r);
 	}
 
 	/** A small status dot (a connection that's up). */

@@ -956,7 +956,9 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> null);
 		context.waitTicks(3);
 		context.getInput().pressKey(EventideClient.openSettingsKey);
-		context.waitTicks(30);
+		context.waitTicks(4);
+		shot(context, "eventide-menu-opening");
+		context.waitTicks(26);
 		check(failed, "Right Shift opens the menu", context.computeOnClient(client ->
 				client.screen instanceof MenuScreen menu && menu.view().category() == Category.RENDER));
 		shot(context, "eventide-menu");
@@ -965,9 +967,12 @@ public final class EventideGameTest implements FabricClientGameTest {
 		check(failed, "the menu lays out a card for each module", zoomCard != null);
 		if (zoomCard != null) {
 			context.getInput().setCursorPos(zoomCard[0] * menuScale, zoomCard[1] * menuScale);
-			context.waitTicks(2);
+			context.waitTicks(6);
+			shot(context, "eventide-menu-hover");
 			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-			context.waitTicks(5);
+			context.waitTicks(2);
+			shot(context, "eventide-menu-toggle-ripple");
+			context.waitTicks(3);
 			check(failed, "clicking a card switches its module", context.computeOnClient(client -> Modules.ZOOM.enabled() != zoomBefore));
 			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 			context.waitTicks(5);

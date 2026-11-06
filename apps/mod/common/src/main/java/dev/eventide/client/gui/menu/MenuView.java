@@ -8,6 +8,7 @@ import dev.eventide.client.module.Module.Category;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.ui.Anim;
 import dev.eventide.client.ui.Ease;
+import dev.eventide.client.ui.Grad;
 import dev.eventide.client.ui.Hits;
 import dev.eventide.client.ui.Keys;
 import dev.eventide.client.ui.Logo;
@@ -109,7 +110,7 @@ public final class MenuView {
 		}
 	};
 	private final Anim[] navHover = new Anim[TABS.size()];
-	private final Anim navY = new Anim(0, Tokens.T_INDICATOR, Ease.OUT);
+	private final Anim navY = new Anim(0, 320, Ease.SPRING);
 	private final Anim searchHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
 	private final Anim editHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
 	private final Anim closeHover = new Anim(0, Tokens.T_COLOR, Ease.OUT);
@@ -252,16 +253,33 @@ public final class MenuView {
 		winX = (canvasW - WIN_W) / 2f;
 		winY = (canvasH - WIN_H) / 2f;
 		float intro = Ease.OUT.apply((now - openedAt) / (double) Tokens.T_OPEN);
+		float pop = opening(now);
 		float old = Paint.opacity(Paint.opacity() * intro);
 		d.push();
 		d.scale(unit);
-		Sky.backdrop(d, canvasW, canvasH, host.inWorld(), 1);
+		if (host.inWorld()) {
+			Paint.rect(d, 0, 0, canvasW, canvasH, 0, Grad.down(0x7005030B, 0x9C0A0716));
+			Sky.nebula(d, canvasW, canvasH, 0.55f);
+		} else {
+			Sky.backdrop(d, canvasW, canvasH, false, 1);
+		}
 		if (Modules.THEME_SNOW.get()) Sky.stars(d, canvasW, canvasH, (float) (Modules.THEME_SNOW_AMOUNT.get() / 100.0) * 0.6f, 1, now);
 		float lift = (1 - intro) * 10;
-		d.translate(winX, winY + lift);
-		drawWindow(d, (float) (mouseX / unit) - winX, (float) (mouseY / unit) - winY - lift, now);
+		d.translate(winX + WIN_W / 2f, winY + WIN_H / 2f + lift);
+		d.scale(pop);
+		d.translate(-WIN_W / 2f, -WIN_H / 2f);
+		float mx = ((float) (mouseX / unit) - winX - WIN_W / 2f) / pop + WIN_W / 2f;
+		float my = ((float) (mouseY / unit) - winY - lift - WIN_H / 2f) / pop + WIN_H / 2f;
+		drawWindow(d, mx, my, now);
 		d.pop();
 		Paint.opacity(old);
+	}
+
+	/** How big the window is as it opens: springing from a little small to a touch past full size and settling. */
+	private float opening(long now) {
+		if (Anim.speed() <= 0) return 1;
+		double t = Math.min(1, (now - openedAt) * Anim.speed() / 420.0);
+		return 0.93f + 0.07f * Ease.SPRING.apply(t);
 	}
 
 	/**
@@ -289,18 +307,16 @@ public final class MenuView {
 		float hx = overSheet ? -9999 : mx;
 		float hy = overSheet ? -9999 : my;
 		int accent = Accent.get();
-		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 24, 70, -6, 0xB3000000);
-		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 0, 90, -30, Paint.fade(accent, 0.16f));
-		Paint.rect(d, 0, 0, WIN_W, WIN_H, WIN_R, Tokens.WINDOW);
-		d.enableScissor(0, 0, Math.round(WIN_W), Math.round(WIN_H));
-		Paint.shadow(d, -220, -260, 460, 140, 200, 0, 0, 260, 0, Paint.fade(accent, 0.2f));
-		Paint.shadow(d, WIN_W - 380, WIN_H - 120, WIN_W + 200, WIN_H + 260, 200, 0, 0, 260, 0, Paint.fade(Accent.secondary(), 0.09f));
-		d.disableScissor();
-		Paint.rect(d, 0, 0, SIDE_W, WIN_H, WIN_R, Tokens.SIDEBAR);
-		Paint.rect(d, SIDE_W - WIN_R, 0, SIDE_W, WIN_H, 0, Tokens.SIDEBAR);
-		Paint.rect(d, SIDE_W, 0, SIDE_W + 1, WIN_H, 0, 0x14FFFFFF);
-		Paint.stroke(d, 0, 0, WIN_W, WIN_H, WIN_R, 1, Tokens.WINDOW_EDGE);
-		Paint.rect(d, WIN_R * 1.5f, 0, WIN_W - WIN_R * 1.5f, 1, 0, 0x1FFFFFFF);
+		boolean floating = host.floating();
+		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 28, 80, -8, 0x99000000);
+		Paint.shadow(d, 0, 0, WIN_W, WIN_H, WIN_R, 0, 0, 110, -30, Paint.fade(accent, 0.2f));
+		Paint.rect(d, 0, 0, WIN_W, WIN_H, WIN_R, Grad.down(floating ? 0xE81C1642 : 0xB21C1642, floating ? 0xF20C0920 : 0xCC0C0920));
+		drawGlassLight(d, accent, now);
+		Paint.rect(d, 0, 0, SIDE_W, WIN_H, WIN_R, 0x38050310);
+		Paint.rect(d, SIDE_W - WIN_R, 0, SIDE_W, WIN_H, 0, 0x38050310);
+		Paint.rect(d, SIDE_W, 0, SIDE_W + 1, WIN_H, 0, 0x1AFFFFFF);
+		Paint.stroke(d, 0, 0, WIN_W, WIN_H, WIN_R, 1, 0x38FFFFFF);
+		Widgets.shine(d, 0, 0, WIN_W, WIN_R * 2);
 
 		drawSidebar(d, hx, hy, now);
 		float x0 = SIDE_W + PAD;
@@ -319,6 +335,35 @@ public final class MenuView {
 		drawNotice(d, now);
 	}
 
+	/**
+	 * The light inside the glass: soft glows in the theme colour that drift slowly round the window, and, as
+	 * the menu opens, a band of light that sweeps across it once.
+	 */
+	private void drawGlassLight(Draw d, int accent, long now) {
+		double t = now / 1000.0;
+		d.enableScissor(0, 0, Math.round(WIN_W), Math.round(WIN_H));
+		float ax = -220 + (float) Math.sin(t * 0.21) * 70;
+		float ay = -260 + (float) Math.cos(t * 0.17) * 50;
+		Paint.shadow(d, ax, ay, ax + 680, ay + 400, 200, 0, 0, 260, 0, Paint.fade(accent, 0.24f));
+		float bx = WIN_W - 380 + (float) Math.cos(t * 0.15) * 80;
+		float by = WIN_H - 120 + (float) Math.sin(t * 0.19) * 50;
+		Paint.shadow(d, bx, by, bx + 580, by + 380, 200, 0, 0, 260, 0, Paint.fade(Accent.secondary(), 0.12f));
+		float cx = WIN_W * 0.55f + (float) Math.sin(t * 0.11) * 160;
+		Paint.shadow(d, cx - 160, -200, cx + 160, 60, 140, 0, 0, 220, 0, Paint.fade(Accent.lighten(accent, 0.3f), 0.1f));
+		if (Anim.speed() > 0) {
+			float sweep = (float) ((now - openedAt) * Anim.speed() / 1200.0);
+			if (sweep < 1) {
+				float band = 240;
+				float x = -band + (WIN_W + 2 * band) * Ease.OUT.apply(sweep);
+				float strength = (float) Math.sin(Math.PI * sweep);
+				int light = Paint.fade(0x2EFFFFFF, strength);
+				Paint.rect(d, x - band, 0, x, WIN_H, 0, Grad.across(0x00FFFFFF, light));
+				Paint.rect(d, x, 0, x + band, WIN_H, 0, Grad.across(light, 0x00FFFFFF));
+			}
+		}
+		d.disableScissor();
+	}
+
 	private void drawSidebar(Draw d, float mx, float my, long now) {
 		Logo.lockup(d, 26, 30, 30, 10.5f, now);
 		Type.draw(d, "Modules", 26, 76, 9, Weight.SEMIBOLD, Tokens.TEXT_3);
@@ -334,8 +379,10 @@ public final class MenuView {
 		float ay = navY.get();
 		int accent = Accent.get();
 		if (!searching) {
-			Paint.rect(d, x1, ay, x2, ay + NAV_H, 11, Paint.fade(accent, 0.16f));
-			Paint.stroke(d, x1, ay, x2, ay + NAV_H, 11, 1, Paint.fade(accent, 0.32f));
+			Paint.shadow(d, x1, ay, x2, ay + NAV_H, 11, 0, 4, 22, -6, Paint.fade(accent, 0.3f));
+			Paint.rect(d, x1, ay, x2, ay + NAV_H, 11, Grad.across(Paint.fade(accent, 0.34f), Paint.fade(accent, 0.1f)));
+			Paint.stroke(d, x1, ay, x2, ay + NAV_H, 11, 1, Paint.fade(Accent.lighten(accent, 0.3f), 0.45f));
+			Widgets.shine(d, x1, ay, x2, 11);
 			Paint.shadow(d, x1, ay + 10, x1 + 3, ay + NAV_H - 10, 1.5f, 0, 0, 10, 0, Paint.fade(accent, 0.8f));
 			Paint.rect(d, x1, ay + 11, x1 + 3, ay + NAV_H - 11, 1.5f, Accent.lighten(accent, 0.2f));
 		}
@@ -583,6 +630,12 @@ public final class MenuView {
 		float old = Paint.opacity(Paint.opacity() * reveal);
 		float top = y + (1 - reveal) * Tokens.REVEAL_RISE;
 		float lit = module.toggleable() ? state.lit.get() : 1;
+		float grow = (0.95f + 0.05f * Ease.SPRING.apply(reveal)) * (1 + 0.014f * h);
+		float liftBy = 3 * h;
+		d.push();
+		d.translate(x + w / 2f, top + CARD_H / 2f - liftBy);
+		d.scale(grow);
+		d.translate(-(x + w / 2f), -(top + CARD_H / 2f));
 
 		Widgets.card(d, x, top, x + w, top + CARD_H, Tokens.R_CARD, h, module.toggleable() ? lit : 0, state.chosen.get());
 		Widgets.tile(d, x + 18, top + (CARD_H - TILE) / 2f, TILE, module.icon(), lit, h);
@@ -593,7 +646,16 @@ public final class MenuView {
 			focused = null;
 			sheet.open(module);
 		};
-		if (module.toggleable()) Widgets.toggle(d, toggleX, top + 18, 40, 22, state.knob.get(), state.lit.get());
+		if (module.toggleable()) {
+			long since = now - state.toggledAt;
+			if (since < 560 && Anim.speed() > 0) {
+				float p = since / 560f;
+				float ring = 12 + 26 * Ease.OUT.apply(p);
+				int color = module.enabled() ? Accent.lighten(Accent.get(), 0.2f) : 0xFFFFFFFF;
+				Paint.ring(d, toggleX + 20, top + 29, ring, 2 * (1 - p) + 0.5f, Paint.fade(color, 0.55f * (1 - p)));
+			}
+			Widgets.toggle(d, toggleX, top + 18, 40, 22, state.knob.get(), state.lit.get());
+		}
 		float sx2 = module.toggleable() ? toggleX - 8 : x + w - 18;
 		float sx1 = sx2 - 26;
 		float sy1 = top + 16;
@@ -616,6 +678,7 @@ public final class MenuView {
 		for (int i = 0; i < lines.size(); i++) {
 			Type.draw(d, lines.get(i), nameX, top + 46 + i * 14, 9.5f, Weight.MEDIUM, Tokens.TEXT_2);
 		}
+		d.pop();
 		Paint.opacity(old);
 
 		if (reveal < 0.5f) return;
@@ -656,6 +719,7 @@ public final class MenuView {
 	private void toggle(Module module) {
 		focused = null;
 		module.toggle();
+		state(module).toggledAt = System.currentTimeMillis();
 	}
 
 	private void drawProfiles(Draw d, float x0, float mx, float my, long now) {
@@ -1009,6 +1073,8 @@ public final class MenuView {
 		final Anim lit;
 		boolean placed = false;
 		long drawnAt = -1;
+		/** When it was last switched, for the ripple off its switch. */
+		long toggledAt = 0;
 		float cx;
 		float cy;
 

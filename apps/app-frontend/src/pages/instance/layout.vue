@@ -1,9 +1,12 @@
 <template>
-	<div v-if="instance" :class="{ 'flex h-full flex-col': isFixedRender }">
+	<div v-if="instance" class="ev-instance" :class="{ 'flex h-full flex-col': isFixedRender }">
 		<div
-			:class="['p-6 pr-2 pb-4', { 'shrink-0': isFixedRender }]"
+			:class="['ev-instance__hero', { 'shrink-0': isFixedRender }]"
 			@contextmenu.prevent.stop="(event) => handleRightClick(event)"
 		>
+			<div class="ev-instance__glow" aria-hidden="true">
+				<img v-if="icon" :src="icon" alt="" />
+			</div>
 			<ExportModal v-if="!instance.quarantined" ref="exportModal" :instance="instance" />
 			<ConfirmDeleteInstanceModal
 				ref="deleteConfirmModal"
@@ -55,7 +58,18 @@
 			/>
 		</div>
 		<div :class="['px-6', { 'shrink-0': isFixedRender }]">
-			<NavTabs :links="tabs" />
+			<nav class="ev-tabs" :aria-label="formatMessage(messages.instanceActionsLabel)">
+				<RouterLink
+					v-for="tab in tabs"
+					:key="tab.href"
+					:to="tab.href"
+					class="ev-tab"
+					:class="{ 'ev-tab--active': tabActive(tab.href) }"
+				>
+					<component :is="tab.icon" class="ev-tab__icon" aria-hidden="true" />
+					{{ tab.label }}
+				</RouterLink>
+			</nav>
 			<InstanceAdmonitions
 				class="mt-4"
 				:instance="instance"
@@ -104,7 +118,6 @@ import {
 	ContextMenu,
 	defineMessages,
 	injectNotificationManager,
-	NavTabs,
 	useLoadingBarToken,
 	useVIntl,
 } from '@modrinth/ui'
@@ -509,6 +522,13 @@ const showShareTab = computed(() => {
 		linkType !== 'server_project_modpack'
 	)
 })
+
+/** Whether a tab is the page you're on: Content only on its own path, the others on theirs and below. */
+function tabActive(href: string) {
+	const path = displayedInstanceRoute.value.path
+	if (href === basePath.value) return path === href || path === `${href}/`
+	return path === href || path.startsWith(`${href}/`)
+}
 
 const tabs = computed(() => {
 	const instanceTabs = [
@@ -932,3 +952,155 @@ onUnmounted(() => {
 	}
 })
 </script>
+
+<style scoped lang="scss">
+.ev-instance__hero {
+	position: relative;
+	margin: 1.25rem 1.5rem 1rem;
+	padding: 1.4rem 1.5rem;
+	border-radius: 16px;
+	overflow: hidden;
+	background: #121217;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+	> :deep(*:not(.ev-instance__glow)) {
+		position: relative;
+	}
+}
+
+// The instance's icon, blown up and blurred into a soft wash of its colours behind the header
+.ev-instance__glow {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: radial-gradient(60% 140% at 0% 50%, rgba(139, 124, 246, 0.16), transparent 70%);
+
+	img {
+		position: absolute;
+		left: -6%;
+		top: 50%;
+		width: 42%;
+		aspect-ratio: 1;
+		translate: 0 -50%;
+		object-fit: cover;
+		filter: blur(48px) saturate(1.3);
+		opacity: 0.35;
+	}
+}
+
+.ev-instance__hero :deep(h1) {
+	font-size: 1.75rem;
+	letter-spacing: -0.02em;
+}
+
+// Play is the launcher's white button
+.ev-instance__hero :deep(.ev-play) {
+	background: #e7e7ee !important;
+	color: #0d0d11 !important;
+	border-radius: 12px !important;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+	font-weight: 700;
+
+	svg {
+		color: #0d0d11;
+	}
+
+	&:hover:not(:disabled) {
+		background: #ffffff !important;
+	}
+}
+
+.ev-instance__hero :deep(.button-frame--base),
+.ev-instance__hero :deep(.button-frame--quiet) {
+	border-radius: 12px;
+	background: #1a1a21;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.ev-tabs {
+	display: flex;
+	gap: 1.4rem;
+	padding: 0 0.25rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.ev-tab {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.75rem 0.1rem 0.85rem;
+	color: #7d7d8c;
+	font-size: 0.9rem;
+	font-weight: 600;
+	white-space: nowrap;
+	transition: color 0.15s ease-out;
+
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 2px;
+		border-radius: 2px;
+		background: #8b7cf6;
+		scale: 0 1;
+		transition: scale 0.2s ease-out;
+	}
+
+	&:hover {
+		color: #c4c4d0;
+	}
+}
+
+.ev-tab--active {
+	color: #ffffff;
+
+	&::after {
+		scale: 1 1;
+	}
+}
+
+.ev-tab__icon {
+	width: 1rem;
+	height: 1rem;
+}
+
+// The content list: a flat dark panel, no stripes, quiet dividers and a lit row under the mouse
+.ev-instance :deep([role='table']) {
+	border: none !important;
+	border-radius: 14px;
+	background: #0f0f13;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+.ev-instance :deep([role='table'] > [role='rowgroup'].sticky) {
+	background: transparent !important;
+	border-color: rgba(255, 255, 255, 0.06) !important;
+
+	&::before {
+		background: #0f0f13 !important;
+	}
+
+	[role='columnheader'],
+	.text-secondary {
+		font-size: 0.68rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: #6e6e7c;
+	}
+}
+
+.ev-instance :deep([role='table'] [role='row']) {
+	background: transparent !important;
+	border-color: rgba(255, 255, 255, 0.05) !important;
+	transition: background-color 0.12s ease-out;
+
+	&:hover {
+		background: #15151b !important;
+	}
+}
+</style>

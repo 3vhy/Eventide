@@ -1,10 +1,10 @@
 <template>
-	<PageHeader :title="instance.name">
+	<PageHeader :title="instance.name" :divider="false" :bottom-padding="false">
 		<template #leading>
 			<Avatar
 				:src="iconSrc"
 				:alt="instance.name"
-				size="64px"
+				size="76px"
 				:tint-by="instance.id"
 				pad-transparent-corners
 			/>
@@ -89,6 +89,7 @@
 					type="colored"
 					color="brand"
 					size="xl"
+					class="ev-play"
 					native-type="button"
 					disabled
 				>
@@ -100,6 +101,7 @@
 					type="colored"
 					color="brand"
 					size="xl"
+					class="ev-play"
 					native-type="button"
 					disabled
 				>
@@ -111,6 +113,7 @@
 					type="colored"
 					color="brand"
 					size="xl"
+					class="ev-play"
 					native-type="button"
 					@click="emit('repair')"
 				>
@@ -122,6 +125,7 @@
 					type="colored"
 					color="brand"
 					size="xl"
+					class="ev-play"
 					:options="serverPlayOptions"
 					:menu-label="formatMessage(messages.launchInstance)"
 					@click="emit('playServer')"
@@ -134,13 +138,14 @@
 					type="colored"
 					color="brand"
 					size="xl"
+					class="ev-play"
 					native-type="button"
 					@click="emit('play')"
 				>
 					<PlayIcon />
 					{{ formatMessage(commonMessages.playButton) }}
 				</Button>
-				<Button v-else type="colored" color="brand" size="xl" native-type="button" disabled>{{
+				<Button v-else type="colored" color="brand" size="xl" class="ev-play" native-type="button" disabled>{{
 					formatMessage(messages.starting)
 				}}</Button>
 

@@ -46,7 +46,7 @@ public final class PauseMenuButton {
 			}
 		}
 		String label = LABEL;
-		Button mods = Button.builder(Component.literal(label), button -> mc.setScreen(MenuHost.open(screen, Category.RENDER))).build();
+		Button mods = Button.builder(Component.literal(label), button -> MenuHost.show(screen, Category.RENDER)).build();
 		GEMS.add(mods);
 		Compat.afterScreen(screen, d -> {
 			for (AbstractWidget widget : Compat.widgets(screen)) {

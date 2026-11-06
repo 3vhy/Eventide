@@ -42,15 +42,15 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 		return view;
 	}
 
-	/** What the menu key opens: the menu on screen, or floating in the world (Theme > Menu display). */
-	public static Screen fromKey(Screen parent) {
-		return open(parent, Category.RENDER);
+	/** Whether the menu should float in the world (Theme > Menu display, and only with a world to float in). */
+	public static boolean floatingNow() {
+		return Modules.THEME_MENU_MODE.is("Floating") && Minecraft.getInstance().level != null && !FloatingMenu.failed();
 	}
 
-	/** The menu at {@code start}, on screen or floating as Theme > Menu display says (always on screen without a world). */
-	public static MenuHost open(Screen parent, Category start) {
-		boolean floating = Modules.THEME_MENU_MODE.is("Floating") && Minecraft.getInstance().level != null && !FloatingMenu.failed();
-		return floating ? new FloatingMenuScreen(parent, start) : new MenuScreen(parent, start);
+	/** Opens the menu at {@code start}: on screen, or floating in the world as Theme > Menu display says. */
+	public static void show(Screen parent, Category start) {
+		if (floatingNow()) FloatingMenu.open(parent, start);
+		else Minecraft.getInstance().setScreen(new MenuScreen(parent, start));
 	}
 
 	@Override
@@ -125,11 +125,17 @@ public abstract class MenuHost extends CompatScreen implements MenuView.Host {
 			return;
 		}
 		Modules.THEME_MENU_MODE.set(floating ? "Floating" : "Screen");
-		MenuHost next = floating ? new FloatingMenuScreen(parent, view.category()) : new MenuScreen(parent, view.category());
+		MenuHost next;
+		if (floating) {
+			FloatingMenu.open(parent, view.category());
+			next = FloatingMenu.host();
+		} else {
+			FloatingMenu.close();
+			next = new MenuScreen(parent, view.category());
+			Minecraft.getInstance().setScreen(next);
+		}
 		if (view.category() == null) next.view.openProfiles();
 		if (view.sheetOpen()) next.view.openSettings(view.sheetModule());
-		if (!floating) FloatingMenu.hide();
-		Minecraft.getInstance().setScreen(next);
 	}
 
 	@Override

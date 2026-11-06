@@ -12,7 +12,6 @@ import dev.eventide.client.gui.HudEditorScreen;
 import dev.eventide.client.gui.PauseMenuButton;
 import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.gui.menu.FloatingMenu;
-import dev.eventide.client.gui.menu.FloatingMenuScreen;
 import dev.eventide.client.gui.menu.MenuScreen;
 import dev.eventide.client.hud.CpsTracker;
 import dev.eventide.client.hud.HudRenderer;
@@ -1018,48 +1017,72 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.setScreen(() -> null);
 		context.waitTicks(3);
 		context.getInput().pressKey(EventideClient.openSettingsKey);
-		context.waitTicks(40);
-		check(failed, "Theme > Menu display > Floating opens the menu in the world", context.computeOnClient(client ->
-				client.screen instanceof FloatingMenuScreen));
+		context.waitTicks(2);
+		shot(context, "eventide-menu-floating-popping");
+		context.waitTicks(30);
+		check(failed, "Floating opens the menu in the world with no screen over the game", context.computeOnClient(client ->
+				FloatingMenu.active() && client.screen == null));
 		check(failed, "the floating menu is drawn in the world (GameRenderer)", context.computeOnClient(client -> FloatingMenu.drawnFrames() > 0));
 		shot(context, "eventide-menu-floating");
 		boolean floatZoom = context.computeOnClient(client -> Modules.ZOOM.enabled());
-		float[] floatCard = context.computeOnClient(client -> {
-			float[] layout = ((FloatingMenuScreen) client.screen).view().cardCenter(Modules.ZOOM);
-			return layout == null ? null : FloatingMenu.project(layout[0], layout[1]);
-		});
+		float[] floatCard = context.computeOnClient(client -> FloatingMenu.host() == null ? null : FloatingMenu.host().view().cardCenter(Modules.ZOOM));
 		check(failed, "the floating menu lays out its cards", floatCard != null);
 		if (floatCard != null) {
-			context.getInput().setCursorPos(floatCard[0] * menuScale, floatCard[1] * menuScale);
+			context.runOnClient(client -> FloatingMenu.lookAt(floatCard[0], floatCard[1]));
 			context.waitTicks(3);
 			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 			context.waitTicks(5);
-			check(failed, "clicking a card on the floating menu switches its module", context.computeOnClient(client ->
+			check(failed, "clicking a floating card with the crosshair switches its module", context.computeOnClient(client ->
 					Modules.ZOOM.enabled() != floatZoom));
 			context.runOnClient(client -> Modules.ZOOM.set(floatZoom));
 			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
 			context.waitTicks(15);
 			check(failed, "right-clicking a floating card opens its settings", context.computeOnClient(client ->
-					client.screen instanceof FloatingMenuScreen menu && menu.view().sheetModule() == Modules.ZOOM));
+					FloatingMenu.host() != null && FloatingMenu.host().view().sheetModule() == Modules.ZOOM));
 			shot(context, "eventide-menu-floating-settings");
+			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+			context.waitTicks(10);
 		}
-		float yawBefore = context.computeOnClient(client -> client.player.getYRot());
-		context.runOnClient(client -> client.player.turn(-260, 40));
-		context.waitTicks(10);
-		check(failed, "you can look around the floating menu", context.computeOnClient(client -> client.player.getYRot() != yawBefore));
+		double[] before = context.computeOnClient(client -> new double[] {client.player.getX(), client.player.getZ()});
+		context.getInput().holdKeyFor(GLFW.GLFW_KEY_W, 20);
+		context.getInput().holdKeyFor(GLFW.GLFW_KEY_D, 12);
+		context.waitTicks(5);
+		check(failed, "you can walk while the floating menu is up", context.computeOnClient(client ->
+				Math.hypot(client.player.getX() - before[0], client.player.getZ() - before[1]) > 1));
+		check(failed, "walking doesn't type into the floating menu's search", context.computeOnClient(client ->
+				FloatingMenu.host() != null && FloatingMenu.host().view().searchText().isEmpty()));
+		context.runOnClient(client -> FloatingMenu.lookAt(0, 0));
+		context.waitTicks(1);
+		context.runOnClient(client -> {
+			float[] mid = FloatingMenu.host().view().cardCenter(Modules.ZOOM);
+			if (mid != null) FloatingMenu.lookAt(mid[0], mid[1]);
+		});
+		context.waitTicks(5);
 		shot(context, "eventide-menu-floating-side");
+		check(failed, "the floating menu stays where it opened as you walk", context.computeOnClient(client -> FloatingMenu.drawnFrames() > 0
+				&& FloatingMenu.host().view().cardCenter(Modules.ZOOM) != null));
+		float[] searchAt = context.computeOnClient(client -> FloatingMenu.host().view().searchCenter());
+		context.runOnClient(client -> FloatingMenu.lookAt(searchAt[0], searchAt[1]));
+		context.waitTicks(3);
+		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.waitTicks(3);
+		double[] typingFrom = context.computeOnClient(client -> new double[] {client.player.getX(), client.player.getZ()});
+		context.getInput().typeChars("zoom");
+		context.getInput().holdKeyFor(GLFW.GLFW_KEY_W, 10);
+		context.waitTicks(5);
+		check(failed, "after clicking the search box, typing goes into it (and doesn't walk)", context.computeOnClient(client ->
+				FloatingMenu.host().view().searchText().startsWith("zoom")
+						&& Math.hypot(client.player.getX() - typingFrom[0], client.player.getZ() - typingFrom[1]) < 0.3));
+		shot(context, "eventide-menu-floating-search");
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.waitTicks(3);
 		context.getInput().pressKey(InputConstants.KEY_R);
 		context.waitTicks(10);
 		shot(context, "eventide-menu-floating-recentred");
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-		context.waitTicks(5);
-		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitTicks(10);
-		check(failed, "Esc closes the floating menu", context.computeOnClient(client -> client.screen == null));
-		context.runOnClient(client -> {
-			Modules.THEME_MENU_MODE.reset();
-			client.player.turn(260, -40);
-		});
+		check(failed, "Esc closes the floating menu", context.computeOnClient(client -> !FloatingMenu.active() && client.screen == null));
+		context.runOnClient(client -> Modules.THEME_MENU_MODE.reset());
 		context.waitTicks(5);
 	}
 

@@ -12,19 +12,27 @@ import dev.eventide.client.ui.Paint;
 import dev.eventide.client.ui.Tokens;
 import dev.eventide.client.ui.Type;
 import dev.eventide.client.ui.Type.Weight;
+import dev.eventide.client.Config;
+import dev.eventide.client.module.Module.Category;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
  * Floating mode: the mod menu as a panel hanging in the air in front of you, like a holographic screen.
- * It's anchored in the world where you were looking when it opened (and moves with you, not with your
- * view), so you can turn your head by right-dragging and see it from the side. It opens with a line of
- * light sweeping down it and closes the same way up. The bar under it moves it around you, the button
- * beside the bar brings it back in front, and Floating distance and size in Theme set how far away and
- * how big it is.
+ * It stays where it opened in the world, so you can walk round it and look at it from the side; nothing
+ * freezes, since no screen opens. Your crosshair is the pointer (a small ring shows where it meets the
+ * panel): click to press, scroll to scroll, and clicks that miss go to the game. Keys only reach it while
+ * you're typing in one of its boxes (click the search box first), so walking never types. It pops open
+ * with a little spring and shrinks away; holding the bar under it carries it where you look, the button
+ * beside the bar or R brings it back in front, and Floating distance and size in Theme set how far away
+ * and how big it is.
  *
  * <p>It's drawn after the world (before the HUD and screens) by {@link WorldDraw}, with its own fixed field
  * of view so zoom and sprinting don't warp it; mouse positions are turned into points on the panel by
@@ -36,8 +44,8 @@ public final class FloatingMenu {
 	private static final float FOV = 70;
 	private static final float NEAR = 0.05f;
 	private static final float FAR = 100;
-	private static final long OPEN_MS = 340;
-	private static final long CLOSE_MS = 220;
+	private static final long OPEN_MS = 460;
+	private static final long CLOSE_MS = 200;
 	/** The bar under the window, in the window's layout units. */
 	private static final float BAR_W = 170;
 	private static final float BAR_H = 12;
@@ -50,7 +58,16 @@ public final class FloatingMenu {
 	private static final Quaternionf ROTATION = new Quaternionf();
 
 	private static MenuView view;
+	/** What runs the panel: a menu host that's never put on screen, so the game keeps its mouse and keyboard. */
+	private static FloatingMenuScreen host;
 	private static boolean open = false;
+	/** Where the window's middle hangs, in world coordinates, so you can walk round it. */
+	private static double anchorX;
+	private static double anchorY;
+	private static double anchorZ;
+	private static final boolean[] HELD = new boolean[3];
+	/** Whether the bar is held, so the panel follows where you look. */
+	private static boolean carrying = false;
 	private static long changedAt = 0;
 	private static float yaw;
 	private static float pitch;
@@ -62,6 +79,38 @@ public final class FloatingMenu {
 	private static long drawnFrames = 0;
 
 	private FloatingMenu() {
+	}
+
+	/**
+	 * Opens the menu floating in front of you. No screen opens: you keep walking and looking around, click the
+	 * panel with your crosshair, and keys only go to it while you're typing in one of its boxes.
+	 */
+	public static void open(Screen parent, Category start) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.screen != null) mc.setScreen(null);
+		FloatingMenuScreen next = new FloatingMenuScreen(parent, start);
+		next.init(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+		host = next;
+	}
+
+	/** The floating menu's host while it's up, or null. */
+	public static FloatingMenuScreen host() {
+		return host;
+	}
+
+	/** Closes the floating menu (it shrinks away). */
+	public static void close() {
+		if (host == null) return;
+		Config.save();
+		host = null;
+		carrying = false;
+		java.util.Arrays.fill(HELD, false);
+		hide();
+	}
+
+	/** Whether the floating menu is up and taking your clicks (nothing's on screen over it). */
+	public static boolean active() {
+		return host != null && open && Minecraft.getInstance().screen == null;
 	}
 
 	/** Shows {@code menu} on a panel in front of where the camera looks. */
@@ -82,11 +131,16 @@ public final class FloatingMenu {
 		changedAt = System.currentTimeMillis();
 	}
 
-	/** Puts the panel straight in front of where the camera looks now. */
+	/** Puts the panel straight in front of where the camera looks now, hanging there in the world. */
 	public static void recenter() {
 		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
 		yaw = camera.yRot();
 		pitch = Math.max(-25, Math.min(25, camera.xRot() * 0.6f));
+		Vec3 eye = camera.position();
+		Vector3f f = forward(yaw, pitch);
+		anchorX = eye.x + f.x * distance();
+		anchorY = eye.y + f.y * distance();
+		anchorZ = eye.z + f.z * distance();
 	}
 
 	/** Whether the panel is up (or still sweeping away). */
@@ -104,6 +158,13 @@ public final class FloatingMenu {
 		long age = System.currentTimeMillis() - changedAt;
 		if (open) return Ease.OUT.apply(age / (double) OPEN_MS);
 		return 1 - Ease.OUT.apply(age / (double) CLOSE_MS);
+	}
+
+	/** How big the panel is as it pops open (springing a little past full size) or shrinks away. */
+	private static float pop() {
+		long age = System.currentTimeMillis() - changedAt;
+		if (open) return 0.55f + 0.45f * Ease.SPRING.apply(Math.min(1, age / (double) OPEN_MS));
+		return 1 - 0.18f * Ease.OUT.apply(Math.min(1, age / (double) CLOSE_MS));
 	}
 
 	private static float distance() {
@@ -132,7 +193,8 @@ public final class FloatingMenu {
 		Vector3f up = new Vector3f(r).cross(f).normalize();
 		float k = unit();
 		float bob = (float) Math.sin(System.currentTimeMillis() / 1000.0 * 1.3) * 0.008f;
-		Vector3f centre = new Vector3f(f).mul(distance()).add(new Vector3f(up).mul(bob));
+		Vec3 eye = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+		Vector3f centre = new Vector3f((float) (anchorX - eye.x), (float) (anchorY - eye.y), (float) (anchorZ - eye.z)).add(new Vector3f(up).mul(bob));
 		Vector3f corner = new Vector3f(centre).sub(new Vector3f(r).mul(MenuView.WIN_W * k / 2f)).add(new Vector3f(up).mul(MenuView.WIN_H * k / 2f));
 		return new Vector3f[] {corner, new Vector3f(r).mul(k), new Vector3f(up).mul(-k), f};
 	}
@@ -153,6 +215,7 @@ public final class FloatingMenu {
 		}
 		float t = reveal();
 		if (t <= 0.001f) return;
+		follow(mc);
 		Camera camera = mc.gameRenderer.getMainCamera();
 		ROTATION.set(camera.rotation()).conjugate();
 		VIEW.identity().rotation(ROTATION);
@@ -161,7 +224,7 @@ public final class FloatingMenu {
 		float k = unit();
 		var window = mc.getWindow();
 		float pixels = window.getHeight() / (2f * (float) Math.tan(Math.toRadians(FOV / 2)) * distance()) * k;
-		float scale = 0.94f + 0.06f * t;
+		float scale = pop();
 		Vector3f centre = new Vector3f(f[0]).add(new Vector3f(f[1]).mul(MenuView.WIN_W / 2f)).add(new Vector3f(f[2]).mul(MenuView.WIN_H / 2f));
 		Vector3f corner = new Vector3f(centre).sub(new Vector3f(f[1]).mul(MenuView.WIN_W / 2f * scale)).sub(new Vector3f(f[2]).mul(MenuView.WIN_H / 2f * scale));
 		Vector3f across = new Vector3f(f[1]).mul(scale);
@@ -170,14 +233,11 @@ public final class FloatingMenu {
 		try {
 			RenderSystem.setProjectionMatrix(Compat.projectionBuffer(PROJECTION), ProjectionType.PERSPECTIVE);
 			DRAW.begin(corner, across, downward, MenuView.WIN_W, MenuView.WIN_H + BAR_GAP + BUTTON + 10, pixels * scale);
-			float old = Paint.opacity(Math.min(1, t * 1.6f));
+			float old = Paint.opacity(Math.min(1, t * 2.2f));
 			drawAura(t);
-			float sweep = MenuView.WIN_H * t;
-			DRAW.enableScissor(-200, -200, Math.round(MenuView.WIN_W + 200), Math.round(sweep));
 			view.drawPanel(DRAW, mouseX, mouseY);
-			DRAW.disableScissor();
-			drawSweep(sweep, t);
 			drawBar(t);
+			if (active() && mouseX > -9000) drawPointer();
 			Paint.opacity(old);
 			DRAW.end(VIEW, 1);
 			drawnFrames++;
@@ -222,13 +282,119 @@ public final class FloatingMenu {
 		}
 	}
 
-	/** The line of light at the edge of the reveal while it opens or closes. */
-	private static void drawSweep(float y, float t) {
-		if (t >= 0.999f) return;
-		float strength = (float) Math.sin(Math.PI * t);
-		int accent = Accent.get();
-		Paint.shadow(DRAW, 0, y - 1, MenuView.WIN_W, y + 1, 1, 0, 0, 30, 0, Paint.fade(accent, 0.9f * strength));
-		Paint.rect(DRAW, 20, y - 1, MenuView.WIN_W - 20, y + 1, 1, Paint.fade(Tokens.ICE, strength));
+	/** Where your crosshair meets the panel: a small ring, so you can see what a click will press. */
+	private static void drawPointer() {
+		Paint.circle(DRAW, mouseX, mouseY, 5.5f, 0x40000000);
+		Paint.ring(DRAW, mouseX, mouseY, 5, 1.6f, 0xF2FFFFFF);
+		Paint.circle(DRAW, mouseX, mouseY, 1.6f, Accent.get());
+	}
+
+	/** Each frame: the crosshair is the pointer; a held bar carries the panel, a held button drags (sliders and the like). */
+	private static void follow(Minecraft mc) {
+		if (!active()) return;
+		if (carrying) {
+			recenter();
+			return;
+		}
+		float[] p = crosshair();
+		if (HELD[0] && p != null) view.dragLayout(p[0], p[1]);
+	}
+
+	/** Where the crosshair (the middle of the screen) points on the panel, or null. */
+	private static float[] crosshair() {
+		var window = Minecraft.getInstance().getWindow();
+		return hover(window.getGuiScaledWidth() / 2.0, window.getGuiScaledHeight() / 2.0);
+	}
+
+	private static boolean onPanel(float x, float y) {
+		return x >= -12 && x < MenuView.WIN_W + 12 && y >= -12 && y < MenuView.WIN_H + BAR_GAP + BUTTON + 12;
+	}
+
+	/**
+	 * A mouse button pressed ({@code action} 1) or let go (0) with no screen open; returns whether the floating
+	 * menu took it. Clicks that miss the panel go to the game as usual, so you can still fight and mine.
+	 */
+	public static boolean mouseButton(int button, int action) {
+		if (!active() || button < 0 || button > 2) return false;
+		if (action == 0) {
+			if (!HELD[button]) return false;
+			HELD[button] = false;
+			if (button == 0) {
+				carrying = false;
+				view.mouseReleased();
+			}
+			return true;
+		}
+		if (action != 1) return false;
+		if (host.extras.pickingKey()) {
+			host.extras.pickMouse(button);
+			return true;
+		}
+		float[] p = crosshair();
+		if (p == null || !onPanel(p[0], p[1])) {
+			view.stopTyping();
+			return false;
+		}
+		HELD[button] = true;
+		if (button == 0 && onRecenter(p[0], p[1])) {
+			host.clickSound();
+			recenter();
+			return true;
+		}
+		if (button == 0 && onBar(p[0], p[1])) {
+			carrying = true;
+			return true;
+		}
+		view.clickLayout(p[0], p[1], button);
+		return true;
+	}
+
+	/** The mouse wheel with no screen open: scrolls the panel when the crosshair is on it. */
+	public static boolean scroll(double amount) {
+		if (!active()) return false;
+		float[] p = crosshair();
+		return p != null && onPanel(p[0], p[1]) && view.scrollLayout(p[0], p[1], amount);
+	}
+
+	/**
+	 * A key with no screen open ({@code action} 1 pressed, 2 held, 0 let go); returns whether the floating menu
+	 * took it. While you type in one of its boxes it takes every key; otherwise only Esc and the menu key
+	 * (close), R (bring it back in front) and the arrows, Enter and Tab, so walking never types.
+	 */
+	public static boolean key(int action, KeyEvent event) {
+		if (!active()) return false;
+		boolean typing = view.typing() || host.extras.pickingBind() || host.extras.pickingKey();
+		int key = event.key();
+		if (action == 0) return typing;
+		if (typing) {
+			host.keyPressed(event);
+			return true;
+		}
+		if (action != 1) return false;
+		if (key == 256 || EventideClient.openSettingsKey != null && EventideClient.openSettingsKey.matches(event)) {
+			if (view.sheetOpen()) {
+				view.keyPressed(256, false, false);
+				return true;
+			}
+			close();
+			return true;
+		}
+		if (key == 82) {
+			recenter();
+			return true;
+		}
+		if (key >= 262 && key <= 269 || key == 257 || key == 335 || key == 258) {
+			host.keyPressed(event);
+			return true;
+		}
+		return false;
+	}
+
+	/** A typed character with no screen open: goes to the panel only while you're typing in one of its boxes. */
+	public static boolean charTyped(CharacterEvent event) {
+		if (!active() || !view.typing()) return false;
+		host.charTyped(event);
+		return true;
 	}
 
 	/** The bar under the panel that moves it, and the button beside it that brings it back in front. */
@@ -246,7 +412,7 @@ public final class FloatingMenu {
 		Paint.circle(DRAW, rx + BUTTON / 2f, ry + BUTTON / 2f, BUTTON / 2f, overRecenter ? 0xF2221A42 : 0xD9110C22);
 		Paint.ring(DRAW, rx + BUTTON / 2f, ry + BUTTON / 2f, BUTTON / 2f, 1, overRecenter ? Paint.fade(Accent.get(), 0.9f) : 0x33FFFFFF);
 		Paint.icon(DRAW, "locate", rx + BUTTON / 2f - 8, ry + BUTTON / 2f - 8, 16, overRecenter ? 0xFFFFFFFF : Tokens.TEXT_2);
-		String hint = "Drag to move · Right-drag to look around";
+		String hint = "Hold to carry · R brings it back · Esc closes";
 		float cap = 9;
 		Type.center(DRAW, hint, cx, y + BAR_H + 12, cap, Weight.SEMIBOLD, Paint.fade(Tokens.TEXT_2, 0.85f));
 		Paint.opacity(old);
@@ -294,6 +460,20 @@ public final class FloatingMenu {
 		float ny = world.y / (-world.z * tan);
 		double scale = window.getGuiScale();
 		return new float[] {(float) ((nx + 1) / 2 * window.getWidth() / scale), (float) ((1 - ny) / 2 * window.getHeight() / scale)};
+	}
+
+	/** Turns you to look straight at a point on the window (layout units), for the in-game test. */
+	public static void lookAt(float lx, float ly) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) return;
+		Vector3f[] f = frame();
+		Vector3f point = new Vector3f(f[0]).add(new Vector3f(f[1]).mul(lx)).add(new Vector3f(f[2]).mul(ly));
+		float yawTo = (float) Math.toDegrees(Math.atan2(-point.x, point.z));
+		float pitchTo = (float) Math.toDegrees(-Math.atan2(point.y, Math.sqrt(point.x * point.x + point.z * point.z)));
+		mc.player.setYRot(yawTo);
+		mc.player.setXRot(pitchTo);
+		mc.player.yRotO = yawTo;
+		mc.player.xRotO = pitchTo;
 	}
 
 	/** Tells the panel where the mouse is; returns the point on the window (layout units). */

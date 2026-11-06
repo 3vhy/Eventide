@@ -120,6 +120,7 @@ public final class MenuView {
 	private int tab;
 	private long tabSince = System.currentTimeMillis();
 	private String search = "";
+	private final float[] searchMid = new float[2];
 	private boolean searchFocused = false;
 	private double scroll = 0;
 	private double shownScroll = 0;
@@ -190,6 +191,11 @@ public final class MenuView {
 
 	public String searchText() {
 		return search;
+	}
+
+	/** The middle of the search box as last drawn, in GUI units (for the in-game test). */
+	public float[] searchCenter() {
+		return new float[] {(winX + searchMid[0]) * unit, (winY + searchMid[1]) * unit};
 	}
 
 	/** The middle of a module's card as last drawn, in GUI units, or null if it isn't on screen. */
@@ -464,6 +470,8 @@ public final class MenuView {
 		searchHover.set(searchHovered);
 		Widgets.search(d, sx1, 28, sx2, 28 + HEAD_H, search, "Search mods", "/", searchFocused, searchHover.get(), now);
 		hits.add(sx1, 28, sx2, 28 + HEAD_H, () -> searchFocused = true);
+		searchMid[0] = (sx1 + sx2) / 2f;
+		searchMid[1] = 28 + HEAD_H / 2f;
 		if (category() == Category.HUD && !searching) {
 			String label = "Edit layout";
 			float cap = 10f;
@@ -976,6 +984,12 @@ public final class MenuView {
 			tabSince = System.currentTimeMillis();
 		}
 		return true;
+	}
+
+	/** Lets go of the keyboard (the search box and the new-profile name), as when you click away from the panel. */
+	public void stopTyping() {
+		searchFocused = false;
+		typingProfile = false;
 	}
 
 	/** Whether a text field has the keyboard, so keys like the menu key shouldn't close it. */

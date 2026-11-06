@@ -8,11 +8,9 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
 /**
- * The mod menu in Floating mode. The screen itself draws nothing: it holds the mouse and keyboard (so
- * nothing reaches the game while the menu is up) and passes them to the panel {@link FloatingMenu} draws in
- * the world, after turning the mouse into a point on it. Left-drag the bar under the panel to move it,
- * right-drag anywhere to look around, R (when you're not typing) or the button by the bar to bring it back
- * in front. The game keeps running behind it.
+ * The mod menu in Floating mode. It's never put on screen: {@link FloatingMenu} keeps it and passes it your
+ * crosshair's clicks on the panel and, while you type in one of its boxes, your keys, so the game keeps your
+ * mouse and movement. Should it ever be shown as a screen, it still works with the mouse.
  */
 public final class FloatingMenuScreen extends MenuHost {
 	private int drag = 0;
@@ -123,13 +121,14 @@ public final class FloatingMenuScreen extends MenuHost {
 
 	@Override
 	public void onClose() {
-		FloatingMenu.hide();
-		super.onClose();
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.screen == this) mc.setScreen(null);
+		FloatingMenu.close();
 	}
 
 	@Override
-	public void removed() {
-		FloatingMenu.hide();
-		super.removed();
+	public void openHudEditor() {
+		FloatingMenu.close();
+		Minecraft.getInstance().setScreen(new dev.eventide.client.gui.HudEditorScreen(null));
 	}
 }

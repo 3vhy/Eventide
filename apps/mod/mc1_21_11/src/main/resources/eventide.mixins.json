@@ -22,6 +22,8 @@
 		"EntityGlowMixin",
 		"EntityMixin",
 		"EntityTeamColorMixin",
+		"FloatingMenuKeysMixin",
+		"FloatingMenuMouseMixin",
 		"FogRendererMixin",
 		"FontTextureMixin",
 		"FramerateLimitTrackerMixin",

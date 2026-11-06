@@ -122,7 +122,7 @@ public final class EventideClient implements ClientModInitializer {
 			if (screen instanceof net.minecraft.client.gui.screens.TitleScreen || screen instanceof PauseScreen) {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.afterKeyPress(screen).register((shown, event) -> {
 					if (openSettingsKey != null && openSettingsKey.matches(event) && client.screen == shown) {
-						client.setScreen(dev.eventide.client.gui.menu.MenuHost.fromKey(shown));
+						dev.eventide.client.gui.menu.MenuHost.show(shown, dev.eventide.client.module.Module.Category.RENDER);
 					}
 				});
 			}
@@ -139,7 +139,7 @@ public final class EventideClient implements ClientModInitializer {
 		FreezeWatch.tick();
 		dev.eventide.client.module.EventideBadge.tick(mc);
 		while (openSettingsKey.consumeClick()) {
-			if (mc.screen == null) mc.setScreen(MenuHost.fromKey(null));
+			if (mc.screen == null && !dev.eventide.client.gui.menu.FloatingMenu.active()) MenuHost.show(null, dev.eventide.client.module.Module.Category.RENDER);
 		}
 		while (inspectKey.consumeClick()) Knives.inspect(mc);
 		Knives.tick(mc);

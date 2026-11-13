@@ -9,6 +9,8 @@ import dev.eventide.client.module.Module;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.module.Setting;
 import dev.eventide.client.ui.Tokens;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 
 /**
@@ -206,6 +208,12 @@ public abstract class HudWidget {
 			members++;
 		}
 		float wanted = Math.max(MARGIN, Math.min(screenH - MARGIN - groupH, centres / members - groupH / 2f));
+		List<float[]> above = new ArrayList<>();
+		List<float[]> below = new ArrayList<>();
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor != Anchor.TOP_RIGHT && other.anchor != Anchor.BOTTOM_RIGHT || !other.placedAtAnchor(mc, editing)) continue;
+			(other.anchor == Anchor.TOP_RIGHT ? above : below).add(other.guiBox(mc, screenW, screenH));
+		}
 		float right = screenW - edge;
 		float top = wanted;
 		for (int pass = 0; pass < 8; pass++) {
@@ -213,13 +221,13 @@ public abstract class HudWidget {
 			float clearTop = MARGIN;
 			float clearBottom = screenH - MARGIN;
 			float blockedAt = right;
-			for (HudWidget other : HudWidgets.ALL) {
-				if (other.anchor != Anchor.TOP_RIGHT && other.anchor != Anchor.BOTTOM_RIGHT || !other.placedAtAnchor(mc, editing)) continue;
-				float[] box = other.guiBox(mc, screenW, screenH);
-				if (box[0] >= right || box[2] <= left) continue;
-				if (other.anchor == Anchor.TOP_RIGHT) clearTop = Math.max(clearTop, box[3] + GAP);
-				else clearBottom = Math.min(clearBottom, box[1] - GAP);
-				if (box[1] < wanted + groupH && wanted < box[3]) blockedAt = Math.min(blockedAt, box[0] - GAP);
+			for (int side = 0; side < 2; side++) {
+				for (float[] box : side == 0 ? above : below) {
+					if (box[0] >= right || box[2] <= left) continue;
+					if (side == 0) clearTop = Math.max(clearTop, box[3] + GAP);
+					else clearBottom = Math.min(clearBottom, box[1] - GAP);
+					if (box[1] < wanted + groupH && wanted < box[3]) blockedAt = Math.min(blockedAt, box[0] - GAP);
+				}
 			}
 			if (groupH <= clearBottom - clearTop) {
 				top = Math.max(clearTop, Math.min(clearBottom - groupH, wanted));

@@ -2,6 +2,7 @@ package dev.eventide.client.hud;
 
 import dev.eventide.client.Draw;
 import dev.eventide.client.gui.Accent;
+import dev.eventide.client.gui.UiFont;
 import dev.eventide.client.module.Module;
 import dev.eventide.client.module.Modules;
 import dev.eventide.client.ui.Anim;
@@ -58,14 +59,53 @@ final class ModuleListWidget extends HudWidget {
 		return module.category != Module.Category.HUD || Modules.MODULE_LIST_HUD.get();
 	}
 
+	private static final Listing LISTING = new Listing(false);
+	private static final Listing PREVIEW_LISTING = new Listing(true);
+
 	private static List<Module> modules(boolean preview) {
-		List<Module> list = new ArrayList<>();
-		for (Module module : Modules.ALL) {
-			if (listed(module)) list.add(module);
+		return (preview ? PREVIEW_LISTING : LISTING).get();
+	}
+
+	/**
+	 * The listed mods, widest first. The HUD asks for them many times a frame (for the list's size and for laying out the widgets
+	 * around it), so the sorted list is kept until a mod comes on or goes off, or something that changes the chips' widths does.
+	 */
+	private static final class Listing {
+		private final boolean preview;
+		private boolean[] listed = new boolean[0];
+		private boolean icons;
+		private boolean clean;
+		private List<Module> list = null;
+
+		Listing(boolean preview) {
+			this.preview = preview;
 		}
-		if (list.isEmpty() && preview) list.addAll(SAMPLE);
-		list.sort(Comparator.comparingDouble((Module module) -> chipWidth(module.name)).reversed());
-		return list;
+
+		List<Module> get() {
+			List<Module> all = Modules.ALL;
+			boolean icons = Modules.MODULE_LIST_ICONS.get();
+			boolean clean = UiFont.clean();
+			boolean same = list != null && listed.length == all.size() && this.icons == icons && this.clean == clean;
+			if (!same) listed = new boolean[all.size()];
+			for (int i = 0; i < all.size(); i++) {
+				boolean now = listed(all.get(i));
+				if (listed[i] != now) {
+					listed[i] = now;
+					same = false;
+				}
+			}
+			if (same) return list;
+			this.icons = icons;
+			this.clean = clean;
+			List<Module> made = new ArrayList<>();
+			for (int i = 0; i < all.size(); i++) {
+				if (listed[i]) made.add(all.get(i));
+			}
+			if (made.isEmpty() && preview) made.addAll(SAMPLE);
+			made.sort(Comparator.comparingDouble((Module module) -> chipWidth(module.name)).reversed());
+			list = made;
+			return list;
+		}
 	}
 
 	@Override

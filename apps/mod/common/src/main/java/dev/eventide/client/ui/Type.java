@@ -1,6 +1,7 @@
 package dev.eventide.client.ui;
 
 import dev.eventide.client.Draw;
+import dev.eventide.client.compat.Compat;
 import dev.eventide.client.gui.UiFont;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +34,20 @@ public final class Type {
 	private static final Map<String, Component> PIXEL_BOLD = new HashMap<>();
 	@SuppressWarnings("unchecked")
 	private static final Map<String, Sharp>[][] SHARP = new Map[3][UiFont.SHARPNESS.length];
+	/** Measured widths at the font's own size, by font (clean, Minecraft's) and weight. */
+	@SuppressWarnings("unchecked")
+	private static final Map<String, Float>[][] WIDTHS = new Map[2][3];
+	/** {@link #fit} results, by font and weight. */
+	@SuppressWarnings("unchecked")
+	private static final Map<String, Fitted>[][] FITTED = new Map[2][3];
+	private static boolean reloading = false;
 
 	/** Text in one sharp copy of the font, and how much to stretch it across to match the layout's width. */
 	private record Sharp(Component text, float stretch) {
+	}
+
+	/** What {@link #fit} made of a text for one width and size. */
+	private record Fitted(float maxWidth, float cap, String text) {
 	}
 
 	private Type() {
@@ -90,7 +102,45 @@ public final class Type {
 	/** How wide {@code text} is with capitals {@code cap} units tall. */
 	public static float width(String text, float cap, Weight weight) {
 		if (text.isEmpty()) return 0;
-		return Minecraft.getInstance().font.width(component(text, weight)) * cap / baseCap();
+		return baseWidth(text, weight) * cap / baseCap();
+	}
+
+	/**
+	 * {@code text}'s width at the font's own size. Measuring goes through Minecraft's text code, which allocates on every call, and
+	 * the HUD and menus measure the same labels many times a frame, so each width is kept. A resource reload can change the fonts,
+	 * so nothing is kept while one runs, and everything is forgotten once it's done.
+	 */
+	private static float baseWidth(String text, Weight weight) {
+		if (cacheBlocked()) return Minecraft.getInstance().font.width(component(text, weight));
+		Map<String, Float> cache = cache(WIDTHS, weight);
+		Float known = cache.get(text);
+		if (known != null) return known;
+		if (cache.size() > CACHE_LIMIT) cache.clear();
+		float measured = Minecraft.getInstance().font.width(component(text, weight));
+		cache.put(text, measured);
+		return measured;
+	}
+
+	/** Whether a resource reload is running (so measurements can't be kept); forgets every kept measurement once it has finished. */
+	private static boolean cacheBlocked() {
+		if (Compat.overlayShown()) {
+			reloading = true;
+			return true;
+		}
+		if (reloading) {
+			reloading = false;
+			for (Map<String, ?>[] font : WIDTHS) for (Map<String, ?> map : font) if (map != null) map.clear();
+			for (Map<String, ?>[] font : FITTED) for (Map<String, ?> map : font) if (map != null) map.clear();
+			for (Map<String, ?>[] weight : SHARP) for (Map<String, ?> map : weight) if (map != null) map.clear();
+		}
+		return false;
+	}
+
+	private static <T> Map<String, T> cache(Map<String, T>[][] caches, Weight weight) {
+		int font = UiFont.clean() ? 0 : 1;
+		Map<String, T> cache = caches[font][weight.ordinal()];
+		if (cache == null) caches[font][weight.ordinal()] = cache = new HashMap<>();
+		return cache;
 	}
 
 	/** Draws {@code text} with its left edge at {@code x} and the top of its capitals at {@code capTop}. */
@@ -123,9 +173,18 @@ public final class Type {
 	/** {@code text} cut short with an ellipsis so it fits in {@code maxWidth}. */
 	public static String fit(String text, float maxWidth, float cap, Weight weight) {
 		if (width(text, cap, weight) <= maxWidth) return text;
+		boolean keep = !cacheBlocked();
+		Map<String, Fitted> cache = keep ? cache(FITTED, weight) : null;
+		Fitted known = keep ? cache.get(text) : null;
+		if (known != null && known.maxWidth() == maxWidth && known.cap() == cap) return known.text();
 		String cut = text;
 		while (!cut.isEmpty() && width(cut + "...", cap, weight) > maxWidth) cut = cut.substring(0, cut.length() - 1);
-		return cut.stripTrailing() + "...";
+		String fitted = cut.stripTrailing() + "...";
+		if (keep) {
+			if (cache.size() > CACHE_LIMIT) cache.clear();
+			cache.put(text, new Fitted(maxWidth, cap, fitted));
+		}
+		return fitted;
 	}
 
 	/**

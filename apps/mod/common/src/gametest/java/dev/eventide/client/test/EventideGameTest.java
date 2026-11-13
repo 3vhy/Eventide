@@ -39,10 +39,21 @@ import dev.eventide.client.music.Lyrics;
 import dev.eventide.client.music.MusicBridge;
 import dev.eventide.client.ui.Sky;
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
+import jdk.jfr.Configuration;
+import jdk.jfr.Recording;
+import jdk.jfr.consumer.RecordedEvent;
+import jdk.jfr.consumer.RecordedFrame;
+import jdk.jfr.consumer.RecordedStackTrace;
+import jdk.jfr.consumer.RecordedThread;
+import jdk.jfr.consumer.RecordingFile;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -1784,7 +1795,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 			TextRules.add("Kills: #", "Kills: 9999");
 		});
 		context.waitTicks(40);
-		double[] hud = measure(context, frames);
+		double[] hud = profiled(context, frames, "HUD");
 		context.runOnClient(client -> Modules.PERFORMANCE_PRESET.set("Performance"));
 		context.waitTicks(20);
 		double[] lite = measure(context, frames);
@@ -1796,7 +1807,7 @@ public final class EventideGameTest implements FabricClientGameTest {
 		});
 		context.setScreen(() -> new MenuScreen(null, Category.HUD));
 		context.waitTicks(40);
-		double[] menu = measure(context, frames);
+		double[] menu = profiled(context, frames, "menu");
 		context.setScreen(() -> null);
 		context.runOnClient(client -> before.forEach(Module::set));
 		report("world, Eventide mods off", off);
@@ -1815,6 +1826,91 @@ public final class EventideGameTest implements FabricClientGameTest {
 			waited += 10;
 		}
 		return context.computeOnClient(client -> FrameRecorder.INSTANCE.stop());
+	}
+
+	/**
+	 * {@link #measure} with Java Flight Recorder watching the render thread, then logs where Eventide's share of the time and the
+	 * allocations go: by the innermost Eventide method on each sampled stack (its own cost and what it calls in Minecraft and Java),
+	 * by every Eventide method on the stack (the call tree's totals), and by what's allocated.
+	 */
+	private static double[] profiled(ClientGameTestContext context, int frames, String label) {
+		Recording recording;
+		try {
+			recording = new Recording(Configuration.getConfiguration("profile"));
+			recording.enable("jdk.ObjectAllocationSample").with("throttle", "5000/s");
+			recording.enable("jdk.ExecutionSample").withPeriod(Duration.ofMillis(2));
+			recording.start();
+		} catch (Exception | LinkageError e) {
+			EventideClient.LOG.warn("eventide-bench: no profile of the {}: {}", label, e.toString());
+			return measure(context, frames);
+		}
+		double[] result = measure(context, frames);
+		try {
+			recording.stop();
+			Path file = Files.createTempFile("eventide-bench", ".jfr");
+			recording.dump(file);
+			summarise(label, file, Math.max(1, result[4]));
+			Files.deleteIfExists(file);
+		} catch (Exception e) {
+			EventideClient.LOG.warn("eventide-bench: couldn't read the profile of the {}: {}", label, e.toString());
+		} finally {
+			recording.close();
+		}
+		return result;
+	}
+
+	private static void summarise(String label, Path file, double frames) throws java.io.IOException {
+		Map<String, Long> cpuSelf = new HashMap<>();
+		Map<String, Long> cpuTotal = new HashMap<>();
+		Map<String, Long> allocSite = new HashMap<>();
+		Map<String, Long> allocType = new HashMap<>();
+		long samples = 0;
+		long bytes = 0;
+		for (RecordedEvent event : RecordingFile.readAllEvents(file)) {
+			String type = event.getEventType().getName();
+			boolean cpu = type.equals("jdk.ExecutionSample");
+			if (!cpu && !type.equals("jdk.ObjectAllocationSample")) continue;
+			RecordedThread thread = cpu ? event.getThread("sampledThread") : event.getThread();
+			if (thread == null || !"Render thread".equals(thread.getJavaName())) continue;
+			long weight = cpu ? 1 : event.getLong("weight");
+			if (cpu) samples++;
+			else bytes += weight;
+			RecordedStackTrace stack = event.getStackTrace();
+			String innermost = null;
+			java.util.Set<String> onStack = new java.util.HashSet<>();
+			if (stack != null) {
+				for (RecordedFrame frame : stack.getFrames()) {
+					String owner = frame.getMethod().getType().getName();
+					if (!owner.startsWith("dev.eventide.") || owner.startsWith("dev.eventide.client.test.")) continue;
+					String method = owner.substring(owner.lastIndexOf('.') + 1) + "." + frame.getMethod().getName();
+					if (innermost == null) innermost = method + ":" + frame.getLineNumber();
+					onStack.add(method);
+				}
+			}
+			if (cpu) {
+				if (innermost != null) cpuSelf.merge(innermost, weight, Long::sum);
+				for (String method : onStack) cpuTotal.merge(method, weight, Long::sum);
+			} else {
+				allocSite.merge((innermost == null ? "(outside Eventide)" : innermost) + " -> " + event.getClass("objectClass").getName(), weight, Long::sum);
+				if (innermost != null) allocType.merge(event.getClass("objectClass").getName(), weight, Long::sum);
+			}
+		}
+		EventideClient.LOG.info("eventide-bench: profile of the {}: {} render-thread samples, {} KB allocated a frame by the render thread", label, samples,
+				String.format(java.util.Locale.ROOT, "%.1f", bytes / 1024.0 / frames));
+		logTop(label, "time, innermost Eventide method", cpuSelf, samples, 20, null);
+		logTop(label, "time, Eventide methods on the stack", cpuTotal, samples, 20, null);
+		logTop(label, "allocations, by site", allocSite, bytes, 25, frames);
+		logTop(label, "allocations by Eventide code, by type", allocType, bytes, 12, frames);
+	}
+
+	private static void logTop(String label, String what, Map<String, Long> counts, long total, int limit, Double frames) {
+		counts.entrySet().stream()
+				.sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+				.limit(limit)
+				.forEach(entry -> EventideClient.LOG.info("eventide-bench: {} {}: {}%{} {}", label, what,
+						String.format(java.util.Locale.ROOT, "%5.1f", 100.0 * entry.getValue() / Math.max(1, total)),
+						frames == null ? "" : String.format(java.util.Locale.ROOT, " (%.1f KB a frame)", entry.getValue() / 1024.0 / frames),
+						entry.getKey()));
 	}
 
 	private static void report(String scene, double[] result) {

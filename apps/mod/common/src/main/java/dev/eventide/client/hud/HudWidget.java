@@ -128,7 +128,7 @@ public abstract class HudWidget {
 			case TOP_BAR -> barPosition(mc, w, h, screenWidth, screenHeight);
 			case BOTTOM_RIGHT -> new int[] {screenWidth - w - MARGIN, screenHeight - h - MARGIN - stackedBefore(mc)};
 			case ABOVE_HOTBAR -> new int[] {(screenWidth - w) / 2, screenHeight - 58 - h - stackedBefore(mc)};
-			case MIDDLE_RIGHT -> new int[] {screenWidth - w - MARGIN, (screenHeight - h) / 2};
+			case MIDDLE_RIGHT -> middleRight(mc);
 			case BELOW_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 + 20};
 			case ABOVE_CROSSHAIR -> new int[] {(screenWidth - w) / 2, screenHeight / 2 - 22 - h};
 		};
@@ -164,6 +164,71 @@ public abstract class HudWidget {
 		int y = bossBarsBottom(mc) + MARGIN + column;
 		int start = clearOfTopRight(mc, (screenWidth - total) / 2, y, total, h, screenWidth, screenHeight);
 		return new int[] {start + before, y};
+	}
+
+	/** For a middle-right widget: where its top would like to be on a screen this many units tall, before it makes room for the others. */
+	protected int preferredTop(Minecraft mc, int screenHeight) {
+		return (screenHeight - height(mc)) / 2;
+	}
+
+	/** For a middle-right widget: its gap to the right edge of the screen, in GUI pixels. */
+	protected int edgeGap() {
+		return MARGIN;
+	}
+
+	/**
+	 * Where a middle-right widget goes. The middle-right widgets (the scoreboard, potions) stack in one group, centred where they
+	 * would like to be and kept clear of the top-right and bottom-right columns. When the gap between those columns is too small,
+	 * the group moves left of whatever it would cover instead. Worked out in GUI pixels, since each widget has its own scale.
+	 */
+	private int[] middleRight(Minecraft mc) {
+		boolean editing = Compat.screen() instanceof HudEditorScreen;
+		int screenW = mc.getWindow().getGuiScaledWidth();
+		int screenH = mc.getWindow().getGuiScaledHeight();
+		float groupH = 0;
+		float centres = 0;
+		float offset = 0;
+		int members = 0;
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other != this && (other.anchor != Anchor.MIDDLE_RIGHT || !other.placedAtAnchor(mc, editing))) continue;
+			float scale = HudRenderer.scaleFor(other);
+			float h = other.height(mc) * scale;
+			if (other == this) offset = groupH + (members > 0 ? GAP : 0);
+			groupH += h + (members > 0 ? GAP : 0);
+			centres += other.preferredTop(mc, Math.round(screenH / scale)) * scale + h / 2f;
+			members++;
+		}
+		float top = centres / members - groupH / 2f;
+		float clearTop = MARGIN;
+		float clearBottom = screenH - MARGIN;
+		for (HudWidget other : HudWidgets.ALL) {
+			if (other.anchor != Anchor.TOP_RIGHT && other.anchor != Anchor.BOTTOM_RIGHT || !other.placedAtAnchor(mc, editing)) continue;
+			float scale = HudRenderer.scaleFor(other);
+			int[] at = other.position(mc, Math.round(screenW / scale), Math.round(screenH / scale));
+			if (other.anchor == Anchor.TOP_RIGHT) clearTop = Math.max(clearTop, (at[1] + other.height(mc)) * scale + GAP);
+			else clearBottom = Math.min(clearBottom, at[1] * scale - GAP);
+		}
+		float right = screenW - edgeGap();
+		if (groupH <= clearBottom - clearTop) {
+			top = Math.max(clearTop, Math.min(clearBottom - groupH, top));
+		} else {
+			top = Math.max(MARGIN, Math.min(screenH - MARGIN - groupH, top));
+			for (HudWidget other : HudWidgets.ALL) {
+				if (other.anchor != Anchor.TOP_RIGHT && other.anchor != Anchor.BOTTOM_RIGHT || !other.placedAtAnchor(mc, editing)) continue;
+				float scale = HudRenderer.scaleFor(other);
+				int[] at = other.position(mc, Math.round(screenW / scale), Math.round(screenH / scale));
+				float y1 = at[1] * scale;
+				float y2 = y1 + other.height(mc) * scale;
+				if (y1 < top + groupH && top < y2) right = Math.min(right, at[0] * scale - GAP);
+			}
+		}
+		float scale = HudRenderer.scaleFor(this);
+		return new int[] {Math.round(right / scale) - width(mc), Math.round((top + offset) / scale)};
+	}
+
+	/** Whether this widget is on screen at its anchor (not dragged away, not hidden), so the widgets around it make room for it. */
+	private boolean placedAtAnchor(Minecraft mc, boolean editing) {
+		return shown() && storedPosition() == null && usesAnchor() && (editing || visible(mc));
 	}
 
 	/** How far this top corner's column moves down to clear the boss bars, when one of its widgets would reach under them. */

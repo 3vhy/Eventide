@@ -134,13 +134,19 @@ public final class ScoreboardWidget extends HudWidget {
 		return board == null ? SAMPLE.length * LINE + TITLE : board.height();
 	}
 
-	/** Where Minecraft puts it: against the right edge, a little below the middle. */
+	/** Where Minecraft puts it: a little below the middle (and it makes room for the widgets above and below it). */
 	@Override
-	protected int[] defaultPosition(Minecraft mc, int screenWidth, int screenHeight) {
+	protected int preferredTop(Minecraft mc, int screenHeight) {
 		Board board = board(mc);
 		int lines = board == null ? SAMPLE.length : board.lines().size();
 		int bottom = screenHeight / 2 + lines * LINE / 3;
-		return new int[] {screenWidth - width(mc) - 1, bottom - lines * LINE - TITLE};
+		return bottom - lines * LINE - TITLE;
+	}
+
+	/** Against the right edge, as in Minecraft. */
+	@Override
+	protected int edgeGap() {
+		return 1;
 	}
 
 	/** Called in place of Minecraft's own scoreboard, so it stays in the same layer of the HUD. */

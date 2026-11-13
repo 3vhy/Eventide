@@ -790,6 +790,8 @@ public final class EventideGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new HudEditorScreen(null));
 			context.waitTicks(10);
 			shot(context, "eventide-edit-hud");
+			List<String> overlaps = context.computeOnClient(EventideGameTest::rightColumnOverlaps);
+			check(failed, "right-hand HUD widgets at their anchors don't cover each other " + overlaps, overlaps.isEmpty());
 			double sizeBefore = context.computeOnClient(client -> Modules.SCOREBOARD_SIZE.get());
 			context.runOnClient(client -> {
 				var widget = HudWidgets.SCOREBOARD;
@@ -2531,6 +2533,30 @@ public final class EventideGameTest implements FabricClientGameTest {
 		context.waitTicks(2);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 		context.waitTicks(3);
+	}
+
+	/** Pairs of right-hand HUD widgets, left where their anchors put them, whose boxes cover each other (in GUI pixels). */
+	private static List<String> rightColumnOverlaps(Minecraft client) {
+		List<HudWidget.Anchor> right = List.of(HudWidget.Anchor.TOP_RIGHT, HudWidget.Anchor.MIDDLE_RIGHT, HudWidget.Anchor.BOTTOM_RIGHT);
+		List<Pills.Placed> placed = HudRenderer.placed(client, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(),
+				Compat.screen() instanceof HudEditorScreen).stream()
+				.filter(p -> right.contains(p.widget().anchor) && p.widget().storedPosition() == null)
+				.toList();
+		List<String> out = new ArrayList<>();
+		for (int i = 0; i < placed.size(); i++) {
+			for (int j = i + 1; j < placed.size(); j++) {
+				Pills.Placed a = placed.get(i);
+				Pills.Placed b = placed.get(j);
+				float ax2 = (a.x() + a.w()) * a.scale();
+				float ay2 = (a.y() + a.h()) * a.scale();
+				float bx2 = (b.x() + b.w()) * b.scale();
+				float by2 = (b.y() + b.h()) * b.scale();
+				if (a.x() * a.scale() < bx2 && b.x() * b.scale() < ax2 && a.y() * a.scale() < by2 && b.y() * b.scale() < ay2) {
+					out.add(a.widget().id + " over " + b.widget().id);
+				}
+			}
+		}
+		return out;
 	}
 
 	private static void check(List<String> failed, String name, boolean ok) {

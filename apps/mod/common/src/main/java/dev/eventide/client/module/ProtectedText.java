@@ -1,7 +1,9 @@
 package dev.eventide.client.module;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import net.minecraft.network.chat.FormattedText;
@@ -23,6 +25,8 @@ import net.minecraft.util.FormattedCharSink;
  */
 public final class ProtectedText {
 	private static final ThreadLocal<State> STATE = ThreadLocal.withInitial(State::new);
+	private static final ProtectedText UNCHANGED = new ProtectedText("", new int[0]);
+	private static final int MEMO_LIMIT = 4096;
 
 	/** The text to show. */
 	public final String text;
@@ -51,6 +55,23 @@ public final class ProtectedText {
 	 */
 	public static ProtectedText of(String original, int skip) {
 		if (original == null || !NameProtect.active()) return null;
+		if (skip != 0) return make(original, skip);
+		State state = STATE.get();
+		Object names = NameProtect.names();
+		int rules = TextRules.version();
+		if (state.memoNames != names || state.memoRules != rules || state.memo.size() > MEMO_LIMIT) {
+			state.memo.clear();
+			state.memoNames = names;
+			state.memoRules = rules;
+		}
+		ProtectedText known = state.memo.get(original);
+		if (known != null) return known == UNCHANGED ? null : known;
+		ProtectedText made = make(original, 0);
+		state.memo.put(original, made == null ? UNCHANGED : made);
+		return made;
+	}
+
+	private static ProtectedText make(String original, int skip) {
 		int start = Math.max(0, Math.min(skip, original.length()));
 		String tail = start == 0 ? original : original.substring(start);
 		Rewrite rewrite = TextRules.rewrite(NameProtect.rewrite(null, tail), tail);
@@ -123,6 +144,13 @@ public final class ProtectedText {
 	private static final class State {
 		int paused;
 		String handedOut;
+		/**
+		 * What {@link #of} made of each string lately ({@link #UNCHANGED} when nothing in it is protected). The HUD and menus draw the
+		 * same strings every frame, so they're only searched again once the protected names or the rules change.
+		 */
+		final Map<String, ProtectedText> memo = new HashMap<>();
+		Object memoNames;
+		int memoRules;
 	}
 
 	/** Places to change in a text: start, end and what goes there. Filled in order, left to right. */

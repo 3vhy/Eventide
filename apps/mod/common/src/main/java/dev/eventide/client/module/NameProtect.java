@@ -55,7 +55,13 @@ public final class NameProtect {
 		set(next);
 	}
 
+	/** The protected names as they are now: a new object whenever they change, so text worked out from them can tell it's out of date. */
+	static Object names() {
+		return replacements;
+	}
+
 	private static void set(Map<String, String> next) {
+		if (next.equals(replacements)) return;
 		int min = Integer.MAX_VALUE;
 		int max = 0;
 		for (String name : next.keySet()) {
